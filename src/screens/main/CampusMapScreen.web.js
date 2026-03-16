@@ -1,0 +1,161 @@
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TextInput } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
+export default function CampusMapScreen() {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Campus Map</Text>
+      </View>
+      
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
+        <TextInput 
+          style={styles.searchInput}
+          placeholder="Search locations, buildings, rooms..."
+          placeholderTextColor="#888"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
+
+      <View style={styles.mapPlaceholder}>
+        <Ionicons name="map" size={48} color="#8A2BE2" />
+        <Text style={styles.mapTitle}>Map Optimization</Text>
+        <Text style={styles.mapSubtitle}>
+          The interactive campus map leverages native hardware rendering and is only available on iOS and Android. Please open the Olmies app on your mobile device.
+        </Text>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0A0A0A',
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 30,
+    paddingBottom: 15,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1E1E1E',
+    marginHorizontal: 20,
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    height: 46,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    color: '#fff',
+    fontSize: 16,
+    height: '100%',
+  },
+  mapPlaceholder: {
+    flex: 1,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    backgroundColor: '#111',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#222',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 30,
+  },
+  mapTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  mapSubtitle: {
+    fontSize: 14,
+    color: '#888',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 30,
+  },
+  mapContainer: {
+    flex: 1,
+    position: 'relative',
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginHorizontal: 15,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  map: {
+    width: '100%',
+    height: '100%',
+  },
+  poiCardFloating: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+    backgroundColor: '#1E1E1E',
+    padding: 15,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#333',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+  },
+  poiHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6
+  },
+  poiName: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 10
+  },
+  poiDesc: {
+    color: '#aaa',
+    fontSize: 14,
+    lineHeight: 20,
+    paddingLeft: 34
+  },
+  calloutContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 10,
+    width: 200,
+  },
+  calloutTitle: {
+    fontWeight: 'bold',
+    fontSize: 14,
+    color: '#000',
+    marginBottom: 4,
+  },
+  calloutDesc: {
+    fontSize: 12,
+    color: '#444',
+  }
+});

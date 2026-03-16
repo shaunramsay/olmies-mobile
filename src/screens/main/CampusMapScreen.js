@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TextInput, ActivityIndicator, ScrollView, Dimensions } from 'react-native';
-import MapView, { Marker, Callout } from 'react-native-maps';
+import { View, Text, StyleSheet, SafeAreaView, TextInput, ActivityIndicator, ScrollView, Dimensions, Platform } from 'react-native';
+
+// Dynamically import MapView to prevent web bundler from crashing
+let MapView, Marker, Callout;
+if (Platform.OS !== 'web') {
+  const Maps = require('react-native-maps');
+  MapView = Maps.default;
+  Marker = Maps.Marker;
+  Callout = Maps.Callout;
+}
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 
@@ -68,6 +76,14 @@ export default function CampusMapScreen() {
         <View style={styles.mapPlaceholder}>
           <ActivityIndicator size="large" color="#8A2BE2" />
           <Text style={styles.mapTitle}>Loading Map Data...</Text>
+        </View>
+      ) : Platform.OS === 'web' ? (
+        <View style={styles.mapPlaceholder}>
+          <Ionicons name="map" size={48} color="#8A2BE2" />
+          <Text style={styles.mapTitle}>Map Optimization</Text>
+          <Text style={styles.mapSubtitle}>
+            The interactive campus map leverages native hardware rendering and is only available on iOS and Android. Please open the Olmies app on your mobile device.
+          </Text>
         </View>
       ) : (
         <View style={styles.mapContainer}>
