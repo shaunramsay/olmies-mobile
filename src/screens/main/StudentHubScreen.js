@@ -76,7 +76,11 @@ export default function StudentHubScreen({ navigation }) {
 
         {/* My Modules Card */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>My Modules</Text>
+          <Text style={styles.cardTitle}>
+            {modules.length > 0 
+              ? `My Modules - ${modules[0].semester} - ${modules[0].year}` 
+              : 'My Modules'}
+          </Text>
           <View style={styles.divider} />
           
           {loading ? (

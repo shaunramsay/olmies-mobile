@@ -1,8 +1,36 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TextInput, ActivityIndicator, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../../context/AuthContext';
 
 export default function CampusMapScreen() {
+  const { fetchWithAuth } = useAuth();
+  const [pois, setPois] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    const fetchPois = async () => {
+      try {
+        const res = await fetchWithAuth('/api/v1/mobile/pois');
+        if (res.ok) {
+          const data = await res.json();
+          setPois(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch POIs:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPois();
+  }, []);
+
+  const filteredPois = pois.filter(poi => 
+    poi.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    (poi.description && poi.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -15,31 +43,36 @@ export default function CampusMapScreen() {
           style={styles.searchInput}
           placeholder="Search locations, buildings, rooms..."
           placeholderTextColor="#888"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
         />
       </View>
 
-      <View style={styles.mapPlaceholder}>
-        <Ionicons name="map-outline" size={64} color="#333" />
-        <Text style={styles.mapTitle}>Interactive Map Offline</Text>
-        <Text style={styles.mapSubtitle}>
-          The interactive campus map integration will be displayed here, allowing you to easily find buildings and amenities.
-        </Text>
-        
-        <View style={styles.quickFilters}>
-          <View style={styles.filterChip}>
-            <Ionicons name="library" size={16} color="#bbb" />
-            <Text style={styles.filterText}>Libraries</Text>
-          </View>
-          <View style={styles.filterChip}>
-            <Ionicons name="restaurant" size={16} color="#bbb" />
-            <Text style={styles.filterText}>Cafeterias</Text>
-          </View>
-          <View style={styles.filterChip}>
-            <Ionicons name="business" size={16} color="#bbb" />
-            <Text style={styles.filterText}>Lecture Halls</Text>
-          </View>
+      {loading ? (
+        <View style={styles.mapPlaceholder}>
+          <ActivityIndicator size="large" color="#8A2BE2" />
+          <Text style={styles.mapTitle}>Loading Map Data...</Text>
         </View>
-      </View>
+      ) : (
+        <ScrollView style={styles.poiList}>
+          {filteredPois.map(poi => (
+             <View key={poi.id} style={styles.poiCard}>
+               <View style={styles.poiHeader}>
+                 <Ionicons 
+                   name={poi.category === 'Building' ? 'business' : 'restaurant'} 
+                   size={24} 
+                   color="#8A2BE2" 
+                 />
+                 <Text style={styles.poiName}>{poi.name}</Text>
+               </View>
+               <Text style={styles.poiDesc}>{poi.description}</Text>
+             </View>
+          ))}
+          {filteredPois.length === 0 && (
+             <Text style={{color: '#888', textAlign: 'center', marginTop: 20}}>No locations found matching your search.</Text>
+          )}
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -106,25 +139,32 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 30,
   },
-  quickFilters: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 10,
+  poiList: {
+    paddingHorizontal: 20,
   },
-  filterChip: {
+  poiCard: {
+    backgroundColor: '#1E1E1E',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#333'
+  },
+  poiHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1E1E1E',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#333',
+    marginBottom: 6
   },
-  filterText: {
-    color: '#ddd',
-    marginLeft: 6,
+  poiName: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 10
+  },
+  poiDesc: {
+    color: '#aaa',
     fontSize: 14,
+    lineHeight: 20,
+    paddingLeft: 34
   }
 });
