@@ -1,0 +1,14 @@
+  % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
+                                 Dload  Upload  Total   Spent   Left   Speed
+
+  0      0   0      0   0      0      0      0                              0
+100    395   0    322 100     73 121.8k  28294                              0
+100    395   0    322 100     73 117.3k  27248                              0
+HTTP/1.1 400 Bad Request
+Content-Type: application/problem+json; charset=utf-8
+Date: Sat, 14 Mar 2026 02:27:05 GMT
+Server: Kestrel
+Transfer-Encoding: chunked
+
+100    395   0    322 100     73 110.6k  25695                              0
+{"type":"https://tools.ietf.org/html/rfc9110#section-15.5.1","title":"One or more validation errors occurred.","status":400,"errors":{"$":["'\\' is an invalid start of a property name. Expected a '\"'. Path: $ | LineNumber: 0 | BytePositionInLine: 1."]},"traceId":"00-feb7e8d6e3b7f109fee239c501790950-c04355f94664e67b-00"}

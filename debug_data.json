@@ -1,0 +1,59 @@
+{
+  "modules": [
+    {
+      "moduleOfferingId": "6c6e1e37-bc85-4f58-94c6-d90d0f611ef0",
+      "moduleCode": "COMP3012",
+      "moduleName": "Advanced Web Development",
+      "semester": "Semester 1",
+      "year": 2026,
+      "section": null
+    },
+    {
+      "moduleOfferingId": "c9fb65ab-b069-40a8-b6d5-0879a2e666b4",
+      "moduleCode": "MATH2010",
+      "moduleName": "Linear Algebra",
+      "semester": "Semester 1",
+      "year": 2026,
+      "section": null
+    }
+  ],
+  "enrolls": [
+    {
+      "enrollmentId": "a30da53c-15af-40ce-afb3-243b4ca181f4",
+      "studentId": "1234567",
+      "moduleOfferingId": "c9fb65ab-b069-40a8-b6d5-0879a2e666b4"
+    },
+    {
+      "enrollmentId": "c3a35047-db4c-4f06-9fa9-4556dbad0923",
+      "studentId": "1234567",
+      "moduleOfferingId": "6c6e1e37-bc85-4f58-94c6-d90d0f611ef0"
+    }
+  ],
+  "versions": [
+    {
+      "surveyVersionId": "75476e31-c4b7-49d4-ac51-bc2440eae648",
+      "moduleOfferingId": null,
+      "status": 0
+    },
+    {
+      "surveyVersionId": "68af3b67-84ab-45bc-aaea-7b56b36340e5",
+      "moduleOfferingId": null,
+      "status": 0
+    },
+    {
+      "surveyVersionId": "d090a942-9f0f-44b2-9397-78eab785dd5e",
+      "moduleOfferingId": null,
+      "status": 0
+    },
+    {
+      "surveyVersionId": "58c80c9d-f0e0-441c-8b10-877dae499de2",
+      "moduleOfferingId": "6c6e1e37-bc85-4f58-94c6-d90d0f611ef0",
+      "status": 1
+    },
+    {
+      "surveyVersionId": "e4f87c91-02f5-4bd3-9cd8-51636b0750d9",
+      "moduleOfferingId": null,
+      "status": 1
+    }
+  ]
+}

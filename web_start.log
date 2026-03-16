@@ -1,0 +1,11 @@
+
+> olmies-mobile@1.0.0 web
+> expo start --web --port 3000
+
+Starting project at C:\Users\Shaun Ramsay\Desktop\olmies-mobile
+Starting Metro Bundler
+
+Waiting on http://localhost:3000
+Logs for your project will appear below.
+Web Bundled 600ms index.js (610 modules)
+ LOG  [web] Logs will appear in the browser console

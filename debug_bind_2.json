@@ -1,0 +1,14 @@
+[
+  {
+    "SurveyVersionId": "5d397254-509c-466b-8c69-317180500aa9",
+    "Name": "Student Experience Survey - Spring 2026",
+    "ModuleCode": "COMP3012"
+  }
+]
+All bound surveys: [
+  {
+    "SurveyVersionId": "5d397254-509c-466b-8c69-317180500aa9",
+    "Status": "Published",
+    "ModuleOfferingId": "6c6e1e37-bc85-4f58-94c6-d90d0f611ef0"
+  }
+]

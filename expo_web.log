@@ -1,0 +1,35 @@
+
+> olmies-mobile@1.0.0 web
+> expo start --web --port 3000
+
+Starting project at C:\Users\Shaun Ramsay\Desktop\olmies-mobile
+Starting Metro Bundler
+
+Waiting on http://localhost:3000
+Logs for your project will appear below.
+Web Bundled 602ms index.js (608 modules)
+ LOG  [web] Logs will appear in the browser console
+Web .\index.js ΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæ  0.0% (0/1)
+Web Bundled 36ms index.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web .\index.js ΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæ  0.0% (0/1)
+Web Bundled 36ms index.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web .\index.js ΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæ  0.0% (0/1)
+Web Bundled 32ms index.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web .\index.js ΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæ  0.0% (0/1)
+Web Bundled 39ms index.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web .\index.js ΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæ  0.0% (0/1)
+Web Bundled 40ms index.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web .\index.js ΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæ  0.0% (0/1)
+Web Bundled 43ms index.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web .\index.js ΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæ  0.0% (0/1)
+Web Bundled 39ms index.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web .\index.js ΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæ  0.0% (0/1)
+Web Bundled 30ms index.js (1 module)
+ LOG  [web] Logs will appear in the browser console

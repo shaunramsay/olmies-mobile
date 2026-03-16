@@ -1,0 +1,12 @@
+Login: {
+  token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4ZGMxNzczOC01YzAxLTQzZmQtYmI5NC1lMGMwZWJkZjk2ZmQiLCJ1c2VybmFtZSI6IjEyMzQ1NjciLCJyb2xlIjoic3R1ZGVudCIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWVpZGVudGlmaWVyIjoiMTIzNDU2NyIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IlN0dWRlbnQiLCJleHAiOjE3NzM0NjI1MTgsImlzcyI6Im9sbWllcy10ZXN0aW5nIiwiYXVkIjoib2xtaWVzLWFwaSJ9.HojQlHVirNRz9ihl_omacVuWWtds1TRBKyshwtUfVtY',
+  user: { username: '1234567', role: 'Student' }
+}
+SyntaxError: Unexpected token 'S', "System.Inv"... is not valid JSON
+    at JSON.parse (<anonymous>)
+    at parseJSONFromBytes (node:internal/deps/undici/undici:5738:19)
+    at successSteps (node:internal/deps/undici/undici:5719:27)
+    at fullyReadBody (node:internal/deps/undici/undici:4609:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async consumeBody (node:internal/deps/undici/undici:5728:7)
+    at async C:\Users\Shaun Ramsay\Desktop\olmies-mobile\test2.js:14:25

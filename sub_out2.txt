@@ -1,0 +1,22 @@
+error: operator does not exist: text = integer
+    at C:\Users\Shaun Ramsay\Desktop\olmies-mobile\node_modules\pg\lib\client.js:631:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async run (C:\Users\Shaun Ramsay\Desktop\olmies-mobile\submit_mock.js:15:21) {
+  length: 199,
+  severity: 'ERROR',
+  code: '42883',
+  detail: undefined,
+  hint: 'No operator matches the given name and argument types. You might need to add explicit type casts.',
+  position: '63',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_oper.c',
+  line: '647',
+  routine: 'op_error'
+}
