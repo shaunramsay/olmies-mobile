@@ -1,29 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, FlatList, Image, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 
 export default function StudentHubScreen({ navigation }) {
   const { user, fetchWithAuth, logout } = useAuth();
   const [modules, setModules] = useState([]);
+  const [deals, setDeals] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchModules = async () => {
+    const fetchDashboardData = async () => {
       try {
-        const response = await fetchWithAuth('/api/v1/mobile/modules');
-        if (response.ok) {
-          const data = await response.json();
-          setModules(data);
+        const [modulesRes, dealsRes] = await Promise.all([
+          fetchWithAuth('/api/v1/mobile/modules'),
+          fetchWithAuth('/api/v1/mobile/deals')
+        ]);
+        
+        if (modulesRes.ok) {
+          const modData = await modulesRes.json();
+          setModules(modData);
+        }
+        if (dealsRes.ok) {
+          const dealsData = await dealsRes.json();
+          setDeals(dealsData);
         }
       } catch (err) {
-        console.error('Error fetching modules:', err);
+        console.error('Error fetching dashboard data:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchModules();
+    fetchDashboardData();
   }, [fetchWithAuth]);
 
   return (
@@ -41,9 +50,37 @@ export default function StudentHubScreen({ navigation }) {
             <Text style={styles.titleText}>Student Hub</Text>
           </View>
           <Text style={styles.subtitle}>
-            Welcome back, {user?.username || 'Student'}. Manage your academic progress and evaluations.
+            Welcome back, {user?.username || 'Student'}. Manage your academic progress and evaluate open surveys.
           </Text>
         </View>
+
+        {/* Vendor Deals Carousel */}
+        {deals.length > 0 && (
+          <View style={styles.carouselContainer}>
+            <View style={styles.carouselHeader}>
+              <Ionicons name="pricetag-outline" size={20} color="#8A2BE2" />
+              <Text style={styles.carouselTitle}>Campus Deals</Text>
+            </View>
+            <FlatList
+              data={deals}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(item) => item.id.toString()}
+              contentContainerStyle={{ paddingRight: 20 }}
+              renderItem={({ item }) => (
+                <View style={styles.dealCard}>
+                  {item.bannerImageUrl && (
+                    <Image source={{ uri: item.bannerImageUrl }} style={styles.dealImage} resizeMode="cover" />
+                  )}
+                  <View style={styles.dealTextContainer}>
+                    <Text style={styles.dealVendorName}>{item.vendorName}</Text>
+                    <Text style={styles.dealOfferText} numberOfLines={2}>{item.offerText}</Text>
+                  </View>
+                </View>
+              )}
+            />
+          </View>
+        )}
 
         {/* Early Grade Access Card */}
         <View style={styles.card}>
@@ -182,6 +219,48 @@ const styles = StyleSheet.create({
     color: '#888',
     textAlign: 'center',
     paddingHorizontal: 20,
+    lineHeight: 20,
+  },
+  carouselContainer: {
+    marginBottom: 20,
+  },
+  carouselHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingHorizontal: 5,
+  },
+  carouselTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginLeft: 8,
+  },
+  dealCard: {
+    backgroundColor: '#1E1E1E',
+    borderRadius: 12,
+    marginRight: 15,
+    width: 260,
+    borderWidth: 1,
+    borderColor: '#333',
+    overflow: 'hidden',
+  },
+  dealImage: {
+    width: '100%',
+    height: 120,
+  },
+  dealTextContainer: {
+    padding: 12,
+  },
+  dealVendorName: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  dealOfferText: {
+    color: '#aaa',
+    fontSize: 14,
     lineHeight: 20,
   },
   card: {

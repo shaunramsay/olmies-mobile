@@ -1,8 +1,19 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
-import {jwtDecode} from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode';
 import { Platform } from 'react-native';
+import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import API_BASE_URL from '../config/api';
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 const AuthContext = createContext(null);
 const TOKEN_KEY = 'olmies_token';
@@ -55,24 +66,58 @@ export const AuthProvider = ({ children }) => {
 
     const decodeAndSetUser = (jwt, explicitUserData = null) => {
         try {
-            // Using jwtDecode from the package we just installed for safer decoding
             const payload = jwtDecode(jwt);
-            setUser({
+            const decoded = {
                 id: payload.sub,
                 username: payload.username || 'User',
                 role: payload.role || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'],
                 isSuperAdmin: payload.SuperAdmin === 'true',
                 permissions: payload.Permission || []
-            });
+            };
+            setUser(decoded);
+            return decoded;
         } catch (e) {
             console.warn("Invalid JWT format detected. Assuming Mock Backend Token...", jwt);
             if (explicitUserData) {
-                // Because the backend passes the user object alongside the token, we can just use that!
                 setUser(explicitUserData);
+                return explicitUserData;
             } else {
-                // absolute fallback incase no user payload provided
-                setUser({ username: 'Test User', role: 'Student' });
+                const fallback = { username: 'Test User', role: 'Student' };
+                setUser(fallback);
+                return fallback;
             }
+        }
+    };
+
+    const registerForPushNotificationsAsync = async (currentUser) => {
+        if (Platform.OS === 'web' || !Device.isDevice) return;
+
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
+        if (existingStatus !== 'granted') {
+            const { status } = await Notifications.requestPermissionsAsync();
+            finalStatus = status;
+        }
+        if (finalStatus !== 'granted') return;
+
+        try {
+            const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+            if (!projectId) return;
+
+            const tokenObj = await Notifications.getExpoPushTokenAsync({ projectId });
+            
+            // Send to our backend
+            if (tokenObj && tokenObj.data && currentUser?.username) {
+                await fetchWithAuth('/api/v1/mobile/tokens', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        Username: currentUser.username,
+                        ExpoToken: tokenObj.data
+                    })
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching Expo token:', error);
         }
     };
 
@@ -80,7 +125,12 @@ export const AuthProvider = ({ children }) => {
         try {
             await TokenStorage.setItemAsync(TOKEN_KEY, newToken);
             setToken(newToken);
-            decodeAndSetUser(newToken, userData);
+            const decodedUser = decodeAndSetUser(newToken, userData);
+            
+            // Fire and forget push token registration on successful login
+            if (decodedUser) {
+                registerForPushNotificationsAsync(decodedUser);
+            }
         } catch (error) {
            console.error('Failed to securely save token:', error);
         }
