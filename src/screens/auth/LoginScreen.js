@@ -8,8 +8,7 @@ export default function LoginScreen({ navigation }) {
   const { login } = useAuth();
   
   const [username, setUsername] = useState('');
-  const [password, setPassword] = useState(''); // Normally required, backend might just mock it atm
-  const [role, setRole] = useState('Student'); // Default
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
@@ -26,8 +25,7 @@ export default function LoginScreen({ navigation }) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 username: username,
-                password: password,
-                role: role
+                password: password
             })
         });
 
@@ -92,22 +90,6 @@ export default function LoginScreen({ navigation }) {
                 />
             </View>
 
-            {/* Quick role toggle for MVP testing with the backend Mock Token generator */}
-            <Text style={styles.label}>Sign in as (Development)</Text>
-            <View style={styles.roleToggle}>
-                <TouchableOpacity 
-                    style={[styles.roleButton, role === 'Student' && styles.roleButtonActive]}
-                    onPress={() => setRole('Student')}
-                >
-                    <Text style={[styles.roleText, role === 'Student' && styles.roleTextActive]}>Student</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                    style={[styles.roleButton, role === 'Lecturer' && styles.roleButtonActive]}
-                    onPress={() => setRole('Lecturer')}
-                >
-                    <Text style={[styles.roleText, role === 'Lecturer' && styles.roleTextActive]}>Lecturer</Text>
-                </TouchableOpacity>
-            </View>
 
             <TouchableOpacity 
                 style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
@@ -182,31 +164,6 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#fff',
     fontSize: 16,
-  },
-  roleToggle: {
-    flexDirection: 'row',
-    backgroundColor: '#1E1E1E',
-    borderRadius: 12,
-    padding: 4,
-    borderWidth: 1,
-    borderColor: '#333',
-  },
-  roleButton: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderRadius: 8,
-  },
-  roleButtonActive: {
-    backgroundColor: '#333',
-  },
-  roleText: {
-    color: '#888',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  roleTextActive: {
-    color: '#fff',
   },
   submitButton: {
     backgroundColor: '#8A2BE2',

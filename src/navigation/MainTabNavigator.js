@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 
 // Main Tab Navigator Imports
 import StudentHubScreen from '../screens/main/StudentHubScreen';
+import LecturerHubScreen from '../screens/main/LecturerHubScreen';
+import { useAuth } from '../context/AuthContext';
 
 import AlertsScreen from '../screens/main/AlertsScreen';
 import MapScreen from '../screens/main/CampusMapScreen';
@@ -12,6 +14,9 @@ import InsightsScreen from '../screens/main/InsightsScreen';
 const Tab = createBottomTabNavigator();
 
 export default function MainTabNavigator() {
+  const { user } = useAuth();
+  const isLecturer = user?.role?.toLowerCase() === 'lecturer';
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -37,7 +42,11 @@ export default function MainTabNavigator() {
         },
       })}
     >
-      <Tab.Screen name="Hub" component={StudentHubScreen} options={{ title: 'Hub' }} />
+      <Tab.Screen 
+        name="Hub" 
+        component={isLecturer ? LecturerHubScreen : StudentHubScreen} 
+        options={{ title: 'Hub' }} 
+      />
       <Tab.Screen name="Alerts" component={AlertsScreen} options={{ title: 'Alerts' }} />
       <Tab.Screen name="Map" component={MapScreen} options={{ title: 'Map' }} />
       <Tab.Screen name="Insights" component={InsightsScreen} options={{ title: 'Insights' }} />

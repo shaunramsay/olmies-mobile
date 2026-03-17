@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 // Import our original screens
 import StudentHubScreen from '../screens/main/StudentHubScreen';
+import LecturerHubScreen from '../screens/main/LecturerHubScreen';
 import AlertsScreen from '../screens/main/AlertsScreen';
 import CampusMapScreen from '../screens/main/CampusMapScreen';
 import InsightsScreen from '../screens/main/InsightsScreen';
@@ -11,15 +12,17 @@ import { useAuth } from '../context/AuthContext';
 
 export default function WebNavigationShell({ navigation }) {
   const [activeTab, setActiveTab] = useState('Hub');
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
+
+  const isLecturer = user?.role?.toLowerCase() === 'lecturer';
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'Hub': return <StudentHubScreen navigation={navigation} />;
+      case 'Hub': return isLecturer ? <LecturerHubScreen navigation={navigation} /> : <StudentHubScreen navigation={navigation} />;
       case 'Alerts': return <AlertsScreen navigation={navigation} />;
       case 'Map': return <CampusMapScreen navigation={navigation} />;
       case 'Insights': return <InsightsScreen navigation={navigation} />;
-      default: return <StudentHubScreen navigation={navigation} />;
+      default: return isLecturer ? <LecturerHubScreen navigation={navigation} /> : <StudentHubScreen navigation={navigation} />;
     }
   };
 

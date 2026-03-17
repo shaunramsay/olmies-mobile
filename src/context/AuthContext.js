@@ -16,7 +16,7 @@ Notifications.setNotificationHandler({
 });
 
 const AuthContext = createContext(null);
-const TOKEN_KEY = 'olmies_token';
+const TOKEN_KEY = 'olmies_mobile_token';
 
 // Polyfill secure storage for Web usage
 const TokenStorage = {

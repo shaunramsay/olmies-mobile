@@ -7,14 +7,16 @@ export default function StudentHubScreen({ navigation }) {
   const { user, fetchWithAuth, logout } = useAuth();
   const [modules, setModules] = useState([]);
   const [deals, setDeals] = useState([]);
+  const [openSurveys, setOpenSurveys] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [modulesRes, dealsRes] = await Promise.all([
+        const [modulesRes, dealsRes, surveysRes] = await Promise.all([
           fetchWithAuth('/api/v1/mobile/modules'),
-          fetchWithAuth('/api/v1/mobile/deals')
+          fetchWithAuth('/api/v1/mobile/deals'),
+          fetchWithAuth('/api/v1/mobile/open-surveys')
         ]);
         
         if (modulesRes.ok) {
@@ -24,6 +26,10 @@ export default function StudentHubScreen({ navigation }) {
         if (dealsRes.ok) {
           const dealsData = await dealsRes.json();
           setDeals(dealsData);
+        }
+        if (surveysRes.ok) {
+          const surveysData = await surveysRes.json();
+          setOpenSurveys(surveysData);
         }
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
@@ -166,9 +172,35 @@ export default function StudentHubScreen({ navigation }) {
             <Ionicons name="sparkles-outline" size={20} color="#f06292" />
             <Text style={styles.cardTitle}>Open Campus Surveys</Text>
           </View>
-          <Text style={styles.cardDescription}>
-            There are currently no open campus-wide surveys.
-          </Text>
+          
+          <View style={{marginTop: 15}}>
+          {loading ? (
+             <ActivityIndicator size="small" color="#f06292" />
+          ) : openSurveys.length === 0 ? (
+             <Text style={styles.cardDescription}>There are currently no open campus-wide surveys.</Text>
+          ) : (
+            openSurveys.map((survey, index) => (
+              <View key={survey.surveyId}>
+                <View style={styles.moduleRow}>
+                  <View style={{flex: 1, paddingRight: 10}}>
+                    <Text style={[styles.moduleLabel, {color: '#f06292'}]}>{survey.audience} Survey</Text>
+                    <Text style={styles.moduleCode}>{survey.name}</Text>
+                  </View>
+                  
+                  <TouchableOpacity 
+                    style={[styles.primaryButton, {backgroundColor: '#f06292'}]}
+                    onPress={() => navigation.navigate('Survey', { surveyId: survey.surveyId, moduleCode: survey.name })}
+                  >
+                    <Ionicons name="sparkles" size={16} color="#fff" style={{marginRight: 6}} />
+                    <Text style={styles.primaryButtonText}>Participate</Text>
+                  </TouchableOpacity>
+                  
+                </View>
+                {index < openSurveys.length - 1 && <View style={styles.divider} />}
+              </View>
+            ))
+          )}
+          </View>
         </View>
 
       </ScrollView>
