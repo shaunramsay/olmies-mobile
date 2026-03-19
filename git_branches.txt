@@ -1,0 +1,4 @@
+* dev
+  main
+  remotes/origin/dev
+  remotes/origin/main
