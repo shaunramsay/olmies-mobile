@@ -33,6 +33,32 @@ export default function CampusMapScreen() {
     longitude: -76.7468 + (x - 50) * 0.00015,
   });
 
+  const getCategoryColor = (category) => {
+    switch(category) {
+      case 'Building': return '#8A2BE2';
+      case 'Vendor': return '#f06292';
+      case 'Office': return '#4CAF50';
+      case 'Restroom': return '#03A9F4';
+      case 'LectureTheatre': return '#FF9800';
+      case 'Lab': return '#00BCD4';
+      case 'FoodZone': return '#E91E63';
+      default: return '#9E9E9E';
+    }
+  };
+
+  const getCategoryIcon = (category) => {
+    switch(category) {
+      case 'Building': return 'business';
+      case 'Vendor': return 'pricetag';
+      case 'Office': return 'briefcase';
+      case 'Restroom': return 'water';
+      case 'LectureTheatre': return 'easel';
+      case 'Lab': return 'flask';
+      case 'FoodZone': return 'restaurant';
+      default: return 'location';
+    }
+  };
+
   useEffect(() => {
     const fetchPois = async () => {
       try {
@@ -98,7 +124,7 @@ export default function CampusMapScreen() {
                 coordinate={getCoordinates(poi.coordinateX, poi.coordinateY)}
                 title={poi.name}
                 description={poi.description}
-                pinColor={poi.category === 'Building' ? '#8A2BE2' : '#f06292'}
+                pinColor={getCategoryColor(poi.category)}
                 onPress={() => setSelectedPoi(poi)}
               >
                 <Callout tooltip>
@@ -115,9 +141,9 @@ export default function CampusMapScreen() {
             <View style={styles.poiCardFloating}>
               <View style={styles.poiHeader}>
                 <Ionicons 
-                  name={selectedPoi.category === 'Building' ? 'business' : 'restaurant'} 
+                  name={getCategoryIcon(selectedPoi.category)} 
                   size={24} 
-                  color="#8A2BE2" 
+                  color={getCategoryColor(selectedPoi.category)} 
                 />
                 <Text style={styles.poiName}>{selectedPoi.name}</Text>
               </View>

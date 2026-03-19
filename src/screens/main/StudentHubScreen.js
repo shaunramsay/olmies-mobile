@@ -61,32 +61,49 @@ export default function StudentHubScreen({ navigation }) {
         </View>
 
         {/* Vendor Deals Carousel */}
-        {deals.length > 0 && (
-          <View style={styles.carouselContainer}>
-            <View style={styles.carouselHeader}>
-              <Ionicons name="pricetag-outline" size={20} color="#8A2BE2" />
-              <Text style={styles.carouselTitle}>Campus Deals</Text>
-            </View>
-            <FlatList
-              data={deals}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              keyExtractor={(item) => item.id.toString()}
-              contentContainerStyle={{ paddingRight: 20 }}
-              renderItem={({ item }) => (
-                <View style={styles.dealCard}>
-                  {item.bannerImageUrl && (
+        <View style={styles.carouselContainer}>
+          <View style={styles.carouselHeader}>
+            <Ionicons name="pricetag-outline" size={20} color="#8A2BE2" />
+            <Text style={styles.carouselTitle}>Campus Deals</Text>
+          </View>
+          <FlatList
+            data={
+              deals.length >= 3 
+                ? deals.slice(0, 3) 
+                : [
+                    ...deals, 
+                    ...Array(3 - deals.length).fill({ 
+                      id: 'ad-slot', 
+                      vendorName: 'Advertise With UTech, Jamaica', 
+                      offerText: 'Reach thousands of students daily. Tap to learn more.', 
+                      bannerImageUrl: null 
+                    })
+                  ].map((item, index) => ({ ...item, id: item.id === 'ad-slot' ? `ad-slot-${index}` : item.id }))
+            }
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(item) => item.id.toString()}
+            contentContainerStyle={{ paddingRight: 20 }}
+            renderItem={({ item }) => {
+              const isAdSlot = item.id.toString().startsWith('ad-slot');
+              return (
+                <View style={[styles.dealCard, isAdSlot ? { backgroundColor: 'rgba(102, 252, 241, 0.05)', borderColor: '#66FCF1', borderWidth: 1, borderStyle: 'dashed' } : {}]}>
+                  {item.bannerImageUrl ? (
                     <Image source={{ uri: item.bannerImageUrl }} style={styles.dealImage} resizeMode="cover" />
-                  )}
+                  ) : isAdSlot ? (
+                    <View style={[styles.dealImage, { backgroundColor: '#111', justifyContent: 'center', alignItems: 'center' }]}>
+                       <Ionicons name="megaphone-outline" size={40} color="#66FCF1" />
+                    </View>
+                  ) : null}
                   <View style={styles.dealTextContainer}>
-                    <Text style={styles.dealVendorName}>{item.vendorName}</Text>
-                    <Text style={styles.dealOfferText} numberOfLines={2}>{item.offerText}</Text>
+                    <Text style={[styles.dealVendorName, isAdSlot ? { color: '#66FCF1' } : {}]}>{item.vendorName}</Text>
+                    <Text style={[styles.dealOfferText, isAdSlot ? { color: '#aaa' } : {}]} numberOfLines={2}>{item.offerText}</Text>
                   </View>
                 </View>
-              )}
-            />
-          </View>
-        )}
+              );
+            }}
+          />
+        </View>
 
         {/* Early Grade Access Card */}
         <View style={styles.card}>
