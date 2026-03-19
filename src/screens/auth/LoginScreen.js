@@ -10,12 +10,14 @@ export default function LoginScreen({ navigation }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleLogin = async () => {
     if (!username.trim()) {
-        Alert.alert('Required', 'Please enter your Moodle username.');
+        setErrorMsg('Please enter your Moodle username.');
         return;
     }
+    setErrorMsg('');
 
     setIsLoading(true);
 
@@ -29,7 +31,14 @@ export default function LoginScreen({ navigation }) {
             })
         });
 
-        const data = await response.json();
+        // Parse safely to prevent "Unexpected end of input" crashes on empty responses
+        const rawText = await response.text();
+        let data = {};
+        try {
+            data = rawText ? JSON.parse(rawText) : {};
+        } catch (e) {
+            throw new Error(`Invalid JSON Response (Status ${response.status}): ${rawText}`);
+        }
 
         if (response.ok && data.token) {
             // Successfully retrieved the JWT token, save it via Context
@@ -37,10 +46,10 @@ export default function LoginScreen({ navigation }) {
             await login(data.token, data.user);
             // We don't need to manually navigate to MainStack; AppNavigator will detect the token change automatically.
         } else {
-            Alert.alert('Login Failed', data.error || 'Invalid credentials');
+            setErrorMsg(`HTTP ${response.status} - ${JSON.stringify(data)}`);
         }
     } catch (error) {
-        Alert.alert('Network Error', `Could not connect to the authentication server at ${API_BASE_URL}. Error: ${error.message}`);
+        setErrorMsg(`Network Error: ${error.message} - Using URL: ${API_BASE_URL}`);
         console.error("Login fetch error:", error);
     } finally {
         setIsLoading(false);
@@ -63,6 +72,7 @@ export default function LoginScreen({ navigation }) {
         </View>
 
         <View style={styles.form}>
+            {errorMsg ? <Text style={{color: '#ff6b6b', backgroundColor: 'rgba(255,107,107,0.1)', padding: 10, borderRadius: 8, marginBottom: 15, fontWeight: 'bold'}}>{errorMsg}</Text> : null}
             <Text style={styles.label}>Username</Text>
             <View style={styles.inputContainer}>
                 <Ionicons name="person-outline" size={20} color="#888" style={styles.inputIcon} />

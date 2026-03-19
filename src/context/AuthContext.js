@@ -3,17 +3,20 @@ import * as SecureStore from 'expo-secure-store';
 import { jwtDecode } from 'jwt-decode';
 import { Platform } from 'react-native';
 import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import API_BASE_URL from '../config/api';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+// Safely init notifications only if we are outside of Expo Go
+if (Platform.OS !== 'web' && Constants.appOwnership !== 'expo') {
+  const Notifications = require('expo-notifications');
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
+}
 
 const AuthContext = createContext(null);
 const TOKEN_KEY = 'olmies_mobile_token';
@@ -90,8 +93,9 @@ export const AuthProvider = ({ children }) => {
     };
 
     const registerForPushNotificationsAsync = async (currentUser) => {
-        if (Platform.OS === 'web' || !Device.isDevice) return;
+        if (Platform.OS === 'web' || !Device.isDevice || Constants.appOwnership === 'expo') return;
 
+        const Notifications = require('expo-notifications');
         const { status: existingStatus } = await Notifications.getPermissionsAsync();
         let finalStatus = existingStatus;
         if (existingStatus !== 'granted') {
