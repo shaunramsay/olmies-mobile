@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, FlatList, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { getUTechSemester } from '../../utils/dateUtils';
 
 export default function LecturerHubScreen({ navigation }) {
   const { user, fetchWithAuth, logout } = useAuth();
@@ -105,9 +106,7 @@ export default function LecturerHubScreen({ navigation }) {
         {/* My Modules Card */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>
-            {modules.length > 0 
-              ? `My Teaching Modules - ${modules[0].semester} - ${modules[0].year}` 
-              : 'My Teaching Modules'}
+            My Teaching Modules - {getUTechSemester().fullDisplay}
           </Text>
           <View style={styles.divider} />
           
@@ -212,5 +211,7 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: '#2A2A2A', marginVertical: 15 },
   moduleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   moduleLabel: { color: '#8A2BE2', fontSize: 12, fontWeight: 'bold', marginBottom: 4 },
-  moduleCode: { color: '#fff', fontSize: 16, fontWeight: '600' }
+  moduleCode: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  primaryButton: { flexDirection: 'row', backgroundColor: '#5C6BC0', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8, alignItems: 'center' },
+  primaryButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' }
 });

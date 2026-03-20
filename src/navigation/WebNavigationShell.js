@@ -64,10 +64,12 @@ export default function WebNavigationShell({ navigation }) {
           })}
         </ScrollView>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-           <Ionicons name="log-out-outline" size={24} color="#888" style={{ marginRight: 15 }} />
-           <Text style={styles.navText}>Logout</Text>
-        </TouchableOpacity>
+        {user && (
+          <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+             <Ionicons name="log-out-outline" size={24} color="#888" style={{ marginRight: 15 }} />
+             <Text style={styles.navText}>Logout</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Main Content Area */}

@@ -42,9 +42,14 @@ export default function LoginScreen({ navigation }) {
 
         if (response.ok && data.token) {
             // Successfully retrieved the JWT token, save it via Context
-            // We pass the raw data.user object because the backend currently emits a mock token that cannot be decoded.
             await login(data.token, data.user);
-            // We don't need to manually navigate to MainStack; AppNavigator will detect the token change automatically.
+            
+            // Pop the Login modal to return to previous screen
+            if (navigation.canGoBack()) {
+                navigation.goBack();
+            } else {
+                navigation.replace('Main');
+            }
         } else {
             setErrorMsg(`HTTP ${response.status} - ${JSON.stringify(data)}`);
         }

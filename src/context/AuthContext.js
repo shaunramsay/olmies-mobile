@@ -167,14 +167,23 @@ export const AuthProvider = ({ children }) => {
         };
 
         const response = await fetch(fullUrl, { ...options, headers });
-        if (response.status === 401) {
-            logout(); // Auto logout on 401 Unauthorized
+        if (response.status === 401 && token) {
+            logout(); // Auto logout on 401 Unauthorized only if we had an expired token
         }
         return response;
     };
 
+    const getDeviceId = async () => {
+        let storedId = await TokenStorage.getItemAsync('olmies_device_id');
+        if (!storedId) {
+            storedId = Math.random().toString(36).substring(2, 15) + '-' + Date.now().toString(36);
+            await TokenStorage.setItemAsync('olmies_device_id', storedId);
+        }
+        return storedId;
+    };
+
     return (
-        <AuthContext.Provider value={{ token, user, isLoading, login, logout, fetchWithAuth }}>
+        <AuthContext.Provider value={{ token, user, isLoading, login, logout, fetchWithAuth, getDeviceId }}>
             {children}
         </AuthContext.Provider>
     );

@@ -25,20 +25,11 @@ export default function AppNavigator() {
   const MainComponent = Platform.OS === 'web' ? WebNavigationShell : MainTabNavigator;
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {token ? (
-        // User is logged in -> Show the main Dashboard / Tabs
-        <Stack.Group>
-          <Stack.Screen name="Main" component={MainComponent} />
-          <Stack.Screen name="Survey" component={SurveyScreen} options={{ presentation: 'fullScreenModal' }} />
-        </Stack.Group>
-      ) : (
-        // User is NOT logged in -> Show the Welcome / Login flow
-        <Stack.Group>
-          <Stack.Screen name="Landing" component={LandingScreen} />
-          <Stack.Screen name="Login" component={LoginScreen} />
-        </Stack.Group>
-      )}
+    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={token ? "Main" : "Landing"}>
+      <Stack.Screen name="Landing" component={LandingScreen} />
+      <Stack.Screen name="Main" component={MainComponent} />
+      <Stack.Screen name="Login" component={LoginScreen} options={{ presentation: 'modal' }} />
+      <Stack.Screen name="Survey" component={SurveyScreen} options={{ presentation: 'fullScreenModal' }} />
     </Stack.Navigator>
   );
 }

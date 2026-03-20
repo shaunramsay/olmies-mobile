@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, FlatList, Image, Dimensions, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { getUTechSemester } from '../../utils/dateUtils';
 
 export default function StudentHubScreen({ navigation }) {
   const { user, fetchWithAuth, logout } = useAuth();
@@ -13,23 +14,27 @@ export default function StudentHubScreen({ navigation }) {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [modulesRes, dealsRes, surveysRes] = await Promise.all([
-          fetchWithAuth('/api/v1/mobile/modules'),
+        const requests = [
           fetchWithAuth('/api/v1/mobile/deals'),
           fetchWithAuth('/api/v1/mobile/open-surveys')
-        ]);
+        ];
         
-        if (modulesRes.ok) {
-          const modData = await modulesRes.json();
-          setModules(modData);
+        if (user) {
+          requests.unshift(fetchWithAuth('/api/v1/mobile/modules'));
         }
-        if (dealsRes.ok) {
-          const dealsData = await dealsRes.json();
-          setDeals(dealsData);
-        }
-        if (surveysRes.ok) {
-          const surveysData = await surveysRes.json();
-          setOpenSurveys(surveysData);
+
+        const responses = await Promise.all(requests);
+        
+        if (user) {
+          const [modulesRes, dealsRes, surveysRes] = responses;
+          if (modulesRes.ok) setModules(await modulesRes.json());
+          if (dealsRes.ok) setDeals(await dealsRes.json());
+          if (surveysRes.ok) setOpenSurveys(await surveysRes.json());
+        } else {
+          const [dealsRes, surveysRes] = responses;
+          if (dealsRes.ok) setDeals(await dealsRes.json());
+          if (surveysRes.ok) setOpenSurveys(await surveysRes.json());
+          setModules([]);
         }
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
@@ -39,15 +44,17 @@ export default function StudentHubScreen({ navigation }) {
     };
 
     fetchDashboardData();
-  }, [fetchWithAuth]);
+  }, [fetchWithAuth, user]);
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Absolute Logout Button */}
-      <TouchableOpacity style={styles.logoutButtonTopRight} onPress={logout}>
-        <Ionicons name="log-out-outline" size={20} color="#888" />
-        <Text style={styles.logoutTextTopRight}>Logout</Text>
-      </TouchableOpacity>
+      {/* Absolute Header Interactions */}
+      {user && (
+        <TouchableOpacity style={styles.logoutButtonTopRight} onPress={logout}>
+          <Ionicons name="log-out-outline" size={20} color="#888" />
+          <Text style={styles.logoutTextTopRight}>Logout</Text>
+        </TouchableOpacity>
+      )}
       
       <ScrollView contentContainerStyle={styles.scrollContent}>
         
@@ -121,31 +128,42 @@ export default function StudentHubScreen({ navigation }) {
           </View>
           
           <Text style={styles.cardDescription}>
-            You need to evaluate 100% of your modules to unlock early grade access. Evaluate 100% of your active modules to unlock your grades before the official release date!
+            {!user 
+              ? "Sign in to view your progress toward early grade access!" 
+              : "You need to evaluate 100% of your modules to unlock early grade access. Evaluate 100% of your active modules to unlock your grades before the official release date!"}
           </Text>
 
           {/* Progress Bar */}
-          <View style={styles.progressBarContainer}>
-            <View style={styles.progressBarBackground}>
-              <View style={[styles.progressBarFill, { width: `${modules.length > 0 ? (Math.round((modules.filter(m => m.hasCompleted).length / modules.length) * 100)) : 0}%` }]} />
+          {user && (
+            <View style={styles.progressBarContainer}>
+              <View style={styles.progressBarBackground}>
+                <View style={[styles.progressBarFill, { width: `${modules.length > 0 ? (Math.round((modules.filter(m => m.hasCompleted).length / modules.length) * 100)) : 0}%` }]} />
+              </View>
+              <View style={styles.progressTextRow}>
+                <Text style={styles.progressTextLeft}>{modules.filter(m => m.hasCompleted).length} Evaluated</Text>
+                <Text style={styles.progressTextRight}>{modules.length} Total</Text>
+              </View>
             </View>
-            <View style={styles.progressTextRow}>
-              <Text style={styles.progressTextLeft}>{modules.filter(m => m.hasCompleted).length} Evaluated</Text>
-              <Text style={styles.progressTextRight}>{modules.length} Total</Text>
-            </View>
-          </View>
+          )}
         </View>
 
         {/* My Modules Card */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>
-            {modules.length > 0 
-              ? `My Modules - ${modules[0].semester} - ${modules[0].year}` 
-              : 'My Modules'}
+            My Modules - {getUTechSemester().fullDisplay}
           </Text>
           <View style={styles.divider} />
           
-          {loading ? (
+          {!user ? (
+            <TouchableOpacity onPress={() => navigation.navigate('Login')} style={{ alignItems: 'center', marginVertical: 10 }}>
+              <Ionicons name="lock-closed-outline" size={40} color="#888" style={{ marginBottom: 10 }} />
+              <Text style={[styles.cardDescription, { textAlign: 'center' }]}>Sign in to view your enrolled modules and pending evaluations.</Text>
+              <View style={[styles.primaryButton, { backgroundColor: '#8A2BE2', marginTop: 10 }]}>
+                <Ionicons name="log-in-outline" size={18} color="#fff" style={{marginRight: 6}} />
+                <Text style={styles.primaryButtonText}>Sign In</Text>
+              </View>
+            </TouchableOpacity>
+          ) : loading ? (
              <ActivityIndicator size="large" color="#8A2BE2" style={{ marginVertical: 20 }} />
           ) : modules.length === 0 ? (
              <Text style={styles.cardDescription}>You are not currently enrolled in any active modules.</Text>

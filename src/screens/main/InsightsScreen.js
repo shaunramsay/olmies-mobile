@@ -1,8 +1,38 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../../context/AuthContext';
+import { useNavigation } from '@react-navigation/native';
 
 export default function InsightsScreen() {
+  const { user } = useAuth();
+  const navigation = useNavigation();
+
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Ionicons name="stats-chart" size={28} color="#fff" />
+          <Text style={styles.headerTitle}>Survey Insights</Text>
+        </View>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 30 }}>
+            <Ionicons name="lock-closed" size={80} color="#222" style={{ marginBottom: 20 }} />
+            <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#fff', marginBottom: 10 }}>Insights Locked</Text>
+            <Text style={{ fontSize: 16, color: '#aaa', textAlign: 'center', marginBottom: 30, lineHeight: 24 }}>
+                Sign in with your University credentials to unlock your academic performance insights and sentiment data.
+            </Text>
+            <TouchableOpacity 
+                style={{ backgroundColor: '#8A2BE2', paddingVertical: 15, paddingHorizontal: 30, borderRadius: 12, flexDirection: 'row', alignItems: 'center' }}
+                onPress={() => navigation.navigate('Login')}
+            >
+                <Ionicons name="log-in-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+                <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold' }}>Sign In</Text>
+            </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>

@@ -19,13 +19,19 @@ export default function LandingScreen({ navigation }) {
         <View style={styles.bottomSection}>
             <TouchableOpacity 
                 style={styles.primaryButton}
-                onPress={() => navigation.navigate('Login')}
+                onPress={() => navigation.replace('Main')}
             >
-                <Text style={styles.primaryButtonText}>Login with Moodle</Text>
+                <Text style={styles.primaryButtonText}>Experience UTech!</Text>
                 <Ionicons name="arrow-forward" size={20} color="#fff" />
             </TouchableOpacity>
 
-            <Text style={styles.footerText}>
+            <TouchableOpacity style={{ marginTop: 24, padding: 10, alignItems: 'center' }} onPress={() => navigation.navigate('Login')}>
+                <Text style={{ color: '#aaa', fontSize: 16, fontWeight: '600' }}>
+                    Already a student? <Text style={{ color: '#8A2BE2' }}>Log in here</Text>
+                </Text>
+            </TouchableOpacity>
+
+            <Text style={[styles.footerText, { marginTop: 12 }]}>
                 Need help? Contact the IT Service Desk.
             </Text>
         </View>

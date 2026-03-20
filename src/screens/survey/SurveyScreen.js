@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 
 export default function SurveyScreen({ route, navigation }) {
   const { surveyId, moduleCode } = route.params;
-  const { fetchWithAuth } = useAuth();
+  const { fetchWithAuth, getDeviceId } = useAuth();
   
   const [survey, setSurvey] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -41,9 +41,11 @@ export default function SurveyScreen({ route, navigation }) {
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
+      const deviceId = await getDeviceId();
       const payload = {
         surveyVersionId: surveyId,
-        answers: answers
+        answers: answers,
+        deviceId: deviceId
       };
 
       const response = await fetchWithAuth('/api/v1/execution/responses', {
