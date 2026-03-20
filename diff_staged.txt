@@ -1,0 +1,68 @@
+diff --git a/src/config/api.js b/src/config/api.js
+index 6f4319d..1b5d71a 100644
+--- a/src/config/api.js
++++ b/src/config/api.js
+@@ -1,6 +1,16 @@
+ import Constants from 'expo-constants';
+ 
+-// We fall back to the localhost URL matching the web app
+-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000';
++import { Platform } from 'react-native';
++
++// Dynamically grab the laptop's Wi-Fi IP address automatically assigned by Expo (e.g., 192.168.5.206)
++const debuggerHost = Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost || '';
++const CLOUD_WIFI_IP = debuggerHost.split(':')[0];
++
++// Physical phones CANNOT use 'localhost' to reach the laptop's backend! They will just talk to themselves.
++const defaultApiUrl = (Platform.OS === 'web' || !CLOUD_WIFI_IP) 
++    ? 'http://localhost:5000' 
++    : `http://${CLOUD_WIFI_IP}:5000`;
++
++const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || defaultApiUrl;
+ 
+ export default API_BASE_URL;
+diff --git a/src/context/AuthContext.js b/src/context/AuthContext.js
+index f032d15..999c222 100644
+--- a/src/context/AuthContext.js
++++ b/src/context/AuthContext.js
+@@ -6,16 +6,22 @@ import * as Device from 'expo-device';
+ import Constants from 'expo-constants';
+ import API_BASE_URL from '../config/api';
+ 
++const isExpoGo = Constants.executionEnvironment === 'storeClient' || Constants.appOwnership === 'expo';
++
+ // Safely init notifications only if we are outside of Expo Go
+-if (Platform.OS !== 'web' && Constants.appOwnership !== 'expo') {
+-  const Notifications = require('expo-notifications');
+-  Notifications.setNotificationHandler({
+-    handleNotification: async () => ({
+-      shouldShowAlert: true,
+-      shouldPlaySound: true,
+-      shouldSetBadge: false,
+-    }),
+-  });
++if (Platform.OS !== 'web' && !isExpoGo) {
++    try {
++        const Notifications = require('expo-notifications');
++        Notifications.setNotificationHandler({
++            handleNotification: async () => ({
++                shouldShowAlert: true,
++                shouldPlaySound: true,
++                shouldSetBadge: false,
++            }),
++        });
++    } catch (e) { 
++        console.warn('Push handled safely outside Expo Go', e); 
++    }
+ }
+ 
+ const AuthContext = createContext(null);
+@@ -93,7 +99,7 @@ export const AuthProvider = ({ children }) => {
+     };
+ 
+     const registerForPushNotificationsAsync = async (currentUser) => {
+-        if (Platform.OS === 'web' || !Device.isDevice || Constants.appOwnership === 'expo') return;
++        if (Platform.OS === 'web' || !Device.isDevice || isExpoGo) return;
+ 
+         const Notifications = require('expo-notifications');
+         const { status: existingStatus } = await Notifications.getPermissionsAsync();

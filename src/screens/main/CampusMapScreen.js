@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TextInput, ActivityIndicator, ScrollView, Dimensions, Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 // Dynamically import MapView to prevent web bundler from crashing
 let MapView, Marker, Callout;
@@ -109,6 +110,14 @@ export default function CampusMapScreen() {
           <Text style={styles.mapTitle}>Map Optimization</Text>
           <Text style={styles.mapSubtitle}>
             The interactive campus map leverages native hardware rendering and is only available on iOS and Android. Please open the Olmies app on your mobile device.
+          </Text>
+        </View>
+      ) : (Platform.OS === 'android' && Constants.appOwnership !== 'expo') ? (
+        <View style={styles.mapPlaceholder}>
+          <Ionicons name="warning" size={48} color="#E91E63" />
+          <Text style={styles.mapTitle}>API Key Required</Text>
+          <Text style={styles.mapSubtitle}>
+            The interactive map requires a valid Google Maps API Key to render on standalone Android builds. Please add "android.config.googleMaps.apiKey" to your Expo app.json.
           </Text>
         </View>
       ) : (

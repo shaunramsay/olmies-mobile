@@ -74,11 +74,9 @@ export default function AlertsScreen() {
                   )}
                 </View>
                 <View style={styles.alertContent}>
-                  <View style={styles.alertHeader}>
-                    <Text style={[styles.alertTitle, !alert.read && styles.unreadText]}>{alert.title}</Text>
-                    <Text style={styles.alertDate}>{alert.date}</Text>
-                  </View>
-                  <Text style={styles.alertMessage} numberOfLines={2}>{alert.message}</Text>
+                  <Text style={[styles.alertTitle, !alert.read && styles.unreadText]}>{alert.title}</Text>
+                  <Text style={styles.alertDate}>{alert.date}</Text>
+                  <Text style={[styles.alertMessage, { marginTop: 8 }]} numberOfLines={2}>{alert.message}</Text>
                 </View>
                 {!alert.read && <View style={styles.unreadDot} />}
               </TouchableOpacity>
@@ -161,18 +159,11 @@ const styles = StyleSheet.create({
   alertContent: {
     flex: 1,
   },
-  alertHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
   alertTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#ddd',
-    flex: 1,
-    marginRight: 10,
+    marginBottom: 4,
   },
   unreadText: {
     color: '#fff',

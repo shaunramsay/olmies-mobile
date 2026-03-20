@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, FlatList, Image, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, FlatList, Image, Dimensions, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 
@@ -43,14 +43,16 @@ export default function StudentHubScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Absolute Logout Button */}
+      <TouchableOpacity style={styles.logoutButtonTopRight} onPress={logout}>
+        <Ionicons name="log-out-outline" size={20} color="#888" />
+        <Text style={styles.logoutTextTopRight}>Logout</Text>
+      </TouchableOpacity>
+      
       <ScrollView contentContainerStyle={styles.scrollContent}>
         
         {/* Header Section */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-            <Ionicons name="log-out-outline" size={20} color="#888" />
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
           <View style={styles.titleRow}>
             <Ionicons name="ribbon-outline" size={32} color="#f06292" />
             <Text style={styles.titleText}>Student Hub</Text>
@@ -236,21 +238,28 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginVertical: 30,
+    marginTop: 20,
+    marginBottom: 30,
     position: 'relative',
   },
-  logoutButton: {
+  logoutButtonTopRight: {
     position: 'absolute',
-    top: -15,
-    right: 0,
+    top: Platform.OS === 'android' ? 40 : 10,
+    right: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 8,
+    padding: 10,
+    zIndex: 100,
+    backgroundColor: 'rgba(20, 20, 20, 0.8)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#333'
   },
-  logoutText: {
-    color: '#888',
-    marginLeft: 4,
+  logoutTextTopRight: {
+    color: '#aaa',
+    marginLeft: 6,
     fontSize: 14,
+    fontWeight: 'bold',
   },
   titleRow: {
     flexDirection: 'row',
