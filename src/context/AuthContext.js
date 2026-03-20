@@ -6,16 +6,22 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import API_BASE_URL from '../config/api';
 
+const isExpoGo = Constants.executionEnvironment === 'storeClient' || Constants.appOwnership === 'expo';
+
 // Safely init notifications only if we are outside of Expo Go
-if (Platform.OS !== 'web' && Constants.appOwnership !== 'expo') {
-  const Notifications = require('expo-notifications');
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-    }),
-  });
+if (Platform.OS !== 'web' && !isExpoGo) {
+    try {
+        const Notifications = require('expo-notifications');
+        Notifications.setNotificationHandler({
+            handleNotification: async () => ({
+                shouldShowAlert: true,
+                shouldPlaySound: true,
+                shouldSetBadge: false,
+            }),
+        });
+    } catch (e) { 
+        console.warn('Push handled safely outside Expo Go', e); 
+    }
 }
 
 const AuthContext = createContext(null);
@@ -93,7 +99,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     const registerForPushNotificationsAsync = async (currentUser) => {
-        if (Platform.OS === 'web' || !Device.isDevice || Constants.appOwnership === 'expo') return;
+        if (Platform.OS === 'web' || !Device.isDevice || isExpoGo) return;
 
         const Notifications = require('expo-notifications');
         const { status: existingStatus } = await Notifications.getPermissionsAsync();
