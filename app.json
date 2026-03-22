@@ -21,7 +21,12 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "com.shaunramsay14.olmiesmobile"
+      "package": "com.shaunramsay14.olmiesmobile",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCp9p5NyeornCg5v32anUe7RbmHIXy6rZU"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
