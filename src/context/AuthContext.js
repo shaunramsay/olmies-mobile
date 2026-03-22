@@ -160,11 +160,11 @@ export const AuthProvider = ({ children }) => {
     const fetchWithAuth = async (url, options = {}) => {
         const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
         
-        const headers = {
-            ...options.headers,
-            'Authorization': token ? `Bearer ${token}` : '',
-            'Content-Type': options.headers && options.headers['Content-Type'] ? options.headers['Content-Type'] : 'application/json'
-        };
+        const headers = { ...options.headers };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        headers['Content-Type'] = options.headers && options.headers['Content-Type'] ? options.headers['Content-Type'] : 'application/json';
 
         const response = await fetch(fullUrl, { ...options, headers });
         if (response.status === 401 && token) {
