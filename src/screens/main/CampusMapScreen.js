@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TextInput, ActivityIndicator, ScrollView, Dimensions, Platform } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TextInput, ActivityIndicator, FlatList, TouchableOpacity, Dimensions, Platform } from 'react-native';
 import Constants from 'expo-constants';
 
 // Dynamically import MapView to prevent web bundler from crashing
-let MapView, Marker, Callout;
+let MapView, Marker, Callout, UrlTile;
 if (Platform.OS !== 'web') {
   const Maps = require('react-native-maps');
   MapView = Maps.default;
   Marker = Maps.Marker;
   Callout = Maps.Callout;
+  UrlTile = Maps.UrlTile;
 }
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
@@ -19,6 +20,22 @@ export default function CampusMapScreen() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPoi, setSelectedPoi] = useState(null);
+  const mapRef = useRef(null);
+
+  const handleSelectSearchResult = (poi) => {
+    setSearchQuery(''); // Hide dropdown
+    setSelectedPoi(poi); // Open popup
+    
+    // Animate map to point
+    if (mapRef.current) {
+      const coords = getCoordinates(poi.coordinateX, poi.coordinateY);
+      mapRef.current.animateToRegion({
+        ...coords,
+        latitudeDelta: 0.002,
+        longitudeDelta: 0.002,
+      }, 1000);
+    }
+  };
 
   // UTech Jamaica Center Coordinates
   const mapRegion = {
@@ -88,15 +105,40 @@ export default function CampusMapScreen() {
         <Text style={styles.headerTitle}>Campus Map</Text>
       </View>
       
-      <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
-        <TextInput 
-          style={styles.searchInput}
-          placeholder="Search locations, buildings, rooms..."
-          placeholderTextColor="#888"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
+      <View style={{ zIndex: 100, position: 'relative' }}>
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
+          <TextInput 
+            style={styles.searchInput}
+            placeholder="Search locations, buildings, rooms..."
+            placeholderTextColor="#888"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+
+        {searchQuery.length > 0 && (
+          <View style={styles.searchDropdown}>
+            <FlatList
+              data={filteredPois}
+              keyExtractor={item => item.id.toString()}
+              keyboardShouldPersistTaps="handled"
+              style={{ maxHeight: 250 }}
+              renderItem={({ item }) => (
+                <TouchableOpacity style={styles.searchResultItem} onPress={() => handleSelectSearchResult(item)}>
+                  <Ionicons name={getCategoryIcon(item.category)} size={18} color={getCategoryColor(item.category)} />
+                  <View style={styles.searchResultTextContainer}>
+                    <Text style={styles.searchResultName}>{item.name}</Text>
+                    {item.description && <Text numberOfLines={1} style={styles.searchResultDesc}>{item.description}</Text>}
+                  </View>
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={
+                <Text style={styles.noResultsText}>No locations found matching "{searchQuery}"</Text>
+              }
+            />
+          </View>
+        )}
       </View>
 
       {loading ? (
@@ -116,9 +158,18 @@ export default function CampusMapScreen() {
         <View style={styles.mapContainer}>
           <MapView 
             style={styles.map} 
+            ref={mapRef}
             initialRegion={mapRegion}
             showsUserLocation={true}
+            userInterfaceStyle="light"
+            mapType="standard"
           >
+            <UrlTile
+              urlTemplate="https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
+              maximumZ={19}
+              flipY={false}
+              zIndex={-1}
+            />
             {filteredPois.map(poi => (
               <Marker
                 key={poi.id}
@@ -192,6 +243,48 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     height: '100%',
+  },
+  searchDropdown: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    right: 20,
+    backgroundColor: '#1E1E1E',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#333',
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 5,
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2A2A2A',
+  },
+  searchResultTextContainer: {
+    marginLeft: 10,
+    flex: 1,
+  },
+  searchResultName: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  searchResultDesc: {
+    color: '#888',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  noResultsText: {
+    color: '#888',
+    textAlign: 'center',
+    padding: 15,
+    fontStyle: 'italic',
   },
   mapPlaceholder: {
     flex: 1,
