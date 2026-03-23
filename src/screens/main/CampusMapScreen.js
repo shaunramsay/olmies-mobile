@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TextInput, ActivityIndicator, FlatList, TouchableOpacity, Dimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TextInput, ActivityIndicator, FlatList, TouchableOpacity, Dimensions, Platform, Linking, Alert } from 'react-native';
 import Constants from 'expo-constants';
 
 // Dynamically import MapView to prevent web bundler from crashing
@@ -108,6 +108,26 @@ export default function CampusMapScreen() {
     (poi.description && poi.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
+  const handleGetDirections = async () => {
+    if (!selectedPoi) return;
+    try {
+      // Universal Intent URL - Intelligently fires Google Maps on Android, and Apple Maps natively on iOS
+      const url = `https://maps.google.com/?daddr=${selectedPoi.coordinateY},${selectedPoi.coordinateX}`;
+      
+      // Strict Mitigation: Ask the OS if ANY app is capable of handling this link before violently opening it
+      const supported = await Linking.canOpenURL(url);
+      
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert("Navigation Error", "We could not find a Maps application (like Google Maps) on your device.");
+      }
+    } catch (error) {
+      Alert.alert("Navigation Error", "An unexpected error occurred while attempting to map your route.");
+      console.error("Routing error:", error);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -172,6 +192,10 @@ export default function CampusMapScreen() {
             showsUserLocation={true}
             userInterfaceStyle="light"
             mapType="standard"
+            onPress={(e) => {
+              // Mitigation: Deselect the highlighted pin if the user legitimately taps the empty grass on the map
+              if(e.nativeEvent.action !== 'marker-press') setSelectedPoi(null);
+            }}
           >
             <UrlTile
               urlTemplate="https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
@@ -185,8 +209,9 @@ export default function CampusMapScreen() {
                 coordinate={getCoordinates(poi.coordinateX, poi.coordinateY)}
                 title={poi.name}
                 description={poi.description}
-                pinColor={getCategoryColor(poi.category)}
+                pinColor={selectedPoi && selectedPoi.id === poi.id ? '#FFEA00' : getCategoryColor(poi.category)}
                 onPress={() => setSelectedPoi(poi)}
+                zIndex={selectedPoi && selectedPoi.id === poi.id ? 100 : 1}
               >
                 <Callout tooltip>
                   <View style={styles.calloutContainer}>
@@ -209,6 +234,15 @@ export default function CampusMapScreen() {
                 <Text style={styles.poiName}>{selectedPoi.name}</Text>
               </View>
               <Text style={styles.poiDesc}>{selectedPoi.description}</Text>
+              
+              <TouchableOpacity 
+                style={styles.directionsButton}
+                onPress={handleGetDirections}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="navigate-circle" size={20} color="#fff" />
+                <Text style={styles.directionsButtonText}>Get Directions</Text>
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -369,10 +403,12 @@ const styles = StyleSheet.create({
     paddingLeft: 34
   },
   calloutContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
     borderRadius: 8,
-    padding: 10,
-    width: 200,
+    padding: 8,
+    width: 180,
+    borderWidth: 1,
+    borderColor: 'rgba(200, 200, 200, 0.5)',
   },
   calloutTitle: {
     fontWeight: 'bold',
@@ -383,5 +419,21 @@ const styles = StyleSheet.create({
   calloutDesc: {
     fontSize: 12,
     color: '#444',
+  },
+  directionsButton: {
+    marginTop: 12,
+    backgroundColor: '#8A2BE2',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  directionsButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 15,
   }
 });
