@@ -45,11 +45,20 @@ export default function CampusMapScreen() {
     longitudeDelta: 0.005,
   };
 
-  // The backend was seeded with CoordinateX/Y percentages (40-60). We map them to real GPS coords around UTech.
-  const getCoordinates = (x, y) => ({
-    latitude: 18.0167736 + (y - 50) * 0.00015,
-    longitude: -76.7464894 + (x - 50) * 0.00015,
-  });
+  // The backend was originally seeded with CoordinateX/Y percentages (40-60). 
+  // However, the new Web Admin Map drops real Lat/Lng GPS coordinates (e.g. Lat: 18.01..., Lng: -76.74...).
+  // This logic dynamically detects real GPS vs legacy percentages.
+  const getCoordinates = (x, y) => {
+    // If y looks like a raw Jamaica Latitude (around 18), use it directly.
+    if (y > 10 && y < 30) {
+      return { latitude: y, longitude: x };
+    }
+    // Otherwise fallback to legacy percentage math
+    return {
+      latitude: 18.0167736 + (y - 50) * 0.00015,
+      longitude: -76.7464894 + (x - 50) * 0.00015,
+    };
+  };
 
   const getCategoryColor = (category) => {
     switch(category) {
