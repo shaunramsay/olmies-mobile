@@ -108,26 +108,6 @@ export default function CampusMapScreen() {
     (poi.description && poi.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const handleGetDirections = async () => {
-    if (!selectedPoi) return;
-    try {
-      // Universal Intent URL - Intelligently fires Google Maps on Android, and Apple Maps natively on iOS
-      const url = `https://maps.google.com/?daddr=${selectedPoi.coordinateY},${selectedPoi.coordinateX}`;
-      
-      // Strict Mitigation: Ask the OS if ANY app is capable of handling this link before violently opening it
-      const supported = await Linking.canOpenURL(url);
-      
-      if (supported) {
-        await Linking.openURL(url);
-      } else {
-        Alert.alert("Navigation Error", "We could not find a Maps application (like Google Maps) on your device.");
-      }
-    } catch (error) {
-      Alert.alert("Navigation Error", "An unexpected error occurred while attempting to map your route.");
-      console.error("Routing error:", error);
-    }
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -212,14 +192,7 @@ export default function CampusMapScreen() {
                 pinColor={selectedPoi && selectedPoi.id === poi.id ? '#FFEA00' : getCategoryColor(poi.category)}
                 onPress={() => setSelectedPoi(poi)}
                 zIndex={selectedPoi && selectedPoi.id === poi.id ? 100 : 1}
-              >
-                <Callout tooltip>
-                  <View style={styles.calloutContainer}>
-                    <Text style={styles.calloutTitle}>{poi.name}</Text>
-                    <Text style={styles.calloutDesc}>{poi.description}</Text>
-                  </View>
-                </Callout>
-              </Marker>
+              />
             ))}
           </MapView>
           
@@ -234,15 +207,6 @@ export default function CampusMapScreen() {
                 <Text style={styles.poiName}>{selectedPoi.name}</Text>
               </View>
               <Text style={styles.poiDesc}>{selectedPoi.description}</Text>
-              
-              <TouchableOpacity 
-                style={styles.directionsButton}
-                onPress={handleGetDirections}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="navigate-circle" size={20} color="#fff" />
-                <Text style={styles.directionsButtonText}>Get Directions</Text>
-              </TouchableOpacity>
             </View>
           )}
         </View>
