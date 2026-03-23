@@ -103,9 +103,10 @@ export default function CampusMapScreen() {
     fetchPois();
   }, []);
 
+  const safeSearch = searchQuery.trim().toLowerCase();
   const filteredPois = pois.filter(poi => 
-    poi.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    (poi.description && poi.description.toLowerCase().includes(searchQuery.toLowerCase()))
+    poi.name.toLowerCase().includes(safeSearch) || 
+    (poi.description && poi.description.toLowerCase().includes(safeSearch))
   );
 
   return (
@@ -170,6 +171,8 @@ export default function CampusMapScreen() {
             ref={mapRef}
             initialRegion={mapRegion}
             showsUserLocation={true}
+            showsPointsOfInterest={false}
+            showsBuildings={false}
             userInterfaceStyle="light"
             mapType="standard"
             onPress={(e) => {
