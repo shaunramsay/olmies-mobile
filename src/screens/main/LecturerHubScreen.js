@@ -3,9 +3,11 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Act
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { getUTechSemester } from '../../utils/dateUtils';
+import { useAppTheme } from '../../context/ThemeContext';
 
 export default function LecturerHubScreen({ navigation }) {
   const { user, fetchWithAuth, logout } = useAuth();
+  const { colors } = useAppTheme();
   const [modules, setModules] = useState([]);
   const [deals, setDeals] = useState([]);
   const [openSurveys, setOpenSurveys] = useState([]);
@@ -43,30 +45,33 @@ export default function LecturerHubScreen({ navigation }) {
   }, [fetchWithAuth]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      
+      {/* Sticky Header Section */}
+      <View style={[styles.stickyHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <View style={styles.titleRow}>
+          <Ionicons name="school-outline" size={28} color={colors.primary} />
+          <Text style={[styles.titleText, { color: colors.primary }]}>Lecturer Hub</Text>
+        </View>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          Welcome back, {user?.username || 'Lecturer'}.
+        </Text>
+        
+        {user && (
+          <TouchableOpacity style={[styles.logoutButtonInline, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={logout}>
+            <Ionicons name="log-out-outline" size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
+        )}
+      </View>
+
       <ScrollView contentContainerStyle={styles.scrollContent}>
         
-        {/* Header Section */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-            <Ionicons name="log-out-outline" size={20} color="#888" />
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
-          <View style={styles.titleRow}>
-            <Ionicons name="school-outline" size={32} color="#8A2BE2" />
-            <Text style={[styles.titleText, { color: '#8A2BE2' }]}>Lecturer Hub</Text>
-          </View>
-          <Text style={styles.subtitle}>
-            Welcome back, Professor {user?.username || 'Lecturer'}. Manage your assigned modules and review active evaluations.
-          </Text>
-        </View>
-
         {/* Vendor Deals Carousel */}
         {deals.length > 0 && (
           <View style={styles.carouselContainer}>
             <View style={styles.carouselHeader}>
-              <Ionicons name="pricetag-outline" size={20} color="#8A2BE2" />
-              <Text style={styles.carouselTitle}>Campus Deals</Text>
+              <Ionicons name="pricetag-outline" size={20} color={colors.primary} />
+              <Text style={[styles.carouselTitle, { color: colors.text }]}>Campus Deals</Text>
             </View>
             <FlatList
               data={deals}
@@ -75,13 +80,13 @@ export default function LecturerHubScreen({ navigation }) {
               keyExtractor={(item) => item.id.toString()}
               contentContainerStyle={{ paddingRight: 20 }}
               renderItem={({ item }) => (
-                <View style={styles.dealCard}>
+                <View style={[styles.dealCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                   {item.bannerImageUrl && (
                     <Image source={{ uri: item.bannerImageUrl }} style={styles.dealImage} resizeMode="cover" />
                   )}
                   <View style={styles.dealTextContainer}>
-                    <Text style={styles.dealVendorName}>{item.vendorName}</Text>
-                    <Text style={styles.dealOfferText} numberOfLines={2}>{item.offerText}</Text>
+                    <Text style={[styles.dealVendorName, { color: colors.text }]}>{item.vendorName}</Text>
+                    <Text style={[styles.dealOfferText, { color: colors.textSecondary }]} numberOfLines={2}>{item.offerText}</Text>
                   </View>
                 </View>
               )}
@@ -90,81 +95,81 @@ export default function LecturerHubScreen({ navigation }) {
         )}
 
         {/* Lecturer Info Card instead of Gamification */}
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.cardHeaderRow}>
             <View style={styles.cardTitleContainer}>
-              <Ionicons name="analytics-outline" size={20} color="#fff" />
-              <Text style={styles.cardTitle}>Module Evaluations</Text>
+              <Ionicons name="analytics-outline" size={20} color={colors.text} />
+              <Text style={[styles.cardTitle, { color: colors.text }]}>Module Evaluations</Text>
             </View>
           </View>
           
-          <Text style={styles.cardDescription}>
+          <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>
             As an instructor, you can monitor the completion rates and feedback from your students in real-time on the Web Admin Panel. Full analytics will be continuously available.
           </Text>
         </View>
 
         {/* My Modules Card */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>
             My Teaching Modules - {getUTechSemester().fullDisplay}
           </Text>
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
           
           {loading ? (
-             <ActivityIndicator size="large" color="#8A2BE2" style={{ marginVertical: 20 }} />
+             <ActivityIndicator size="large" color={colors.primary} style={{ marginVertical: 20 }} />
           ) : modules.length === 0 ? (
-             <Text style={styles.cardDescription}>You are not currently assigned to any active modules.</Text>
+             <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>You are not currently assigned to any active modules.</Text>
           ) : (
             modules.map((mod, index) => (
               <View key={mod.moduleOfferingId}>
                 <View style={styles.moduleRow}>
                   <View style={{flex: 1, paddingRight: 10}}>
-                    <Text style={styles.moduleLabel}>{mod.moduleCode}</Text>
-                    <Text style={styles.moduleCode}>{mod.moduleName || mod.moduleCode}</Text>
+                    <Text style={[styles.moduleLabel, { color: colors.primary }]}>{mod.moduleCode}</Text>
+                    <Text style={[styles.moduleCode, { color: colors.text }]}>{mod.moduleName || mod.moduleCode}</Text>
                   </View>
                   
                   {mod.activeSurveyId ? (
-                    <View style={[styles.lockedButton, {backgroundColor: 'rgba(138, 43, 226, 0.15)', borderColor: '#8A2BE2'}]}>
-                      <Ionicons name="pulse-outline" size={16} color="#8A2BE2" style={{marginRight: 4}} />
-                      <Text style={[styles.lockedButtonText, {color: '#8A2BE2'}]}>Survey Active</Text>
+                    <View style={[styles.lockedButton, {backgroundColor: `${colors.primary}26`, borderColor: colors.primary}]}>
+                      <Ionicons name="pulse-outline" size={16} color={colors.primary} style={{marginRight: 4}} />
+                      <Text style={[styles.lockedButtonText, {color: colors.primary}]}>Survey Active</Text>
                     </View>
                   ) : (
-                    <View style={[styles.lockedButton, {backgroundColor: '#222'}]}>
-                      <Ionicons name="time-outline" size={14} color="#888" style={{marginRight: 4}} />
-                      <Text style={[styles.lockedButtonText, {color: '#888'}]}>No Survey</Text>
+                    <View style={[styles.lockedButton, {backgroundColor: colors.border}]}>
+                      <Ionicons name="time-outline" size={14} color={colors.textSecondary} style={{marginRight: 4}} />
+                      <Text style={[styles.lockedButtonText, {color: colors.textSecondary}]}>No Survey</Text>
                     </View>
                   )}
                   
                 </View>
-                {index < modules.length - 1 && <View style={styles.divider} />}
+                {index < modules.length - 1 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
               </View>
             ))
           )}
         </View>
 
         {/* Open Campus Surveys Card */}
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.cardTitleContainer}>
-            <Ionicons name="sparkles-outline" size={20} color="#f06292" />
-            <Text style={styles.cardTitle}>Open Campus Surveys</Text>
+            <Ionicons name="sparkles-outline" size={20} color={colors.secondary} />
+            <Text style={[styles.cardTitle, { color: colors.text }]}>Open Campus Surveys</Text>
           </View>
           
           <View style={{marginTop: 15}}>
           {loading ? (
-             <ActivityIndicator size="small" color="#f06292" />
+             <ActivityIndicator size="small" color={colors.secondary} />
           ) : openSurveys.length === 0 ? (
-             <Text style={styles.cardDescription}>There are currently no open campus-wide surveys.</Text>
+             <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>There are currently no open campus-wide surveys.</Text>
           ) : (
             openSurveys.map((survey, index) => (
               <View key={survey.surveyId}>
                 <View style={styles.moduleRow}>
                   <View style={{flex: 1, paddingRight: 10}}>
-                    <Text style={[styles.moduleLabel, {color: '#f06292'}]}>{survey.audience} Survey</Text>
-                    <Text style={styles.moduleCode}>{survey.name}</Text>
+                    <Text style={[styles.moduleLabel, {color: colors.secondary}]}>{survey.audience} Survey</Text>
+                    <Text style={[styles.moduleCode, { color: colors.text }]}>{survey.name}</Text>
                   </View>
                   
                   <TouchableOpacity 
-                    style={[styles.primaryButton, {backgroundColor: '#f06292'}]}
+                    style={[styles.primaryButton, {backgroundColor: colors.secondary}]}
                     onPress={() => navigation.navigate('Survey', { surveyId: survey.surveyId, moduleCode: survey.name })}
                   >
                     <Ionicons name="sparkles" size={16} color="#fff" style={{marginRight: 6}} />
@@ -172,7 +177,7 @@ export default function LecturerHubScreen({ navigation }) {
                   </TouchableOpacity>
                   
                 </View>
-                {index < openSurveys.length - 1 && <View style={styles.divider} />}
+                {index < openSurveys.length - 1 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
               </View>
             ))
           )}
@@ -185,14 +190,34 @@ export default function LecturerHubScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0A0A0A' },
+  container: { flex: 1 },
   scrollContent: { padding: 20, paddingBottom: 40 },
-  header: { alignItems: 'center', marginVertical: 30, position: 'relative' },
-  logoutButton: { position: 'absolute', top: -15, right: 0, flexDirection: 'row', alignItems: 'center', padding: 8 },
-  logoutText: { color: '#888', marginLeft: 4, fontSize: 14 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  titleText: { fontSize: 28, fontWeight: 'bold', marginLeft: 10 },
-  subtitle: { fontSize: 14, color: '#888', textAlign: 'center', paddingHorizontal: 20, lineHeight: 20 },
+  stickyHeader: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  titleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 5 },
+  titleText: { fontSize: 24, fontWeight: 'bold', marginLeft: 10 },
+  subtitle: { fontSize: 13, paddingHorizontal: 0 },
+  logoutButtonInline: {
+    position: 'absolute',
+    top: 15,
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
   carouselContainer: { marginBottom: 20 },
   carouselHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, paddingHorizontal: 5 },
   carouselTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff', marginLeft: 8 },
@@ -201,7 +226,17 @@ const styles = StyleSheet.create({
   dealTextContainer: { padding: 12 },
   dealVendorName: { color: '#fff', fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
   dealOfferText: { color: '#aaa', fontSize: 14, lineHeight: 20 },
-  card: { backgroundColor: '#161616', borderRadius: 12, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: '#222' },
+  card: {
+    borderRadius: 16,
+    padding: 24,
+    marginBottom: 24,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4, // Android shadow
+  },
   cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
   cardTitleContainer: { flexDirection: 'row', alignItems: 'center' },
   cardTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff', marginLeft: 8 },

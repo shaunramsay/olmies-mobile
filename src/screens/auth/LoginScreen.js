@@ -3,9 +3,11 @@ import { View, Text, TextInput, StyleSheet, TouchableOpacity, SafeAreaView, Keyb
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import API_BASE_URL from '../../config/api';
+import { useAppTheme } from '../../context/ThemeContext';
 
 export default function LoginScreen({ navigation }) {
   const { login } = useAuth();
+  const { colors } = useAppTheme();
   
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -62,29 +64,29 @@ export default function LoginScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.content}
       >
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={28} color="#fff" />
+            <Ionicons name="arrow-back" size={28} color={colors.text} />
         </TouchableOpacity>
 
         <View style={styles.header}>
-            <Text style={styles.title}>Welcome Back</Text>
-            <Text style={styles.subtitle}>Sign in with your University credentials to continue.</Text>
+            <Text style={[styles.title, { color: colors.text }]}>Welcome Back</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Sign in with your University credentials to continue.</Text>
         </View>
 
         <View style={styles.form}>
             {errorMsg ? <Text style={{color: '#ff6b6b', backgroundColor: 'rgba(255,107,107,0.1)', padding: 10, borderRadius: 8, marginBottom: 15, fontWeight: 'bold'}}>{errorMsg}</Text> : null}
-            <Text style={styles.label}>Username</Text>
-            <View style={styles.inputContainer}>
-                <Ionicons name="person-outline" size={20} color="#888" style={styles.inputIcon} />
+            <Text style={[styles.label, { color: colors.text }]}>Username</Text>
+            <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Ionicons name="person-outline" size={20} color={colors.textSecondary} style={styles.inputIcon} />
                 <TextInput 
-                    style={styles.input}
+                    style={[styles.input, { color: colors.text }]}
                     placeholder="Enter ID number"
-                    placeholderTextColor="#555"
+                    placeholderTextColor={colors.textSecondary}
                     value={username}
                     onChangeText={setUsername}
                     autoCapitalize="none"
@@ -92,13 +94,13 @@ export default function LoginScreen({ navigation }) {
                 />
             </View>
 
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.inputContainer}>
-                <Ionicons name="lock-closed-outline" size={20} color="#888" style={styles.inputIcon} />
+            <Text style={[styles.label, { color: colors.text }]}>Password</Text>
+            <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Ionicons name="lock-closed-outline" size={20} color={colors.textSecondary} style={styles.inputIcon} />
                 <TextInput 
-                    style={styles.input}
+                    style={[styles.input, { color: colors.text }]}
                     placeholder="Enter password"
-                    placeholderTextColor="#555"
+                    placeholderTextColor={colors.textSecondary}
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry
@@ -107,7 +109,7 @@ export default function LoginScreen({ navigation }) {
 
 
             <TouchableOpacity 
-                style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
+                style={[styles.submitButton, { backgroundColor: colors.primary }, isLoading && styles.submitButtonDisabled]}
                 onPress={handleLogin}
                 disabled={isLoading}
             >

@@ -3,9 +3,11 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Act
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { getUTechSemester } from '../../utils/dateUtils';
+import { useAppTheme } from '../../context/ThemeContext';
 
 export default function StudentHubScreen({ navigation }) {
   const { user, fetchWithAuth, logout } = useAuth();
+  const { colors } = useAppTheme();
   const [modules, setModules] = useState([]);
   const [deals, setDeals] = useState([]);
   const [openSurveys, setOpenSurveys] = useState([]);
@@ -47,33 +49,32 @@ export default function StudentHubScreen({ navigation }) {
   }, [fetchWithAuth, user]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Absolute Header Interactions */}
-      {user && (
-        <TouchableOpacity style={styles.logoutButtonTopRight} onPress={logout}>
-          <Ionicons name="log-out-outline" size={20} color="#888" />
-          <Text style={styles.logoutTextTopRight}>Logout</Text>
-        </TouchableOpacity>
-      )}
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      
+      {/* Sticky Header Section */}
+      <View style={[styles.stickyHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <View style={styles.titleRow}>
+          <Ionicons name="ribbon-outline" size={28} color={colors.secondary} />
+          <Text style={[styles.titleText, { color: colors.secondary }]}>Student Hub</Text>
+        </View>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          Welcome back, {user?.username || 'Student'}.
+        </Text>
+        
+        {user && (
+          <TouchableOpacity style={[styles.logoutButtonTopRight, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={logout}>
+            <Ionicons name="log-out-outline" size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
+        )}
+      </View>
       
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        
-        {/* Header Section */}
-        <View style={styles.header}>
-          <View style={styles.titleRow}>
-            <Ionicons name="ribbon-outline" size={32} color="#f06292" />
-            <Text style={styles.titleText}>Student Hub</Text>
-          </View>
-          <Text style={styles.subtitle}>
-            Welcome back, {user?.username || 'Student'}. Manage your academic progress and evaluate open surveys.
-          </Text>
-        </View>
 
         {/* Vendor Deals Carousel */}
         <View style={styles.carouselContainer}>
           <View style={styles.carouselHeader}>
-            <Ionicons name="pricetag-outline" size={20} color="#8A2BE2" />
-            <Text style={styles.carouselTitle}>Campus Deals</Text>
+            <Ionicons name="pricetag-outline" size={20} color={colors.primary} />
+            <Text style={[styles.carouselTitle, { color: colors.text }]}>Campus Deals</Text>
           </View>
           <FlatList
             data={
@@ -96,17 +97,17 @@ export default function StudentHubScreen({ navigation }) {
             renderItem={({ item }) => {
               const isAdSlot = item.id.toString().startsWith('ad-slot');
               return (
-                <View style={[styles.dealCard, isAdSlot ? { backgroundColor: 'rgba(102, 252, 241, 0.05)', borderColor: '#66FCF1', borderWidth: 1, borderStyle: 'dashed' } : {}]}>
+                <View style={[styles.dealCard, { backgroundColor: colors.surface, borderColor: colors.border }, isAdSlot ? { backgroundColor: `${colors.info}1A`, borderColor: colors.info, borderWidth: 1, borderStyle: 'dashed' } : {}]}>
                   {item.bannerImageUrl ? (
                     <Image source={{ uri: item.bannerImageUrl }} style={styles.dealImage} resizeMode="cover" />
                   ) : isAdSlot ? (
-                    <View style={[styles.dealImage, { backgroundColor: '#111', justifyContent: 'center', alignItems: 'center' }]}>
-                       <Ionicons name="megaphone-outline" size={40} color="#66FCF1" />
+                    <View style={[styles.dealImage, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
+                       <Ionicons name="megaphone-outline" size={40} color={colors.info} />
                     </View>
                   ) : null}
                   <View style={styles.dealTextContainer}>
-                    <Text style={[styles.dealVendorName, isAdSlot ? { color: '#66FCF1' } : {}]}>{item.vendorName}</Text>
-                    <Text style={[styles.dealOfferText, isAdSlot ? { color: '#aaa' } : {}]} numberOfLines={2}>{item.offerText}</Text>
+                    <Text style={[styles.dealVendorName, { color: colors.text }, isAdSlot ? { color: colors.info } : {}]}>{item.vendorName}</Text>
+                    <Text style={[styles.dealOfferText, { color: colors.textSecondary }]} numberOfLines={2}>{item.offerText}</Text>
                   </View>
                 </View>
               );
@@ -115,19 +116,19 @@ export default function StudentHubScreen({ navigation }) {
         </View>
 
         {/* Early Grade Access Card */}
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.cardHeaderRow}>
             <View style={styles.cardTitleContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#fff" />
-              <Text style={styles.cardTitle}>Early Grade Access</Text>
+              <Ionicons name="lock-closed-outline" size={20} color={colors.text} />
+              <Text style={[styles.cardTitle, { color: colors.text }]}>Early Grade Access</Text>
             </View>
             <TouchableOpacity style={styles.lockedButton} disabled>
-              <Ionicons name="lock-closed-outline" size={14} color="#aaa" style={{marginRight: 4}} />
-              <Text style={styles.lockedButtonText}>Locked</Text>
+              <Ionicons name="lock-closed-outline" size={14} color={colors.textSecondary} style={{marginRight: 4}} />
+              <Text style={[styles.lockedButtonText, { color: colors.textSecondary }]}>Locked</Text>
             </TouchableOpacity>
           </View>
           
-          <Text style={styles.cardDescription}>
+          <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>
             {!user 
               ? "Sign in to view your progress toward early grade access!" 
               : "You need to evaluate 100% of your modules to unlock early grade access. Evaluate 100% of your active modules to unlock your grades before the official release date!"}
@@ -136,96 +137,96 @@ export default function StudentHubScreen({ navigation }) {
           {/* Progress Bar */}
           {user && (
             <View style={styles.progressBarContainer}>
-              <View style={styles.progressBarBackground}>
-                <View style={[styles.progressBarFill, { width: `${modules.length > 0 ? (Math.round((modules.filter(m => m.hasCompleted).length / modules.length) * 100)) : 0}%` }]} />
+              <View style={[styles.progressBarBackground, { backgroundColor: colors.border }]}>
+                <View style={[styles.progressBarFill, { backgroundColor: colors.primary, width: `${modules.length > 0 ? (Math.round((modules.filter(m => m.hasCompleted).length / modules.length) * 100)) : 0}%` }]} />
               </View>
               <View style={styles.progressTextRow}>
-                <Text style={styles.progressTextLeft}>{modules.filter(m => m.hasCompleted).length} Evaluated</Text>
-                <Text style={styles.progressTextRight}>{modules.length} Total</Text>
+                <Text style={[styles.progressTextLeft, { color: colors.textSecondary }]}>{modules.filter(m => m.hasCompleted).length} Evaluated</Text>
+                <Text style={[styles.progressTextRight, { color: colors.textSecondary }]}>{modules.length} Total</Text>
               </View>
             </View>
           )}
         </View>
 
         {/* My Modules Card */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>
             My Modules - {getUTechSemester().fullDisplay}
           </Text>
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
           
           {!user ? (
             <TouchableOpacity onPress={() => navigation.navigate('Login')} style={{ alignItems: 'center', marginVertical: 10 }}>
-              <Ionicons name="lock-closed-outline" size={40} color="#888" style={{ marginBottom: 10 }} />
-              <Text style={[styles.cardDescription, { textAlign: 'center' }]}>Sign in to view your enrolled modules and pending evaluations.</Text>
-              <View style={[styles.primaryButton, { backgroundColor: '#8A2BE2', marginTop: 10 }]}>
+              <Ionicons name="lock-closed-outline" size={40} color={colors.textSecondary} style={{ marginBottom: 10 }} />
+              <Text style={[styles.cardDescription, { textAlign: 'center', color: colors.textSecondary }]}>Sign in to view your enrolled modules and pending evaluations.</Text>
+              <View style={[styles.primaryButton, { backgroundColor: colors.primary, marginTop: 10 }]}>
                 <Ionicons name="log-in-outline" size={18} color="#fff" style={{marginRight: 6}} />
                 <Text style={styles.primaryButtonText}>Sign In</Text>
               </View>
             </TouchableOpacity>
           ) : loading ? (
-             <ActivityIndicator size="large" color="#8A2BE2" style={{ marginVertical: 20 }} />
+             <ActivityIndicator size="large" color={colors.primary} style={{ marginVertical: 20 }} />
           ) : modules.length === 0 ? (
-             <Text style={styles.cardDescription}>You are not currently enrolled in any active modules.</Text>
+             <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>You are not currently enrolled in any active modules.</Text>
           ) : (
             modules.map((mod, index) => (
               <View key={mod.moduleOfferingId}>
                 <View style={styles.moduleRow}>
                   <View style={{flex: 1, paddingRight: 10}}>
-                    <Text style={styles.moduleLabel}>{mod.moduleCode}</Text>
-                    <Text style={styles.moduleCode}>{mod.moduleName || mod.moduleCode}</Text>
+                    <Text style={[styles.moduleLabel, { color: colors.primary }]}>{mod.moduleCode}</Text>
+                    <Text style={[styles.moduleCode, { color: colors.text }]}>{mod.moduleName || mod.moduleCode}</Text>
                   </View>
                   
                   {mod.hasCompleted ? (
-                    <View style={[styles.lockedButton, {backgroundColor: 'rgba(76, 175, 80, 0.15)', borderColor: '#4caf50'}]}>
-                      <Ionicons name="checkmark-done" size={16} color="#4caf50" style={{marginRight: 4}} />
-                      <Text style={[styles.lockedButtonText, {color: '#4caf50'}]}>Completed</Text>
+                    <View style={[styles.lockedButton, {backgroundColor: `${colors.success}26`, borderColor: colors.success}]}>
+                      <Ionicons name="checkmark-done" size={16} color={colors.success} style={{marginRight: 4}} />
+                      <Text style={[styles.lockedButtonText, {color: colors.success}]}>Completed</Text>
                     </View>
                   ) : mod.activeSurveyId ? (
                     <TouchableOpacity 
-                      style={styles.primaryButton}
+                      style={[styles.primaryButton, { backgroundColor: colors.primary }]}
                       onPress={() => navigation.navigate('Survey', { surveyId: mod.activeSurveyId, moduleCode: mod.moduleCode })}
                     >
                       <Ionicons name="checkmark-circle-outline" size={16} color="#fff" style={{marginRight: 6}} />
                       <Text style={styles.primaryButtonText}>Take Survey</Text>
                     </TouchableOpacity>
                   ) : (
-                    <View style={[styles.lockedButton, {backgroundColor: '#222'}]}>
-                      <Ionicons name="lock-closed-outline" size={14} color="#888" style={{marginRight: 4}} />
-                      <Text style={[styles.lockedButtonText, {color: '#888'}]}>No Survey</Text>
+                    <View style={[styles.lockedButton, {backgroundColor: colors.border}]}>
+                      <Ionicons name="lock-closed-outline" size={14} color={colors.textSecondary} style={{marginRight: 4}} />
+                      <Text style={[styles.lockedButtonText, {color: colors.textSecondary}]}>No Survey</Text>
                     </View>
                   )}
                   
                 </View>
-                {index < modules.length - 1 && <View style={styles.divider} />}
+                {index < modules.length - 1 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
               </View>
             ))
           )}
         </View>
 
         {/* Open Campus Surveys Card */}
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.cardTitleContainer}>
-            <Ionicons name="sparkles-outline" size={20} color="#f06292" />
-            <Text style={styles.cardTitle}>Open Campus Surveys</Text>
+            <Ionicons name="sparkles-outline" size={20} color={colors.secondary} />
+            <Text style={[styles.cardTitle, { color: colors.text }]}>Open Campus Surveys</Text>
           </View>
           
           <View style={{marginTop: 15}}>
           {loading ? (
-             <ActivityIndicator size="small" color="#f06292" />
+             <ActivityIndicator size="small" color={colors.secondary} />
           ) : openSurveys.length === 0 ? (
-             <Text style={styles.cardDescription}>There are currently no open campus-wide surveys.</Text>
+             <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>There are currently no open campus-wide surveys.</Text>
           ) : (
             openSurveys.map((survey, index) => (
               <View key={survey.surveyId}>
                 <View style={styles.moduleRow}>
                   <View style={{flex: 1, paddingRight: 10}}>
-                    <Text style={[styles.moduleLabel, {color: '#f06292'}]}>{survey.audience} Survey</Text>
-                    <Text style={styles.moduleCode}>{survey.name}</Text>
+                    <Text style={[styles.moduleLabel, {color: colors.secondary}]}>{survey.audience} Survey</Text>
+                    <Text style={[styles.moduleCode, { color: colors.text }]}>{survey.name}</Text>
                   </View>
                   
                   <TouchableOpacity 
-                    style={[styles.primaryButton, {backgroundColor: '#f06292'}]}
+                    style={[styles.primaryButton, {backgroundColor: colors.secondary}]}
                     onPress={() => navigation.navigate('Survey', { surveyId: survey.surveyId, moduleCode: survey.name })}
                   >
                     <Ionicons name="sparkles" size={16} color="#fff" style={{marginRight: 6}} />
@@ -233,7 +234,7 @@ export default function StudentHubScreen({ navigation }) {
                   </TouchableOpacity>
                   
                 </View>
-                {index < openSurveys.length - 1 && <View style={styles.divider} />}
+                {index < openSurveys.length - 1 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
               </View>
             ))
           )}
@@ -248,33 +249,35 @@ export default function StudentHubScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0A0A', // Darkest background
+  },
+  stickyHeader: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 3,
   },
   scrollContent: {
     padding: 20,
     paddingBottom: 40,
   },
-  header: {
-    alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 30,
-    position: 'relative',
-  },
   logoutButtonTopRight: {
     position: 'absolute',
-    top: Platform.OS === 'android' ? 40 : 10,
+    top: 15,
     right: 20,
     flexDirection: 'row',
     alignItems: 'center',
     padding: 10,
-    zIndex: 100,
-    backgroundColor: 'rgba(20, 20, 20, 0.8)',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#333'
   },
   logoutTextTopRight: {
-    color: '#aaa',
     marginLeft: 6,
     fontSize: 14,
     fontWeight: 'bold',
@@ -282,20 +285,15 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 5,
   },
   titleText: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#f06292', // Pinkish theme from screenshot
     marginLeft: 10,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#888',
-    textAlign: 'center',
-    paddingHorizontal: 20,
-    lineHeight: 20,
+    fontSize: 13,
   },
   carouselContainer: {
     marginBottom: 20,
@@ -341,11 +339,16 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#161616',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
+    borderRadius: 16,
+    padding: 24,
+    marginBottom: 24,
     borderWidth: 1,
     borderColor: '#222',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4, // Android shadow
   },
   cardHeaderRow: {
     flexDirection: 'row',

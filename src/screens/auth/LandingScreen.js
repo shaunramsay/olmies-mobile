@@ -1,24 +1,34 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppTheme } from '../../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
 export default function LandingScreen({ navigation }) {
+  const { colors, toggleTheme, isDarkTheme } = useAppTheme();
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <TouchableOpacity 
+        style={{ position: 'absolute', top: 50, right: 30, zIndex: 10 }} 
+        onPress={toggleTheme}
+      >
+        <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={28} color={colors.text} />
+      </TouchableOpacity>
+
       <View style={styles.content}>
         
         {/* Mock Logo / Branding */}
         <View style={styles.logoContainer}>
-            <Ionicons name="cube" size={80} color="#8A2BE2" />
-            <Text style={styles.title}>OLMIES</Text>
-            <Text style={styles.subtitle}>Student & Lecturer Portal</Text>
+            <Ionicons name="cube" size={80} color={colors.primary} />
+            <Text style={[styles.title, { color: colors.text }]}>OLMIES</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Student & Lecturer Portal</Text>
         </View>
 
         <View style={styles.bottomSection}>
             <TouchableOpacity 
-                style={styles.primaryButton}
+                style={[styles.primaryButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
                 onPress={() => navigation.replace('Main')}
             >
                 <Text style={styles.primaryButtonText}>Experience UTech!</Text>
@@ -26,12 +36,12 @@ export default function LandingScreen({ navigation }) {
             </TouchableOpacity>
 
             <TouchableOpacity style={{ marginTop: 24, padding: 10, alignItems: 'center' }} onPress={() => navigation.navigate('Login')}>
-                <Text style={{ color: '#aaa', fontSize: 16, fontWeight: '600' }}>
-                    Already a student? <Text style={{ color: '#8A2BE2' }}>Log in here</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 16, fontWeight: '600' }}>
+                    Already a student? <Text style={{ color: colors.primary }}>Log in here</Text>
                 </Text>
             </TouchableOpacity>
 
-            <Text style={[styles.footerText, { marginTop: 12 }]}>
+            <Text style={[styles.footerText, { color: colors.textSecondary, marginTop: 12 }]}>
                 Need help? Contact the IT Service Desk.
             </Text>
         </View>
@@ -44,7 +54,6 @@ export default function LandingScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212', // Dark theme matching the web portal
   },
   content: {
     flex: 1,
@@ -60,13 +69,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 48,
     fontWeight: '800',
-    color: '#fff',
     marginTop: 20,
     letterSpacing: 2,
   },
   subtitle: {
     fontSize: 16,
-    color: '#aaa',
     marginTop: 10,
   },
   bottomSection: {
@@ -74,13 +81,11 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   primaryButton: {
-    backgroundColor: '#8A2BE2',
     paddingVertical: 18,
     borderRadius: 12,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#8A2BE2',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -93,7 +98,6 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   footerText: {
-    color: '#666',
     textAlign: 'center',
     marginTop: 24,
     fontSize: 14,
