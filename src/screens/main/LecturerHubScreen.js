@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, FlatList, Image } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, FlatList, Image, Platform, StatusBar } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { getUTechSemester } from '../../utils/dateUtils';
 import { useAppTheme } from '../../context/ThemeContext';
 
 export default function LecturerHubScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const { user, fetchWithAuth, logout } = useAuth();
   const { colors } = useAppTheme();
   const [modules, setModules] = useState([]);
@@ -46,7 +47,7 @@ export default function LecturerHubScreen({ navigation }) {
   }, [fetchWithAuth]);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: Math.max(insets.top, Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0) }]}>
       
       {/* Sticky Header Section */}
       <View style={[styles.stickyHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
@@ -186,7 +187,7 @@ export default function LecturerHubScreen({ navigation }) {
         </View>
 
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
