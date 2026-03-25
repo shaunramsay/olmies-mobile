@@ -9,7 +9,7 @@ import { useAppTheme } from '../../context/ThemeContext';
 export default function LecturerHubScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const { user, fetchWithAuth, logout } = useAuth();
-  const { colors } = useAppTheme();
+  const { colors, isDarkTheme, toggleTheme } = useAppTheme();
   const [modules, setModules] = useState([]);
   const [deals, setDeals] = useState([]);
   const [openSurveys, setOpenSurveys] = useState([]);
@@ -59,11 +59,16 @@ export default function LecturerHubScreen({ navigation }) {
           Welcome back, {user?.username || 'Lecturer'}.
         </Text>
         
-        {user && (
-          <TouchableOpacity style={[styles.logoutButtonInline, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={logout}>
-            <Ionicons name="log-out-outline" size={18} color={colors.textSecondary} />
+        <View style={styles.topRightActions}>
+          <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={toggleTheme}>
+            <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={18} color={colors.textSecondary} />
           </TouchableOpacity>
-        )}
+          {user && (
+            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={logout}>
+              <Ionicons name="log-out-outline" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -210,15 +215,19 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 5 },
   titleText: { fontSize: 24, fontWeight: 'bold', marginLeft: 10 },
   subtitle: { fontSize: 13, paddingHorizontal: 0 },
-  logoutButtonInline: {
+  topRightActions: {
     position: 'absolute',
     top: 15,
     right: 20,
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  actionButton: {
     padding: 8,
     borderRadius: 8,
     borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   carouselContainer: { marginBottom: 20 },
   carouselHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, paddingHorizontal: 5 },

@@ -9,7 +9,7 @@ import { useAppTheme } from '../../context/ThemeContext';
 export default function StudentHubScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const { user, fetchWithAuth, logout } = useAuth();
-  const { colors } = useAppTheme();
+  const { colors, isDarkTheme, toggleTheme } = useAppTheme();
   const [modules, setModules] = useState([]);
   const [deals, setDeals] = useState([]);
   const [openSurveys, setOpenSurveys] = useState([]);
@@ -63,11 +63,16 @@ export default function StudentHubScreen({ navigation }) {
           Welcome back, {user?.username || 'Student'}.
         </Text>
         
-        {user && (
-          <TouchableOpacity style={[styles.logoutButtonTopRight, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={logout}>
-            <Ionicons name="log-out-outline" size={18} color={colors.textSecondary} />
+        <View style={styles.topRightActions}>
+          <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={toggleTheme}>
+            <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={18} color={colors.textSecondary} />
           </TouchableOpacity>
-        )}
+          {user && (
+            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={logout}>
+              <Ionicons name="log-out-outline" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
       
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -269,20 +274,19 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 40,
   },
-  logoutButtonTopRight: {
+  topRightActions: {
     position: 'absolute',
     top: 15,
     right: 20,
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  actionButton: {
     padding: 10,
     borderRadius: 8,
     borderWidth: 1,
-  },
-  logoutTextTopRight: {
-    marginLeft: 6,
-    fontSize: 14,
-    fontWeight: 'bold',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   titleRow: {
     flexDirection: 'row',
