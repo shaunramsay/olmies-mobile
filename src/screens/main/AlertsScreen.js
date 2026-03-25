@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, ActivityIndicator, Image, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { useAppTheme } from '../../context/ThemeContext';
 
 export default function AlertsScreen() {
   const { fetchWithAuth } = useAuth();
+  const { isDarkTheme, toggleTheme } = useAppTheme();
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedAlert, setSelectedAlert] = useState(null);
@@ -49,6 +51,9 @@ export default function AlertsScreen() {
       <View style={styles.header}>
         <Ionicons name="notifications-outline" size={28} color="#fff" />
         <Text style={styles.headerTitle}>Notifications</Text>
+        <TouchableOpacity style={styles.themeToggle} onPress={toggleTheme}>
+          <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={22} color="#fff" />
+        </TouchableOpacity>
       </View>
       
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -128,6 +133,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
     marginLeft: 10,
+    flex: 1,
+  },
+  themeToggle: {
+    padding: 8,
   },
   scrollContent: {
     padding: 15,

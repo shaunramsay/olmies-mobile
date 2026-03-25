@@ -3,10 +3,12 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity } fr
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
+import { useAppTheme } from '../../context/ThemeContext';
 
 export default function InsightsScreen() {
   const { user } = useAuth();
   const navigation = useNavigation();
+  const { isDarkTheme, toggleTheme } = useAppTheme();
 
   if (!user) {
     return (
@@ -14,6 +16,9 @@ export default function InsightsScreen() {
         <View style={styles.header}>
           <Ionicons name="stats-chart" size={28} color="#fff" />
           <Text style={styles.headerTitle}>Survey Insights</Text>
+          <TouchableOpacity style={styles.themeToggle} onPress={toggleTheme}>
+            <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={24} color="#fff" />
+          </TouchableOpacity>
         </View>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 30 }}>
             <Ionicons name="lock-closed" size={80} color="#222" style={{ marginBottom: 20 }} />
@@ -38,6 +43,9 @@ export default function InsightsScreen() {
       <View style={styles.header}>
         <Ionicons name="stats-chart" size={28} color="#fff" />
         <Text style={styles.headerTitle}>Survey Insights</Text>
+        <TouchableOpacity style={styles.themeToggle} onPress={toggleTheme}>
+           <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={24} color="#fff" />
+        </TouchableOpacity>
       </View>
       
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -122,6 +130,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
     marginLeft: 10,
+    flex: 1,
+  },
+  themeToggle: {
+    padding: 8,
   },
   scrollContent: {
     padding: 20,

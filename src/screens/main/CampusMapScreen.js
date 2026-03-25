@@ -13,9 +13,11 @@ if (Platform.OS !== 'web') {
 }
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { useAppTheme } from '../../context/ThemeContext';
 
 export default function CampusMapScreen() {
   const { fetchWithAuth } = useAuth();
+  const { isDarkTheme, toggleTheme } = useAppTheme();
   const [pois, setPois] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -113,6 +115,9 @@ export default function CampusMapScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Campus Map</Text>
+        <TouchableOpacity style={styles.themeToggle} onPress={toggleTheme}>
+          <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={24} color="#fff" />
+        </TouchableOpacity>
       </View>
       
       <View style={{ zIndex: 100, position: 'relative' }}>
@@ -227,11 +232,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 30,
     paddingBottom: 15,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#fff',
+  },
+  themeToggle: {
+    padding: 8,
   },
   searchContainer: {
     flexDirection: 'row',
