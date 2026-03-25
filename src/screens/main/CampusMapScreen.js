@@ -16,8 +16,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../context/ThemeContext';
 
 export default function CampusMapScreen() {
-  const { fetchWithAuth } = useAuth();
-  const { isDarkTheme, toggleTheme } = useAppTheme();
+  const { user, fetchWithAuth, logout } = useAuth();
+  const { colors, isDarkTheme, toggleTheme } = useAppTheme();
   const [pois, setPois] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -112,12 +112,21 @@ export default function CampusMapScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Campus Map</Text>
-        <TouchableOpacity style={styles.themeToggle} onPress={toggleTheme}>
-          <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={24} color="#fff" />
-        </TouchableOpacity>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
+        <Ionicons name="map-outline" size={28} color={colors.primary} />
+        <Text style={[styles.headerTitle, { color: colors.text, flex: 1, marginLeft: 10 }]}>Campus Map</Text>
+        
+        <View style={styles.topRightActions}>
+          <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={toggleTheme}>
+            <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
+          {user && (
+             <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={logout}>
+               <Ionicons name="log-out-outline" size={18} color={colors.textSecondary} />
+             </TouchableOpacity>
+          )}
+        </View>
       </View>
       
       <View style={{ zIndex: 100, position: 'relative' }}>
@@ -241,8 +250,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
-  themeToggle: {
+  topRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionButton: {
     padding: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   searchContainer: {
     flexDirection: 'row',

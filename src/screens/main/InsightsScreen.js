@@ -6,19 +6,21 @@ import { useNavigation } from '@react-navigation/native';
 import { useAppTheme } from '../../context/ThemeContext';
 
 export default function InsightsScreen() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigation = useNavigation();
-  const { isDarkTheme, toggleTheme } = useAppTheme();
+  const { colors, isDarkTheme, toggleTheme } = useAppTheme();
 
   if (!user) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Ionicons name="stats-chart" size={28} color="#fff" />
-          <Text style={styles.headerTitle}>Survey Insights</Text>
-          <TouchableOpacity style={styles.themeToggle} onPress={toggleTheme}>
-            <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={24} color="#fff" />
-          </TouchableOpacity>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <Ionicons name="stats-chart" size={28} color={colors.primary} />
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Survey Insights</Text>
+          <View style={styles.topRightActions}>
+            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={toggleTheme}>
+              <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
         </View>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 30 }}>
             <Ionicons name="lock-closed" size={80} color="#222" style={{ marginBottom: 20 }} />
@@ -39,13 +41,20 @@ export default function InsightsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Ionicons name="stats-chart" size={28} color="#fff" />
-        <Text style={styles.headerTitle}>Survey Insights</Text>
-        <TouchableOpacity style={styles.themeToggle} onPress={toggleTheme}>
-           <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={24} color="#fff" />
-        </TouchableOpacity>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <Ionicons name="stats-chart" size={28} color={colors.primary} />
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Survey Insights</Text>
+        <View style={styles.topRightActions}>
+          <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={toggleTheme}>
+            <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
+          {user && (
+            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={logout}>
+              <Ionicons name="log-out-outline" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
       
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -132,8 +141,16 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     flex: 1,
   },
-  themeToggle: {
+  topRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionButton: {
     padding: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollContent: {
     padding: 20,

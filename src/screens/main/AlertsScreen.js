@@ -5,8 +5,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../context/ThemeContext';
 
 export default function AlertsScreen() {
-  const { fetchWithAuth } = useAuth();
-  const { isDarkTheme, toggleTheme } = useAppTheme();
+  const { user, fetchWithAuth, logout } = useAuth();
+  const { colors, isDarkTheme, toggleTheme } = useAppTheme();
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedAlert, setSelectedAlert] = useState(null);
@@ -47,13 +47,20 @@ export default function AlertsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Ionicons name="notifications-outline" size={28} color="#fff" />
-        <Text style={styles.headerTitle}>Notifications</Text>
-        <TouchableOpacity style={styles.themeToggle} onPress={toggleTheme}>
-          <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={22} color="#fff" />
-        </TouchableOpacity>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <Ionicons name="notifications-outline" size={28} color={colors.primary} />
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Notifications</Text>
+        <View style={styles.topRightActions}>
+          <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={toggleTheme}>
+            <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
+          {user && (
+            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={logout}>
+              <Ionicons name="log-out-outline" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
       
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -67,7 +74,7 @@ export default function AlertsScreen() {
             return (
               <TouchableOpacity 
                 key={alert.id} 
-                style={[styles.alertCard, !alert.read && styles.unreadCard]}
+                style={[styles.alertCard, { backgroundColor: colors.surface, borderColor: colors.border }, !alert.read && { backgroundColor: `${colors.primary}1A`, borderColor: colors.primary }]}
                 activeOpacity={0.7}
                 onPress={() => setSelectedAlert(alert)}
               >
@@ -79,9 +86,9 @@ export default function AlertsScreen() {
                   )}
                 </View>
                 <View style={styles.alertContent}>
-                  <Text style={[styles.alertTitle, !alert.read && styles.unreadText]}>{alert.title}</Text>
-                  <Text style={styles.alertDate}>{alert.date}</Text>
-                  <Text style={[styles.alertMessage, { marginTop: 8 }]} numberOfLines={2}>{alert.message}</Text>
+                  <Text style={[styles.alertTitle, { color: colors.text }, !alert.read && { color: colors.primary, fontWeight: 'bold' }]}>{alert.title}</Text>
+                  <Text style={[styles.alertDate, { color: colors.textSecondary }]}>{alert.date}</Text>
+                  <Text style={[styles.alertMessage, { marginTop: 8, color: colors.textSecondary }]} numberOfLines={2}>{alert.message}</Text>
                 </View>
                 {!alert.read && <View style={styles.unreadDot} />}
               </TouchableOpacity>
@@ -135,8 +142,16 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     flex: 1,
   },
-  themeToggle: {
+  topRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionButton: {
     padding: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollContent: {
     padding: 15,
