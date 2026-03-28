@@ -9,6 +9,7 @@ import LoginScreen from '../screens/auth/LoginScreen';
 import MainTabNavigator from './MainTabNavigator';
 import WebNavigationShell from './WebNavigationShell';
 import SurveyScreen from '../screens/survey/SurveyScreen';
+import SurveyResultsScreen from '../screens/survey/SurveyResultsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -32,6 +33,7 @@ export default function AppNavigator() {
       <Stack.Screen name="Main" component={MainComponent} />
       <Stack.Screen name="Login" component={LoginScreen} options={{ presentation: 'modal' }} />
       <Stack.Screen name="Survey" component={SurveyScreen} options={{ presentation: 'fullScreenModal' }} />
+      <Stack.Screen name="SurveyResults" component={SurveyResultsScreen} options={{ presentation: 'fullScreenModal' }} />
     </Stack.Navigator>
   );
 }

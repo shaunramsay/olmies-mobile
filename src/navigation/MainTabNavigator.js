@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import AlertsScreen from '../screens/main/AlertsScreen';
 import MapScreen from '../screens/main/CampusMapScreen';
 import InsightsScreen from '../screens/main/InsightsScreen';
+import HistoryScreen from '../screens/main/HistoryScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -38,6 +39,7 @@ export default function MainTabNavigator() {
           if (route.name === 'Alerts') iconName = focused ? 'notifications' : 'notifications-outline';
           if (route.name === 'Map') iconName = focused ? 'map' : 'map-outline';
           if (route.name === 'Insights') iconName = focused ? 'pie-chart' : 'pie-chart-outline';
+          if (route.name === 'History') iconName = focused ? 'time' : 'time-outline';
           return <Ionicons name={iconName} size={24} color={color} />;
         },
       })}
@@ -49,6 +51,7 @@ export default function MainTabNavigator() {
       />
       <Tab.Screen name="Alerts" component={AlertsScreen} options={{ title: 'Alerts' }} />
       <Tab.Screen name="Map" component={MapScreen} options={{ title: 'Map' }} />
+      <Tab.Screen name="History" component={HistoryScreen} options={{ title: 'History' }} />
       <Tab.Screen name="Insights" component={InsightsScreen} options={{ title: 'Insights' }} />
     </Tab.Navigator>
   );
