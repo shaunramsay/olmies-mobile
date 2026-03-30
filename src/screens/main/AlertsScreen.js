@@ -14,18 +14,18 @@ export default function AlertsScreen() {
   useEffect(() => {
     const fetchAnnouncements = async () => {
       try {
-        const res = await fetchWithAuth('/api/v1/mobile/announcements');
+        const res = await fetchWithAuth('/api/v1/campushub/notifications');
         if (res.ok) {
           const data = await res.json();
           // Map backend schema to UI format.
-          const mapped = data.map(announcement => ({
-            id: announcement.id,
-            title: announcement.title,
-            message: announcement.message,
-            imageUrl: announcement.imageUrl,
-            date: new Date(announcement.createdAt).toLocaleString(),
-            type: announcement.targetAudience === 'Global' ? 'info' : 'survey',
-            read: false // Simple mock for now
+          const mapped = data.map(notification => ({
+            id: notification.id,
+            title: notification.title,
+            message: notification.message,
+            imageUrl: notification.imageUrl,
+            date: new Date(notification.createdAt).toLocaleString(),
+            type: notification.type === 'Academic' ? 'warning' : (notification.type === 'Promo' ? 'survey' : 'info'),
+            read: notification.isRead
           }));
           setAlerts(mapped);
         }
