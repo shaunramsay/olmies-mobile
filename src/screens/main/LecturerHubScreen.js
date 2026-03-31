@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, FlatList, Image, Platform, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, FlatList, Image, Platform, StatusBar, Linking, Alert, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
@@ -14,6 +14,7 @@ export default function LecturerHubScreen({ navigation }) {
   const [deals, setDeals] = useState([]);
   const [openSurveys, setOpenSurveys] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDeal, setSelectedDeal] = useState(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -60,7 +61,13 @@ export default function LecturerHubScreen({ navigation }) {
         </Text>
         
         <View style={styles.topRightActions}>
-          <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={toggleTheme}>
+          <TouchableOpacity 
+            style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border }]} 
+            onPress={() => navigation.navigate('DataProtection', { isReviewMode: true })}
+          >
+            <Ionicons name="shield-checkmark-outline" size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={toggleTheme}>
             <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={18} color={colors.textSecondary} />
           </TouchableOpacity>
           {user && (
@@ -86,17 +93,25 @@ export default function LecturerHubScreen({ navigation }) {
               showsHorizontalScrollIndicator={false}
               keyExtractor={(item) => item.id.toString()}
               contentContainerStyle={{ paddingRight: 20 }}
-              renderItem={({ item }) => (
-                <View style={[styles.dealCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                  {item.bannerImageUrl && (
-                    <Image source={{ uri: item.bannerImageUrl }} style={styles.dealImage} resizeMode="cover" />
-                  )}
-                  <View style={styles.dealTextContainer}>
-                    <Text style={[styles.dealVendorName, { color: colors.text }]}>{item.vendorName}</Text>
-                    <Text style={[styles.dealOfferText, { color: colors.textSecondary }]} numberOfLines={2}>{item.offerText}</Text>
-                  </View>
-                </View>
-              )}
+              renderItem={({ item }) => {
+                const handlePress = () => {
+                  setSelectedDeal(item);
+                };
+
+                return (
+                  <TouchableOpacity onPress={handlePress} activeOpacity={0.8}>
+                    <View style={[styles.dealCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                      {item.bannerImageUrl && (
+                        <Image source={{ uri: item.bannerImageUrl }} style={styles.dealImage} resizeMode="cover" />
+                      )}
+                      <View style={styles.dealTextContainer}>
+                        <Text style={[styles.dealVendorName, { color: colors.text }]}>{item.vendorName}</Text>
+                        <Text style={[styles.dealOfferText, { color: colors.textSecondary }]} numberOfLines={2}>{item.offerText}</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              }}
             />
           </View>
         )}
@@ -192,6 +207,49 @@ export default function LecturerHubScreen({ navigation }) {
         </View>
 
       </ScrollView>
+
+      {/* Full Deal Modal */}
+      <Modal visible={!!selectedDeal} animationType="slide" transparent={true} onRequestClose={() => setSelectedDeal(null)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            {selectedDeal?.bannerImageUrl ? (
+              <Image source={{ uri: selectedDeal.bannerImageUrl }} style={styles.modalImage} resizeMode="cover" />
+            ) : selectedDeal?.id?.toString().startsWith('ad-slot') ? (
+               <View style={[styles.modalImage, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
+                  <Ionicons name="megaphone-outline" size={60} color={colors.info || '#64b5f6'} />
+               </View>
+            ) : (
+               <View style={[styles.modalImage, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
+                  <Ionicons name="pricetag-outline" size={60} color={colors.primary || '#8A2BE2'} />
+               </View>
+            )}
+            <View style={styles.modalTextContainer}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>{selectedDeal?.vendorName}</Text>
+              <ScrollView style={styles.modalMessageBody}>
+                <Text style={[styles.modalMessage, { color: colors.textSecondary }]}>{selectedDeal?.offerText}</Text>
+              </ScrollView>
+              
+              {selectedDeal?.websiteUrl && (
+                <TouchableOpacity 
+                  style={[styles.closeButton, { backgroundColor: colors.primary, marginTop: 24 }]} 
+                  onPress={() => {
+                    Linking.openURL(selectedDeal.websiteUrl).catch(() => Alert.alert("Error", "Could not open link"));
+                  }}
+                >
+                  <Text style={styles.closeButtonText}>Visit Website</Text>
+                </TouchableOpacity>
+              )}
+              
+              <TouchableOpacity 
+                style={[styles.closeButton, { backgroundColor: colors.border, marginTop: selectedDeal?.websiteUrl ? 12 : 24 }]} 
+                onPress={() => setSelectedDeal(null)}
+              >
+                <Text style={[styles.closeButtonText, { color: colors.text }]}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -259,5 +317,45 @@ const styles = StyleSheet.create({
   moduleLabel: { color: '#8A2BE2', fontSize: 12, fontWeight: 'bold', marginBottom: 4 },
   moduleCode: { color: '#fff', fontSize: 16, fontWeight: '600' },
   primaryButton: { flexDirection: 'row', backgroundColor: '#5C6BC0', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8, alignItems: 'center' },
-  primaryButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' }
+  primaryButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    maxHeight: '85%',
+  },
+  modalImage: {
+    width: '100%',
+    height: 220,
+  },
+  modalTextContainer: {
+    padding: 24,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  modalMessageBody: {
+    maxHeight: 250,
+  },
+  modalMessage: {
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  closeButton: {
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  }
 });

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, TextInput } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, TextInput, Modal, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 
@@ -12,6 +12,9 @@ export default function SurveyScreen({ route, navigation }) {
   const [error, setError] = useState(null);
   const [answers, setAnswers] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.5)).current;
 
   useEffect(() => {
     const fetchSurvey = async () => {
@@ -43,7 +46,7 @@ export default function SurveyScreen({ route, navigation }) {
     try {
       const deviceId = await getDeviceId();
       const payload = {
-        surveyVersionId: surveyId,
+        surveyId: surveyId,
         answers: answers,
         deviceId: deviceId
       };
@@ -54,8 +57,18 @@ export default function SurveyScreen({ route, navigation }) {
       });
 
       if (response.ok) {
-        alert('Survey submitted successfully! Thank you for your feedback.');
-        navigation.goBack();
+        setShowSuccessModal(true);
+        Animated.parallel([
+          Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+          Animated.spring(scaleAnim, { toValue: 1, friction: 6, useNativeDriver: true })
+        ]).start();
+
+        setTimeout(() => {
+          Animated.timing(fadeAnim, { toValue: 0, duration: 250, useNativeDriver: true }).start(() => {
+            setShowSuccessModal(false);
+            navigation.goBack();
+          });
+        }, 2200);
       } else {
         const errData = await response.json();
         alert(errData.error || 'Failed to submit the survey.');
@@ -211,6 +224,18 @@ export default function SurveyScreen({ route, navigation }) {
                 <Text style={styles.submitButtonText}>{submitting ? 'Submitting...' : 'Submit Evaluation'}</Text>
               </TouchableOpacity>
             </View>
+
+            <Modal visible={showSuccessModal} transparent animationType="none">
+              <View style={styles.modalOverlay}>
+                <Animated.View style={[styles.successCard, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
+                  <View style={styles.checkmarkCircle}>
+                    <Ionicons name="checkmark-sharp" size={55} color="#fff" />
+                  </View>
+                  <Text style={styles.successTitle}>Thank You!</Text>
+                  <Text style={styles.successMessage}>Your response has been successfully recorded.</Text>
+                </Animated.View>
+              </View>
+            </Modal>
           </>
         )}
       </ScrollView>
@@ -319,5 +344,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 8,
   },
-  secondaryButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' }
+  secondaryButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center' },
+  successCard: { backgroundColor: '#1E1E1E', borderRadius: 24, padding: 35, width: '85%', alignItems: 'center', shadowColor: '#f06292', shadowOffset: { width: 0, height: 15 }, shadowOpacity: 0.4, shadowRadius: 30, elevation: 15 },
+  checkmarkCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#f06292', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+  successTitle: { color: '#fff', fontSize: 26, fontWeight: 'bold', marginBottom: 12 },
+  successMessage: { color: '#aaa', fontSize: 16, textAlign: 'center', lineHeight: 24 }
 });
