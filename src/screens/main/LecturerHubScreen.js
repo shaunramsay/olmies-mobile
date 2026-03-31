@@ -61,7 +61,13 @@ export default function LecturerHubScreen({ navigation }) {
         </Text>
         
         <View style={styles.topRightActions}>
-          <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={toggleTheme}>
+          <TouchableOpacity 
+            style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border }]} 
+            onPress={() => navigation.navigate('DataProtection', { isReviewMode: true })}
+          >
+            <Ionicons name="shield-checkmark-outline" size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={toggleTheme}>
             <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={18} color={colors.textSecondary} />
           </TouchableOpacity>
           {user && (

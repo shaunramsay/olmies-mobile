@@ -53,18 +53,28 @@ export const AuthProvider = ({ children }) => {
     const [token, setToken] = useState(null);
     const [user, setUser] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [hasAcceptedDPA, setHasAcceptedDPA] = useState(null);
 
     // Initial load of the token from SecureStore or Web Storage
     useEffect(() => {
         const loadToken = async () => {
             try {
                 const storedToken = await TokenStorage.getItemAsync(TOKEN_KEY);
+                const dpaAccepted = await TokenStorage.getItemAsync('olmies_dpa_accepted');
+                
+                if (dpaAccepted === 'true') {
+                    setHasAcceptedDPA(true);
+                } else {
+                    setHasAcceptedDPA(false);
+                }
+
                 if (storedToken) {
                     setToken(storedToken);
                     decodeAndSetUser(storedToken);
                 }
             } catch (error) {
-                console.error('Error loading token:', error);
+                console.error('Error loading config:', error);
+                setHasAcceptedDPA(false);
             } finally {
                 setIsLoading(false);
             }
@@ -72,6 +82,15 @@ export const AuthProvider = ({ children }) => {
 
         loadToken();
     }, []);
+
+    const acceptDPA = async () => {
+        try {
+            await TokenStorage.setItemAsync('olmies_dpa_accepted', 'true');
+            setHasAcceptedDPA(true);
+        } catch (error) {
+            console.error('Failed to secure save DPA consent:', error);
+        }
+    };
 
     const decodeAndSetUser = (jwt, explicitUserData = null) => {
         try {
@@ -183,7 +202,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ token, user, isLoading, login, logout, fetchWithAuth, getDeviceId }}>
+        <AuthContext.Provider value={{ token, user, isLoading, login, logout, fetchWithAuth, getDeviceId, hasAcceptedDPA, acceptDPA }}>
             {children}
         </AuthContext.Provider>
     );
