@@ -134,19 +134,15 @@ export default function StudentHubScreen({ navigation }) {
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.cardHeaderRow}>
             <View style={styles.cardTitleContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color={colors.text} />
-              <Text style={[styles.cardTitle, { color: colors.text }]}>Early Grade Access</Text>
+              <Ionicons name="stats-chart-outline" size={20} color={colors.text} />
+              <Text style={[styles.cardTitle, { color: colors.text }]}>My Evaluation Progress</Text>
             </View>
-            <TouchableOpacity style={styles.lockedButton} disabled>
-              <Ionicons name="lock-closed-outline" size={14} color={colors.textSecondary} style={{marginRight: 4}} />
-              <Text style={[styles.lockedButtonText, { color: colors.textSecondary }]}>Locked</Text>
-            </TouchableOpacity>
           </View>
           
           <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>
             {!user 
-              ? "Sign in to view your progress toward early grade access!" 
-              : "You need to evaluate 100% of your modules to unlock early grade access. Evaluate 100% of your active modules to unlock your grades before the official release date!"}
+              ? "Sign in to view your module evaluation progress!" 
+              : "Complete your module evaluations to help improve the university. Every voice matters!"}
           </Text>
 
           {/* Progress Bar */}
