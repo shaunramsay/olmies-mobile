@@ -184,11 +184,11 @@ export default function CampusMapScreen() {
             style={styles.map} 
             ref={mapRef}
             initialRegion={mapRegion}
-            showsUserLocation={true}
+            showsUserLocation={false}
             showsPointsOfInterest={false}
             showsBuildings={false}
             userInterfaceStyle="light"
-            mapType="standard"
+            mapType="none"
             onPress={(e) => {
               // Mitigation: Deselect the highlighted pin if the user legitimately taps the empty grass on the map
               if(e.nativeEvent.action !== 'marker-press') setSelectedPoi(null);
@@ -198,7 +198,7 @@ export default function CampusMapScreen() {
               urlTemplate="https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
               maximumZ={19}
               flipY={false}
-              zIndex={-1}
+              zIndex={1}
             />
             {filteredPois.map(poi => (
               <Marker
@@ -353,16 +353,11 @@ const styles = StyleSheet.create({
   mapContainer: {
     flex: 1,
     position: 'relative',
-    borderRadius: 16,
-    overflow: 'hidden',
-    marginHorizontal: 15,
-    marginBottom: 15,
     borderWidth: 1,
     borderColor: '#333',
   },
   map: {
-    width: '100%',
-    height: '100%',
+    ...StyleSheet.absoluteFillObject,
   },
   poiCardFloating: {
     position: 'absolute',
