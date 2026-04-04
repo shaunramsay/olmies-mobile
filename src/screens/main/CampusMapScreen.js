@@ -31,11 +31,10 @@ export default function CampusMapScreen() {
     // Animate map to point
     if (mapRef.current) {
       const coords = getCoordinates(poi.coordinateX, poi.coordinateY);
-      mapRef.current.animateToRegion({
-        ...coords,
-        latitudeDelta: 0.002,
-        longitudeDelta: 0.002,
-      }, 1000);
+      mapRef.current.animateCamera({
+        center: coords,
+        // Removed the aggressive latitudeDelta forcing to naturally preserve the user's preferred zoom
+      }, { duration: 1000 });
     }
   };
 
@@ -108,7 +107,8 @@ export default function CampusMapScreen() {
   const safeSearch = searchQuery.trim().toLowerCase();
   const filteredPois = pois.filter(poi => 
     poi.name.toLowerCase().includes(safeSearch) || 
-    (poi.description && poi.description.toLowerCase().includes(safeSearch))
+    (poi.description && poi.description.toLowerCase().includes(safeSearch)) ||
+    (poi.associatedRooms && poi.associatedRooms.toLowerCase().includes(safeSearch))
   );
 
   return (
@@ -153,7 +153,13 @@ export default function CampusMapScreen() {
                   <Ionicons name={getCategoryIcon(item.category)} size={18} color={getCategoryColor(item.category)} />
                   <View style={styles.searchResultTextContainer}>
                     <Text style={styles.searchResultName}>{item.name}</Text>
-                    {item.description && <Text numberOfLines={1} style={styles.searchResultDesc}>{item.description}</Text>}
+                    {item.associatedRooms && safeSearch.length > 0 && item.associatedRooms.toLowerCase().includes(safeSearch) ? (
+                      <Text numberOfLines={1} style={[styles.searchResultDesc, { color: '#4CAF50', fontWeight: '500' }]}>
+                        Contains Room: {safeSearch.toUpperCase()}
+                      </Text>
+                    ) : (
+                      item.description && <Text numberOfLines={1} style={styles.searchResultDesc}>{item.description}</Text>
+                    )}
                   </View>
                 </TouchableOpacity>
               )}
