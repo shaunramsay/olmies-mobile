@@ -41,8 +41,8 @@ export default function CampusMapScreen() {
 
   // UTech Jamaica Center Coordinates
   const mapRegion = {
-    latitude: 18.0167736,
-    longitude: -76.7464894,
+    latitude: 18.0180,
+    longitude: -76.7440,
     latitudeDelta: 0.005,
     longitudeDelta: 0.005,
   };
