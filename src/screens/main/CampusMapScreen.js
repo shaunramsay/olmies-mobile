@@ -28,21 +28,21 @@ export default function CampusMapScreen() {
     setSearchQuery(''); // Hide dropdown
     setSelectedPoi(poi); // Open popup
     
-    // Animate map to point
+    // Animate map to point safely using 2D Bounding Box Math
     if (mapRef.current) {
       const coords = getCoordinates(poi.coordinateX, poi.coordinateY);
       mapRef.current.animateToRegion({
         ...coords,
-        latitudeDelta: 0.002,
-        longitudeDelta: 0.002,
+        latitudeDelta: 0.005, // Retain exactly the safe un-zoomed campus perimeter scale
+        longitudeDelta: 0.005,
       }, 1000);
     }
   };
 
   // UTech Jamaica Center Coordinates
   const mapRegion = {
-    latitude: 18.0167736,
-    longitude: -76.7464894,
+    latitude: 18.0180,
+    longitude: -76.7440,
     latitudeDelta: 0.005,
     longitudeDelta: 0.005,
   };
@@ -108,7 +108,8 @@ export default function CampusMapScreen() {
   const safeSearch = searchQuery.trim().toLowerCase();
   const filteredPois = pois.filter(poi => 
     poi.name.toLowerCase().includes(safeSearch) || 
-    (poi.description && poi.description.toLowerCase().includes(safeSearch))
+    (poi.description && poi.description.toLowerCase().includes(safeSearch)) ||
+    (poi.associatedRooms && poi.associatedRooms.toLowerCase().includes(safeSearch))
   );
 
   return (
@@ -153,7 +154,13 @@ export default function CampusMapScreen() {
                   <Ionicons name={getCategoryIcon(item.category)} size={18} color={getCategoryColor(item.category)} />
                   <View style={styles.searchResultTextContainer}>
                     <Text style={styles.searchResultName}>{item.name}</Text>
-                    {item.description && <Text numberOfLines={1} style={styles.searchResultDesc}>{item.description}</Text>}
+                    {item.associatedRooms && safeSearch.length > 0 && item.associatedRooms.toLowerCase().includes(safeSearch) ? (
+                      <Text numberOfLines={1} style={[styles.searchResultDesc, { color: '#4CAF50', fontWeight: '500' }]}>
+                        Contains Room: {safeSearch.toUpperCase()}
+                      </Text>
+                    ) : (
+                      item.description && <Text numberOfLines={1} style={styles.searchResultDesc}>{item.description}</Text>
+                    )}
                   </View>
                 </TouchableOpacity>
               )}
@@ -184,11 +191,11 @@ export default function CampusMapScreen() {
             style={styles.map} 
             ref={mapRef}
             initialRegion={mapRegion}
-            showsUserLocation={true}
+            showsUserLocation={false}
             showsPointsOfInterest={false}
             showsBuildings={false}
             userInterfaceStyle="light"
-            mapType="standard"
+            mapType="none"
             onPress={(e) => {
               // Mitigation: Deselect the highlighted pin if the user legitimately taps the empty grass on the map
               if(e.nativeEvent.action !== 'marker-press') setSelectedPoi(null);
@@ -198,7 +205,7 @@ export default function CampusMapScreen() {
               urlTemplate="https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
               maximumZ={19}
               flipY={false}
-              zIndex={-1}
+              zIndex={1}
             />
             {filteredPois.map(poi => (
               <Marker
@@ -353,16 +360,11 @@ const styles = StyleSheet.create({
   mapContainer: {
     flex: 1,
     position: 'relative',
-    borderRadius: 16,
-    overflow: 'hidden',
-    marginHorizontal: 15,
-    marginBottom: 15,
     borderWidth: 1,
     borderColor: '#333',
   },
   map: {
-    width: '100%',
-    height: '100%',
+    ...StyleSheet.absoluteFillObject,
   },
   poiCardFloating: {
     position: 'absolute',
