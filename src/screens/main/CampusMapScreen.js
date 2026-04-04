@@ -28,13 +28,14 @@ export default function CampusMapScreen() {
     setSearchQuery(''); // Hide dropdown
     setSelectedPoi(poi); // Open popup
     
-    // Animate map to point
+    // Animate map to point safely using 2D Bounding Box Math
     if (mapRef.current) {
       const coords = getCoordinates(poi.coordinateX, poi.coordinateY);
-      mapRef.current.animateCamera({
-        center: coords,
-        // Removed the aggressive latitudeDelta forcing to naturally preserve the user's preferred zoom
-      }, { duration: 1000 });
+      mapRef.current.animateToRegion({
+        ...coords,
+        latitudeDelta: 0.005, // Retain exactly the safe un-zoomed campus perimeter scale
+        longitudeDelta: 0.005,
+      }, 1000);
     }
   };
 
