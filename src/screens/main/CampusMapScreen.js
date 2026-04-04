@@ -207,7 +207,12 @@ export default function CampusMapScreen() {
               flipY={false}
               zIndex={1}
             />
-            {filteredPois.map(poi => (
+            {filteredPois.filter(poi => {
+              // Hide all pins by default unless we are searching or have selected one
+              if (selectedPoi && selectedPoi.id === poi.id) return true;
+              if (searchQuery.length > 0) return true;
+              return false;
+            }).map(poi => (
               <Marker
                 key={poi.id}
                 coordinate={getCoordinates(poi.coordinateX, poi.coordinateY)}
