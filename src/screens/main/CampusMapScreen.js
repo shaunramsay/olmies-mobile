@@ -105,11 +105,13 @@ export default function CampusMapScreen() {
     fetchPois();
   }, []);
 
-  const safeSearch = searchQuery.trim().toLowerCase();
+  const safeSearch = searchQuery.trim().toLowerCase().replace(/[\s-]/g, '');
+  const isMatch = (text) => text && text.toLowerCase().replace(/[\s-]/g, '').includes(safeSearch);
+  
   const filteredPois = pois.filter(poi => 
-    poi.name.toLowerCase().includes(safeSearch) || 
-    (poi.description && poi.description.toLowerCase().includes(safeSearch)) ||
-    (poi.associatedRooms && poi.associatedRooms.toLowerCase().includes(safeSearch))
+    isMatch(poi.name) || 
+    isMatch(poi.description) ||
+    isMatch(poi.associatedRooms)
   );
 
   return (
@@ -154,9 +156,9 @@ export default function CampusMapScreen() {
                   <Ionicons name={getCategoryIcon(item.category)} size={18} color={getCategoryColor(item.category)} />
                   <View style={styles.searchResultTextContainer}>
                     <Text style={styles.searchResultName}>{item.name}</Text>
-                    {item.associatedRooms && safeSearch.length > 0 && item.associatedRooms.toLowerCase().includes(safeSearch) ? (
+                    {item.associatedRooms && safeSearch.length > 0 && isMatch(item.associatedRooms) ? (
                       <Text numberOfLines={1} style={[styles.searchResultDesc, { color: '#4CAF50', fontWeight: '500' }]}>
-                        Contains Room: {safeSearch.toUpperCase()}
+                        Contains Room: {searchQuery.toUpperCase()}
                       </Text>
                     ) : (
                       item.description && <Text numberOfLines={1} style={styles.searchResultDesc}>{item.description}</Text>
@@ -207,12 +209,7 @@ export default function CampusMapScreen() {
               flipY={false}
               zIndex={1}
             />
-            {filteredPois.filter(poi => {
-              // Hide all pins by default unless we are searching or have selected one
-              if (selectedPoi && selectedPoi.id === poi.id) return true;
-              if (searchQuery.length > 0) return true;
-              return false;
-            }).map(poi => (
+            {filteredPois.map(poi => (
               <Marker
                 key={poi.id}
                 coordinate={getCoordinates(poi.coordinateX, poi.coordinateY)}
