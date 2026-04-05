@@ -64,14 +64,14 @@ export default function CampusMapScreen() {
 
   const getCategoryColor = (category) => {
     switch(category) {
-      case 'Building': return '#8A2BE2';
-      case 'Vendor': return '#f06292';
-      case 'Office': return '#4CAF50';
-      case 'Restroom': return '#03A9F4';
-      case 'LectureTheatre': return '#FF9800';
-      case 'Lab': return '#00BCD4';
-      case 'FoodZone': return '#E91E63';
-      default: return '#9E9E9E';
+      case 'Building': return 'purple';
+      case 'Vendor': return 'plum';
+      case 'Office': return 'green';
+      case 'Restroom': return 'turquoise';
+      case 'LectureTheatre': return 'orange';
+      case 'Lab': return 'blue';
+      case 'FoodZone': return 'tomato';
+      default: return 'linen';
     }
   };
 
@@ -209,13 +209,18 @@ export default function CampusMapScreen() {
               flipY={false}
               zIndex={1}
             />
-            {filteredPois.map(poi => (
+            {filteredPois.filter(poi => {
+              // Hide all pins by default unless we are searching or have selected one
+              if (selectedPoi && selectedPoi.id === poi.id) return true;
+              if (searchQuery.length > 0) return true;
+              return false;
+            }).map(poi => (
               <Marker
                 key={poi.id}
                 coordinate={getCoordinates(poi.coordinateX, poi.coordinateY)}
                 title={poi.name}
                 description={poi.description}
-                pinColor={selectedPoi && selectedPoi.id === poi.id ? '#FFEA00' : getCategoryColor(poi.category)}
+                pinColor={selectedPoi && selectedPoi.id === poi.id ? 'yellow' : getCategoryColor(poi.category)}
                 onPress={() => setSelectedPoi(poi)}
                 zIndex={selectedPoi && selectedPoi.id === poi.id ? 100 : 1}
               />
