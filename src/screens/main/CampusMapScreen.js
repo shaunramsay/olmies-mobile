@@ -213,7 +213,7 @@ export default function CampusMapScreen() {
                 coordinate={getCoordinates(poi.coordinateX, poi.coordinateY)}
                 title={poi.name}
                 description={poi.description}
-                pinColor={getCategoryColor(poi.category)}
+                tracksViewChanges={false}
                 onPress={() => setSelectedPoi(poi)}
               />
             ))}
