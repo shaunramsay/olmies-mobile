@@ -213,7 +213,6 @@ export default function CampusMapScreen() {
                 coordinate={getCoordinates(poi.coordinateX, poi.coordinateY)}
                 title={poi.name}
                 description={poi.description}
-                tracksViewChanges={false}
                 onPress={() => setSelectedPoi(poi)}
               />
             ))}
@@ -226,7 +225,6 @@ export default function CampusMapScreen() {
                 description={selectedPoi.description}
                 pinColor="blue"
                 zIndex={100}
-                tracksViewChanges={false}
                 onPress={() => setSelectedPoi(selectedPoi)}
               />
             )}
