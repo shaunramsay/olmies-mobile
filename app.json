@@ -41,6 +41,14 @@
     },
     "updates": {
       "url": "https://u.expo.dev/8d9e9c78-a53b-4fbd-ac3f-c876a455b3e0"
-    }
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow OLMIES to securely use your location to place your position dynamically on the physical campus map."
+        }
+      ]
+    ]
   }
 }

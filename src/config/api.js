@@ -11,6 +11,6 @@ const defaultApiUrl = (Platform.OS === 'web' || !CLOUD_WIFI_IP)
     ? 'http://localhost:5000' 
     : `http://${CLOUD_WIFI_IP}:5000`;
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || defaultApiUrl;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://olmies-ai-production.up.railway.app';
 
 export default API_BASE_URL;

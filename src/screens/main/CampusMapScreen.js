@@ -14,6 +14,7 @@ if (Platform.OS !== 'web') {
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../context/ThemeContext';
+import * as Location from 'expo-location';
 
 export default function CampusMapScreen() {
   const { user, fetchWithAuth, logout } = useAuth();
@@ -22,7 +23,9 @@ export default function CampusMapScreen() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPoi, setSelectedPoi] = useState(null);
+  const [hasLocationPermission, setHasLocationPermission] = useState(false);
   const mapRef = useRef(null);
+  const selectedMarkerRef = useRef(null);
 
   const handleSelectSearchResult = (poi) => {
     setSearchQuery(''); // Hide dropdown
@@ -31,11 +34,21 @@ export default function CampusMapScreen() {
     // Animate map to point safely using 2D Bounding Box Math
     if (mapRef.current) {
       const coords = getCoordinates(poi.coordinateX, poi.coordinateY);
-      mapRef.current.animateToRegion({
-        ...coords,
-        latitudeDelta: 0.005, // Retain exactly the safe un-zoomed campus perimeter scale
-        longitudeDelta: 0.005,
-      }, 1000);
+      // Wait roughly 450ms for React Native DOM AND CartoDB Tile shards to fully download/draw before violent Android Camera panning locks the thread!
+      setTimeout(() => {
+        mapRef.current.animateToRegion({
+          ...coords,
+          latitudeDelta: 0.005, 
+          longitudeDelta: 0.005,
+        }, 800);
+      }, 450);
+      
+      // Automatically pop the native Callout Bubble after the camera finishes flying to the location
+      setTimeout(() => {
+        if (selectedMarkerRef.current && selectedMarkerRef.current.showCallout) {
+          selectedMarkerRef.current.showCallout();
+        }
+      }, 1200);
     }
   };
 
@@ -47,15 +60,10 @@ export default function CampusMapScreen() {
     longitudeDelta: 0.005,
   };
 
-  // The backend was originally seeded with CoordinateX/Y percentages (40-60). 
-  // However, the new Web Admin Map drops real Lat/Lng GPS coordinates (e.g. Lat: 18.01..., Lng: -76.74...).
-  // This logic dynamically detects real GPS vs legacy percentages.
   const getCoordinates = (x, y) => {
-    // If y looks like a raw Jamaica Latitude (around 18), use it directly.
     if (y > 10 && y < 30) {
       return { latitude: y, longitude: x };
     }
-    // Otherwise fallback to legacy percentage math
     return {
       latitude: 18.0167736 + (y - 50) * 0.00015,
       longitude: -76.7464894 + (x - 50) * 0.00015,
@@ -64,14 +72,14 @@ export default function CampusMapScreen() {
 
   const getCategoryColor = (category) => {
     switch(category) {
-      case 'Building': return 'purple';
+      case 'Building': return 'violet'; // 'purple' string crashes Android natively
       case 'Vendor': return 'plum';
       case 'Office': return 'green';
       case 'Restroom': return 'turquoise';
       case 'LectureTheatre': return 'orange';
       case 'Lab': return 'blue';
       case 'FoodZone': return 'tomato';
-      default: return 'linen';
+      default: return 'red';
     }
   };
 
@@ -102,7 +110,20 @@ export default function CampusMapScreen() {
         setLoading(false);
       }
     };
+    
+    const requestGpsPermissions = async () => {
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          setHasLocationPermission(true);
+        }
+      } catch (error) {
+        console.warn("Failed to request GPS bounds securely:", error);
+      }
+    };
+    
     fetchPois();
+    requestGpsPermissions();
   }, []);
 
   const safeSearch = searchQuery.trim().toLowerCase().replace(/[\s-]/g, '');
@@ -193,13 +214,13 @@ export default function CampusMapScreen() {
             style={styles.map} 
             ref={mapRef}
             initialRegion={mapRegion}
-            showsUserLocation={false}
+            showsUserLocation={hasLocationPermission}
+            showsMyLocationButton={hasLocationPermission}
             showsPointsOfInterest={false}
             showsBuildings={false}
             userInterfaceStyle="light"
             mapType="none"
             onPress={(e) => {
-              // Mitigation: Deselect the highlighted pin if the user legitimately taps the empty grass on the map
               if(e.nativeEvent.action !== 'marker-press') setSelectedPoi(null);
             }}
           >
@@ -207,24 +228,31 @@ export default function CampusMapScreen() {
               urlTemplate="https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
               maximumZ={19}
               flipY={false}
-              zIndex={1}
+              zIndex={-1}
             />
-            {filteredPois.filter(poi => {
-              // Hide all pins by default unless we are searching or have selected one
-              if (selectedPoi && selectedPoi.id === poi.id) return true;
-              if (searchQuery.length > 0) return true;
-              return false;
-            }).map(poi => (
+            {/* Draw permanently visible dynamic pins natively exclusively if they are not selected */}
+            {filteredPois.filter(p => !selectedPoi || p.id !== selectedPoi.id).map(poi => (
               <Marker
                 key={poi.id}
                 coordinate={getCoordinates(poi.coordinateX, poi.coordinateY)}
                 title={poi.name}
                 description={poi.description}
-                pinColor={selectedPoi && selectedPoi.id === poi.id ? 'yellow' : getCategoryColor(poi.category)}
                 onPress={() => setSelectedPoi(poi)}
-                zIndex={selectedPoi && selectedPoi.id === poi.id ? 100 : 1}
               />
             ))}
+            {/* Decoupled Selected Pin rendered distinctly to brutally override Map engine dropping rules */}
+            {selectedPoi && (
+              <Marker
+                ref={selectedMarkerRef}
+                key={`selected-${selectedPoi.id}`}
+                coordinate={getCoordinates(selectedPoi.coordinateX, selectedPoi.coordinateY)}
+                title={selectedPoi.name}
+                description={selectedPoi.description}
+                pinColor="blue"
+                zIndex={100}
+                onPress={() => setSelectedPoi(selectedPoi)}
+              />
+            )}
           </MapView>
           
           {selectedPoi && (
