@@ -206,8 +206,8 @@ export default function CampusMapScreen() {
               flipY={false}
               zIndex={-1}
             />
-            {/* Draw dynamically searched active pins */}
-            {filteredPois.filter(poi => searchQuery.length > 0).map(poi => (
+            {/* Draw permanently visible dynamic pins */}
+            {filteredPois.map(poi => (
               <Marker
                 key={poi.id}
                 coordinate={getCoordinates(poi.coordinateX, poi.coordinateY)}
