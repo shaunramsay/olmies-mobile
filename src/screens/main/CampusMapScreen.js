@@ -14,6 +14,7 @@ if (Platform.OS !== 'web') {
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../context/ThemeContext';
+import * as Location from 'expo-location';
 
 export default function CampusMapScreen() {
   const { user, fetchWithAuth, logout } = useAuth();
@@ -22,6 +23,7 @@ export default function CampusMapScreen() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPoi, setSelectedPoi] = useState(null);
+  const [hasLocationPermission, setHasLocationPermission] = useState(false);
   const mapRef = useRef(null);
   const selectedMarkerRef = useRef(null);
 
@@ -108,7 +110,20 @@ export default function CampusMapScreen() {
         setLoading(false);
       }
     };
+    
+    const requestGpsPermissions = async () => {
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          setHasLocationPermission(true);
+        }
+      } catch (error) {
+        console.warn("Failed to request GPS bounds securely:", error);
+      }
+    };
+    
     fetchPois();
+    requestGpsPermissions();
   }, []);
 
   const safeSearch = searchQuery.trim().toLowerCase().replace(/[\s-]/g, '');
@@ -199,7 +214,8 @@ export default function CampusMapScreen() {
             style={styles.map} 
             ref={mapRef}
             initialRegion={mapRegion}
-            showsUserLocation={false}
+            showsUserLocation={hasLocationPermission}
+            showsMyLocationButton={hasLocationPermission}
             showsPointsOfInterest={false}
             showsBuildings={false}
             userInterfaceStyle="light"
