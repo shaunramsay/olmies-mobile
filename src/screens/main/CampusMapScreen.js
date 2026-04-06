@@ -255,7 +255,7 @@ export default function CampusMapScreen() {
 
               return (
                 <React.Fragment key={poi.id}>
-                  {parsedPolygon ? (
+                  {parsedPolygon && (
                     <Polygon
                       coordinates={parsedPolygon}
                       strokeColor="#8A2BE2"
@@ -265,14 +265,13 @@ export default function CampusMapScreen() {
                       tappable={true}
                       onPress={() => setSelectedPoi(poi)}
                     />
-                  ) : (
-                    <Marker
-                      coordinate={getCoordinates(poi.coordinateX, poi.coordinateY)}
-                      title={poi.name}
-                      description={poi.description}
-                      onPress={() => setSelectedPoi(poi)}
-                    />
                   )}
+                  <Marker
+                    coordinate={getCoordinates(poi.coordinateX, poi.coordinateY)}
+                    title={poi.name}
+                    description={poi.description}
+                    onPress={() => setSelectedPoi(poi)}
+                  />
                 </React.Fragment>
               );
             })}
@@ -288,28 +287,31 @@ export default function CampusMapScreen() {
                 } catch(e) {}
               }
 
-              return parsedSelectedPolygon ? (
-                <Polygon
-                  key={`selected-polygon-${selectedPoi.id}`}
-                  coordinates={parsedSelectedPolygon}
-                  strokeColor="#66FCF1"
-                  strokeWidth={4}
-                  fillColor="rgba(102, 252, 241, 0.4)"
-                  zIndex={100}
-                  tappable={true}
-                  onPress={() => setSelectedPoi(selectedPoi)}
-                />
-              ) : (
-                <Marker
-                  ref={selectedMarkerRef}
-                  key={`selected-${selectedPoi.id}`}
-                  coordinate={getCoordinates(selectedPoi.coordinateX, selectedPoi.coordinateY)}
-                  title={selectedPoi.name}
-                  description={selectedPoi.description}
-                  pinColor="blue"
-                  zIndex={100}
-                  onPress={() => setSelectedPoi(selectedPoi)}
-                />
+              return (
+                <React.Fragment key={`selected-fragment-${selectedPoi.id}`}>
+                  {parsedSelectedPolygon && (
+                    <Polygon
+                      key={`selected-polygon-${selectedPoi.id}`}
+                      coordinates={parsedSelectedPolygon}
+                      strokeColor="#66FCF1"
+                      strokeWidth={4}
+                      fillColor="rgba(102, 252, 241, 0.4)"
+                      zIndex={100}
+                      tappable={true}
+                      onPress={() => setSelectedPoi(selectedPoi)}
+                    />
+                  )}
+                  <Marker
+                    ref={selectedMarkerRef}
+                    key={`selected-${selectedPoi.id}`}
+                    coordinate={getCoordinates(selectedPoi.coordinateX, selectedPoi.coordinateY)}
+                    title={selectedPoi.name}
+                    description={selectedPoi.description}
+                    pinColor="blue"
+                    zIndex={100}
+                    onPress={() => setSelectedPoi(selectedPoi)}
+                  />
+                </React.Fragment>
               );
             })()}
           </MapView>
