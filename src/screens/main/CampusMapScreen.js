@@ -242,28 +242,75 @@ export default function CampusMapScreen() {
             />
             
             {/* Draw permanently visible dynamic pins natively exclusively if they are not selected */}
-            {filteredPois.filter(p => !selectedPoi || p.id !== selectedPoi.id).map(poi => (
-              <Marker
-                key={poi.id}
-                coordinate={getCoordinates(poi.coordinateX, poi.coordinateY)}
-                title={poi.name}
-                description={poi.description}
-                onPress={() => setSelectedPoi(poi)}
-              />
-            ))}
+            {filteredPois.filter(p => !selectedPoi || p.id !== selectedPoi.id).map(poi => {
+              let parsedPolygon = null;
+              if (poi.polygonCoordinates && poi.polygonCoordinates.startsWith('[')) {
+                try {
+                  const arr = JSON.parse(poi.polygonCoordinates);
+                  if (arr && arr.length > 2) {
+                    parsedPolygon = arr.map(coord => ({ latitude: coord[0], longitude: coord[1] }));
+                  }
+                } catch(e) {}
+              }
+
+              return (
+                <React.Fragment key={poi.id}>
+                  {parsedPolygon ? (
+                    <Polygon
+                      coordinates={parsedPolygon}
+                      strokeColor="#8A2BE2"
+                      strokeWidth={3}
+                      fillColor="rgba(138, 43, 226, 0.2)"
+                      tappable={true}
+                      onPress={() => setSelectedPoi(poi)}
+                    />
+                  ) : (
+                    <Marker
+                      coordinate={getCoordinates(poi.coordinateX, poi.coordinateY)}
+                      title={poi.name}
+                      description={poi.description}
+                      onPress={() => setSelectedPoi(poi)}
+                    />
+                  )}
+                </React.Fragment>
+              );
+            })}
             {/* Decoupled Selected Pin rendered distinctly to brutally override Map engine dropping rules */}
-            {selectedPoi && (
-              <Marker
-                ref={selectedMarkerRef}
-                key={`selected-${selectedPoi.id}`}
-                coordinate={getCoordinates(selectedPoi.coordinateX, selectedPoi.coordinateY)}
-                title={selectedPoi.name}
-                description={selectedPoi.description}
-                pinColor="blue"
-                zIndex={100}
-                onPress={() => setSelectedPoi(selectedPoi)}
-              />
-            )}
+            {selectedPoi && (() => {
+              let parsedSelectedPolygon = null;
+              if (selectedPoi.polygonCoordinates && selectedPoi.polygonCoordinates.startsWith('[')) {
+                try {
+                  const arr = JSON.parse(selectedPoi.polygonCoordinates);
+                  if (arr && arr.length > 2) {
+                    parsedSelectedPolygon = arr.map(coord => ({ latitude: coord[0], longitude: coord[1] }));
+                  }
+                } catch(e) {}
+              }
+
+              return parsedSelectedPolygon ? (
+                <Polygon
+                  key={`selected-polygon-${selectedPoi.id}`}
+                  coordinates={parsedSelectedPolygon}
+                  strokeColor="#66FCF1"
+                  strokeWidth={4}
+                  fillColor="rgba(102, 252, 241, 0.4)"
+                  zIndex={100}
+                  tappable={true}
+                  onPress={() => setSelectedPoi(selectedPoi)}
+                />
+              ) : (
+                <Marker
+                  ref={selectedMarkerRef}
+                  key={`selected-${selectedPoi.id}`}
+                  coordinate={getCoordinates(selectedPoi.coordinateX, selectedPoi.coordinateY)}
+                  title={selectedPoi.name}
+                  description={selectedPoi.description}
+                  pinColor="blue"
+                  zIndex={100}
+                  onPress={() => setSelectedPoi(selectedPoi)}
+                />
+              );
+            })()}
           </MapView>
           
           {selectedPoi && (
