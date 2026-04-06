@@ -23,6 +23,7 @@ export default function CampusMapScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPoi, setSelectedPoi] = useState(null);
   const mapRef = useRef(null);
+  const selectedMarkerRef = useRef(null);
 
   const handleSelectSearchResult = (poi) => {
     setSearchQuery(''); // Hide dropdown
@@ -39,6 +40,13 @@ export default function CampusMapScreen() {
           longitudeDelta: 0.005,
         }, 800);
       }, 450);
+      
+      // Automatically pop the native Callout Bubble after the camera finishes flying to the location
+      setTimeout(() => {
+        if (selectedMarkerRef.current && selectedMarkerRef.current.showCallout) {
+          selectedMarkerRef.current.showCallout();
+        }
+      }, 1200);
     }
   };
 
@@ -206,8 +214,8 @@ export default function CampusMapScreen() {
               flipY={false}
               zIndex={-1}
             />
-            {/* Draw permanently visible dynamic pins */}
-            {filteredPois.map(poi => (
+            {/* Draw permanently visible dynamic pins natively exclusively if they are not selected */}
+            {filteredPois.filter(p => !selectedPoi || p.id !== selectedPoi.id).map(poi => (
               <Marker
                 key={poi.id}
                 coordinate={getCoordinates(poi.coordinateX, poi.coordinateY)}
@@ -219,6 +227,7 @@ export default function CampusMapScreen() {
             {/* Decoupled Selected Pin rendered distinctly to brutally override Map engine dropping rules */}
             {selectedPoi && (
               <Marker
+                ref={selectedMarkerRef}
                 key={`selected-${selectedPoi.id}`}
                 coordinate={getCoordinates(selectedPoi.coordinateX, selectedPoi.coordinateY)}
                 title={selectedPoi.name}
