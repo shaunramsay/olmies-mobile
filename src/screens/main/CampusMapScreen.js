@@ -261,6 +261,7 @@ export default function CampusMapScreen() {
                       strokeColor="#8A2BE2"
                       strokeWidth={3}
                       fillColor="rgba(138, 43, 226, 0.2)"
+                      zIndex={50}
                       tappable={true}
                       onPress={() => setSelectedPoi(poi)}
                     />
