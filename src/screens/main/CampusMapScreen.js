@@ -241,15 +241,6 @@ export default function CampusMapScreen() {
               zIndex={-1}
             />
             
-            {/* Geometric Digital Fence outlining explicitly where the university territory resides */}
-            <Polygon
-              coordinates={UTECH_BOUNDARY_COORDS}
-              strokeColor="#8A2BE2"
-              strokeWidth={3}
-              fillColor="transparent"
-              zIndex={50}
-            />
-            
             {/* Draw permanently visible dynamic pins natively exclusively if they are not selected */}
             {filteredPois.filter(p => !selectedPoi || p.id !== selectedPoi.id).map(poi => (
               <Marker
