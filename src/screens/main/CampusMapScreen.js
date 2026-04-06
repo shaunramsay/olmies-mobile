@@ -3,13 +3,14 @@ import { View, Text, StyleSheet, SafeAreaView, TextInput, ActivityIndicator, Fla
 import Constants from 'expo-constants';
 
 // Dynamically import MapView to prevent web bundler from crashing
-let MapView, Marker, Callout, UrlTile;
+let MapView, Marker, Callout, UrlTile, Polygon;
 if (Platform.OS !== 'web') {
   const Maps = require('react-native-maps');
   MapView = Maps.default;
   Marker = Maps.Marker;
   Callout = Maps.Callout;
   UrlTile = Maps.UrlTile;
+  Polygon = Maps.Polygon;
 }
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
@@ -69,6 +70,15 @@ export default function CampusMapScreen() {
       longitude: -76.7464894 + (x - 50) * 0.00015,
     };
   };
+
+  // Explicit Geometric GPS mapping representing the exact parameter walls framing the University Campus.
+  const UTECH_BOUNDARY_COORDS = [
+    { latitude: 18.0210, longitude: -76.7475 }, // North-West (Papine Road edge)
+    { latitude: 18.0210, longitude: -76.7380 }, // North-East (Hope River edge)
+    { latitude: 18.0140, longitude: -76.7380 }, // South-East (Eastern flank)
+    { latitude: 18.0125, longitude: -76.7440 }, // South (Old Hope Road bend)
+    { latitude: 18.0125, longitude: -76.7485 }, // South-West (Hospital flank)
+  ];
 
   const getCategoryColor = (category) => {
     switch(category) {
@@ -230,6 +240,16 @@ export default function CampusMapScreen() {
               flipY={false}
               zIndex={-1}
             />
+            
+            {/* Geometric Digital Fence outlining explicitly where the university territory resides */}
+            <Polygon
+              coordinates={UTECH_BOUNDARY_COORDS}
+              strokeColor="#8A2BE2"
+              strokeWidth={3}
+              fillColor="transparent"
+              zIndex={50}
+            />
+            
             {/* Draw permanently visible dynamic pins natively exclusively if they are not selected */}
             {filteredPois.filter(p => !selectedPoi || p.id !== selectedPoi.id).map(poi => (
               <Marker
