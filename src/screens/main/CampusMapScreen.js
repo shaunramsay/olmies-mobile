@@ -62,14 +62,14 @@ export default function CampusMapScreen() {
 
   const getCategoryColor = (category) => {
     switch(category) {
-      case 'Building': return 'purple';
+      case 'Building': return 'violet'; // 'purple' string crashes Android natively
       case 'Vendor': return 'plum';
       case 'Office': return 'green';
       case 'Restroom': return 'turquoise';
       case 'LectureTheatre': return 'orange';
       case 'Lab': return 'blue';
       case 'FoodZone': return 'tomato';
-      default: return 'linen';
+      default: return 'red';
     }
   };
 
