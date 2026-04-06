@@ -31,14 +31,14 @@ export default function CampusMapScreen() {
     // Animate map to point safely using 2D Bounding Box Math
     if (mapRef.current) {
       const coords = getCoordinates(poi.coordinateX, poi.coordinateY);
-      // Wait 150ms for React Native DOM to draw the Marker before violent Android Camera panning blocks the thread!
+      // Wait roughly 450ms for React Native DOM AND CartoDB Tile shards to fully download/draw before violent Android Camera panning locks the thread!
       setTimeout(() => {
         mapRef.current.animateToRegion({
           ...coords,
           latitudeDelta: 0.005, 
           longitudeDelta: 0.005,
         }, 800);
-      }, 150);
+      }, 450);
     }
   };
 
@@ -204,7 +204,7 @@ export default function CampusMapScreen() {
               urlTemplate="https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
               maximumZ={19}
               flipY={false}
-              zIndex={1}
+              zIndex={-1}
             />
             {/* Draw dynamically searched active pins */}
             {filteredPois.filter(poi => searchQuery.length > 0).map(poi => (
@@ -226,6 +226,7 @@ export default function CampusMapScreen() {
                 description={selectedPoi.description}
                 pinColor="blue"
                 zIndex={100}
+                tracksViewChanges={false}
                 onPress={() => setSelectedPoi(selectedPoi)}
               />
             )}
