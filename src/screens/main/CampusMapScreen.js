@@ -27,9 +27,17 @@ export default function CampusMapScreen() {
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
   const mapRef = useRef(null);
   const selectedMarkerRef = useRef(null);
+  const lastSearchSelectionRef = useRef(0);
 
   const handleSelectSearchResult = (poi) => {
-    setSearchQuery(''); // Hide dropdown
+    lastSearchSelectionRef.current = Date.now(); // Absolute Global Temporal Map Shield! 
+
+    // Delay the unmounting of the search dropdown to absorb the raw physical TouchEnd event
+    setTimeout(() => {
+      setSearchQuery(''); 
+      import('react-native').then(rn => rn.Keyboard.dismiss());
+    }, 250);
+    
     setSelectedPoi(poi); // Open popup
     
     // Animate map to point safely using 2D Bounding Box Math
@@ -172,37 +180,14 @@ export default function CampusMapScreen() {
             placeholderTextColor="#888"
             value={searchQuery}
             onChangeText={setSearchQuery}
+            returnKeyType="search"
+            onSubmitEditing={() => {
+               if (filteredPois.length > 0) {
+                  handleSelectSearchResult(filteredPois[0]);
+               }
+            }}
           />
         </View>
-
-        {searchQuery.length > 0 && (
-          <View style={styles.searchDropdown}>
-            <FlatList
-              data={filteredPois}
-              keyExtractor={item => item.id.toString()}
-              keyboardShouldPersistTaps="handled"
-              style={{ maxHeight: 250 }}
-              renderItem={({ item }) => (
-                <TouchableOpacity style={styles.searchResultItem} onPress={() => handleSelectSearchResult(item)}>
-                  <Ionicons name={getCategoryIcon(item.category)} size={18} color={getCategoryColor(item.category)} />
-                  <View style={styles.searchResultTextContainer}>
-                    <Text style={styles.searchResultName}>{item.name}</Text>
-                    {item.associatedRooms && safeSearch.length > 0 && isMatch(item.associatedRooms) ? (
-                      <Text numberOfLines={1} style={[styles.searchResultDesc, { color: '#4CAF50', fontWeight: '500' }]}>
-                        Contains Room: {searchQuery.toUpperCase()}
-                      </Text>
-                    ) : (
-                      item.description && <Text numberOfLines={1} style={styles.searchResultDesc}>{item.description}</Text>
-                    )}
-                  </View>
-                </TouchableOpacity>
-              )}
-              ListEmptyComponent={
-                <Text style={styles.noResultsText}>No locations found matching "{searchQuery}"</Text>
-              }
-            />
-          </View>
-        )}
       </View>
 
       {loading ? (
@@ -231,14 +216,20 @@ export default function CampusMapScreen() {
             userInterfaceStyle="light"
             mapType="none"
             onPress={(e) => {
-              if(e.nativeEvent.action !== 'marker-press') setSelectedPoi(null);
+              // Imperenetrable Temporal Shield: Absolutely block ALL phantom taps bleeding through unmounting DOM nodes!
+              if (Date.now() - lastSearchSelectionRef.current < 1500) return;
+              
+              // Ensure we only dismiss if the user actually clicked the map deliberately
+              if(e.nativeEvent.coordinate && e.nativeEvent.action !== 'marker-press') {
+                setSelectedPoi(null);
+              }
             }}
           >
             <UrlTile
               urlTemplate="https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
               maximumZ={19}
               flipY={false}
-              zIndex={-1}
+              zIndex={0} // Ensure tiles render exactly on the base layer, natively preventing OpenGL canvas truncation!
             />
             
             {/* Draw permanently visible dynamic pins natively exclusively if they are not selected */}
@@ -309,6 +300,7 @@ export default function CampusMapScreen() {
                     description={selectedPoi.description}
                     pinColor="blue"
                     zIndex={100}
+                    tracksViewChanges={false}
                     onPress={() => setSelectedPoi(selectedPoi)}
                   />
                 </React.Fragment>
@@ -317,7 +309,7 @@ export default function CampusMapScreen() {
           </MapView>
           
           {selectedPoi && (
-            <View style={styles.poiCardFloating}>
+            <TouchableOpacity activeOpacity={1} style={styles.poiCardFloating}>
               <View style={styles.poiHeader}>
                 <Ionicons 
                   name={getCategoryIcon(selectedPoi.category)} 
@@ -327,8 +319,38 @@ export default function CampusMapScreen() {
                 <Text style={styles.poiName}>{selectedPoi.name}</Text>
               </View>
               <Text style={styles.poiDesc}>{selectedPoi.description}</Text>
+            </TouchableOpacity>
+          )}
+
+          {searchQuery.length > 0 && (
+            <View style={[styles.searchDropdown, { top: 0, zIndex: 900 }]}>
+              <FlatList
+                data={filteredPois}
+                keyExtractor={item => item.id.toString()}
+                keyboardShouldPersistTaps="always"
+                style={{ maxHeight: 250 }}
+                renderItem={({ item }) => (
+                  <TouchableOpacity style={styles.searchResultItem} onPress={() => handleSelectSearchResult(item)}>
+                    <Ionicons name={getCategoryIcon(item.category)} size={18} color={getCategoryColor(item.category)} />
+                    <View style={styles.searchResultTextContainer}>
+                      <Text style={styles.searchResultName}>{item.name}</Text>
+                      {item.associatedRooms && safeSearch.length > 0 && isMatch(item.associatedRooms) ? (
+                        <Text numberOfLines={1} style={[styles.searchResultDesc, { color: '#4CAF50', fontWeight: '500' }]}>
+                          Contains Room: {searchQuery.toUpperCase()}
+                        </Text>
+                      ) : (
+                        item.description && <Text numberOfLines={1} style={styles.searchResultDesc}>{item.description}</Text>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                )}
+                ListEmptyComponent={
+                  <Text style={styles.noResultsText}>No locations found matching "{searchQuery}"</Text>
+                }
+              />
             </View>
           )}
+
         </View>
       )}
     </SafeAreaView>
