@@ -1,0 +1,86 @@
+[
+  {
+    "id": "0e04f878-0154-416e-a553-65881c3a5c7b",
+    "name": "Island Grill",
+    "description": "Authentic jerk chicken and festival.",
+    "category": 1,
+    "coordinateX": -76.7443,
+    "coordinateY": 18.0177,
+    "isActive": true,
+    "associatedRooms": null,
+    "polygonCoordinates": null,
+    "attachedPromotionId": null
+  },
+  {
+    "id": "3107ee2e-557a-48e8-8dbe-be1bb622cfe4",
+    "name": "Calvin McKain Library",
+    "description": "Main university library with quiet study zones.",
+    "category": 0,
+    "coordinateX": -76.7445,
+    "coordinateY": 18.0182,
+    "isActive": true,
+    "associatedRooms": "Quiet Room A, Quiet Room B, IT Helpdesk",
+    "polygonCoordinates": null,
+    "attachedPromotionId": null
+  },
+  {
+    "id": "6a31b5f5-59ba-469f-a45b-154e7b270105",
+    "name": "FOBM (Faculty of Business and Management)",
+    "description": "Main lecture theaters for Business students.",
+    "category": 0,
+    "coordinateX": -76.745,
+    "coordinateY": 18.017,
+    "isActive": true,
+    "associatedRooms": "LT-1, LT-2",
+    "polygonCoordinates": null,
+    "attachedPromotionId": null
+  },
+  {
+    "id": "6f112429-8a05-4d49-a455-3d4208b5de18",
+    "name": "FOSS (Faculty of Science and Sport)",
+    "description": "Biology, Chemistry, and Physics laboratories.",
+    "category": 0,
+    "coordinateX": -76.743,
+    "coordinateY": 18.0185,
+    "isActive": true,
+    "associatedRooms": "Lab 1, Lab 2, Prep Area",
+    "polygonCoordinates": null,
+    "attachedPromotionId": null
+  },
+  {
+    "id": "81b671d8-d0c3-4092-b246-905ec07ffba2",
+    "name": "Shared Facilities",
+    "description": "Main computing labs and lecture theaters.",
+    "category": 0,
+    "coordinateX": -76.7455,
+    "coordinateY": 18.0165,
+    "isActive": true,
+    "associatedRooms": "LT-48, LT-49, LT-50, Restroom, Classroom Block",
+    "polygonCoordinates": null,
+    "attachedPromotionId": null
+  },
+  {
+    "id": "a25b0369-ed96-4e12-b580-c693463a2e6c",
+    "name": "Student Union",
+    "description": "Student activity center and meeting spaces.",
+    "category": 0,
+    "coordinateX": -76.744,
+    "coordinateY": 18.0175,
+    "isActive": true,
+    "associatedRooms": "Activity Room, Lounge",
+    "polygonCoordinates": null,
+    "attachedPromotionId": null
+  },
+  {
+    "id": "d53e3995-866d-46ec-9308-0784df714485",
+    "name": "Juici Patties",
+    "description": "Hot Jamaican patties and local meals.",
+    "category": 1,
+    "coordinateX": -76.7442,
+    "coordinateY": 18.0176,
+    "isActive": true,
+    "associatedRooms": null,
+    "polygonCoordinates": null,
+    "attachedPromotionId": null
+  }
+]

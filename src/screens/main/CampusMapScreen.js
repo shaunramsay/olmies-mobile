@@ -229,7 +229,7 @@ export default function CampusMapScreen() {
               urlTemplate="https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
               maximumZ={19}
               flipY={false}
-              zIndex={-1}
+              zIndex={0} // Ensure tiles render exactly on the base layer, natively preventing OpenGL canvas truncation!
             />
             
             {/* Draw permanently visible dynamic pins natively exclusively if they are not selected */}
