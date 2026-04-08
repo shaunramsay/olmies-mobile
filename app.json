@@ -48,7 +48,8 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Allow OLMIES to securely use your location to place your position dynamically on the physical campus map."
         }
-      ]
+      ],
+      "expo-secure-store"
     ]
   }
 }
