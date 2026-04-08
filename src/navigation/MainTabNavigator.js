@@ -32,7 +32,7 @@ export default function MainTabNavigator() {
           paddingBottom: Math.max(10, insets.bottom),
           paddingTop: 10,
         },
-        tabBarActiveTintColor: '#8A2BE2',
+        tabBarActiveTintColor: '#4A90E2',
         tabBarInactiveTintColor: 'gray',
         tabBarLabelStyle: { fontSize: 12, marginTop: 4 },
         tabBarIcon: ({ focused, color, size }) => {
