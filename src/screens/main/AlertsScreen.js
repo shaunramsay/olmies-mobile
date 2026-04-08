@@ -105,7 +105,7 @@ export default function AlertsScreen() {
       <Modal visible={!!selectedAlert} animationType="slide" transparent={true}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            {selectedAlert?.imageUrl && (
+            {selectedAlert?.imageUrl && typeof selectedAlert.imageUrl === 'string' && selectedAlert.imageUrl.trim().length > 5 && selectedAlert.imageUrl !== 'null' && (
               <Image source={{ uri: selectedAlert.imageUrl }} style={styles.modalImage} resizeMode="cover" />
             )}
             <View style={styles.modalTextContainer}>
@@ -224,13 +224,15 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     maxHeight: '85%',
+    flexShrink: 1,
   },
   modalImage: {
     width: '100%',
-    height: 220,
+    height: 180,
   },
   modalTextContainer: {
     padding: 24,
+    flexShrink: 1,
   },
   modalTitle: {
     fontSize: 22,
@@ -244,7 +246,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalMessageBody: {
-    maxHeight: 250,
+    flexShrink: 1,
   },
   modalMessage: {
     fontSize: 16,
