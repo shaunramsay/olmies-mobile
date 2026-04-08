@@ -1,5 +1,4 @@
 import Constants from 'expo-constants';
-
 import { Platform } from 'react-native';
 
 // Dynamically grab the laptop's Wi-Fi IP address automatically assigned by Expo (e.g., 192.168.5.206)
