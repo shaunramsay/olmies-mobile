@@ -192,12 +192,12 @@ export default function CampusMapScreen() {
 
       {loading ? (
         <View style={styles.mapPlaceholder}>
-          <ActivityIndicator size="large" color="#8A2BE2" />
+          <ActivityIndicator size="large" color="#4A90E2" />
           <Text style={styles.mapTitle}>Loading Map Data...</Text>
         </View>
       ) : Platform.OS === 'web' ? (
         <View style={styles.mapPlaceholder}>
-          <Ionicons name="map" size={48} color="#8A2BE2" />
+          <Ionicons name="map" size={48} color="#4A90E2" />
           <Text style={styles.mapTitle}>Map Optimization</Text>
           <Text style={styles.mapSubtitle}>
             The interactive campus map leverages native hardware rendering and is only available on iOS and Android. Please open the Olmies app on your mobile device.
@@ -249,7 +249,7 @@ export default function CampusMapScreen() {
                   {parsedPolygon && (
                     <Polygon
                       coordinates={parsedPolygon}
-                      strokeColor="#8A2BE2"
+                      strokeColor="#4A90E2"
                       strokeWidth={3}
                       fillColor="rgba(138, 43, 226, 0.2)"
                       zIndex={50}
@@ -537,7 +537,7 @@ const styles = StyleSheet.create({
   },
   directionsButton: {
     marginTop: 12,
-    backgroundColor: '#8A2BE2',
+    backgroundColor: '#4A90E2',
     paddingVertical: 10,
     paddingHorizontal: 15,
     borderRadius: 8,

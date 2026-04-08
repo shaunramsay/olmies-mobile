@@ -29,7 +29,7 @@ export default function InsightsScreen() {
                 Sign in with your University credentials to unlock your academic performance insights and sentiment data.
             </Text>
             <TouchableOpacity 
-                style={{ backgroundColor: '#8A2BE2', paddingVertical: 15, paddingHorizontal: 30, borderRadius: 12, flexDirection: 'row', alignItems: 'center' }}
+                style={{ backgroundColor: '#4A90E2', paddingVertical: 15, paddingHorizontal: 30, borderRadius: 12, flexDirection: 'row', alignItems: 'center' }}
                 onPress={() => navigation.navigate('Login')}
             >
                 <Ionicons name="log-in-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
@@ -108,7 +108,7 @@ export default function InsightsScreen() {
 
         {/* Action Call */}
         <View style={styles.actionCard}>
-          <Ionicons name="chatbubbles-outline" size={32} color="#8A2BE2" style={{marginBottom: 10}} />
+          <Ionicons name="chatbubbles-outline" size={32} color="#4A90E2" style={{marginBottom: 10}} />
           <Text style={styles.actionTitle}>Your voice matters</Text>
           <Text style={styles.actionDesc}>
             The insights here are generated from reviews submitted by students like you. Continue to provide honest feedback to improve the campus experience!

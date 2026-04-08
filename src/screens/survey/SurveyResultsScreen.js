@@ -57,7 +57,7 @@ export default function SurveyResultsScreen({ route, navigation }) {
   if (loading) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color="#8A2BE2" />
+        <ActivityIndicator size="large" color="#4A90E2" />
         <Text style={{color: '#888', marginTop: 15}}>Aggregating community responses...</Text>
       </View>
     );
@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
   backButton: { marginRight: 15 },
   headerTextContainer: { flex: 1 },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
-  headerSubtitle: { fontSize: 13, color: '#8A2BE2', marginTop: 2 },
+  headerSubtitle: { fontSize: 13, color: '#4A90E2', marginTop: 2 },
   scrollContent: { padding: 15, paddingBottom: 60 },
   
   statsContainer: {
@@ -200,9 +200,9 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#8A2BE2',
+    borderColor: '#4A90E2',
   },
-  meanBadgeText: { color: '#8A2BE2', fontSize: 12, fontWeight: 'bold' },
+  meanBadgeText: { color: '#4A90E2', fontSize: 12, fontWeight: 'bold' },
 
   chartContainer: {
     marginTop: 5,

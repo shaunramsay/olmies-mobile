@@ -5,7 +5,7 @@ export const darkThemeColors = {
   text: '#ffffff',
   textSecondary: '#aaaaaa',
   border: '#333333',
-  primary: '#8A2BE2', // Purple
+  primary: '#4A90E2', // Purple
   secondary: '#f06292', // Pink
   danger: '#e53935',
   success: '#4caf50',
@@ -19,7 +19,7 @@ export const lightThemeColors = {
   text: '#121212',
   textSecondary: '#555555',
   border: '#e1e4e8',
-  primary: '#8A2BE2', // Same purple for brand
+  primary: '#4A90E2', // Same purple for brand
   secondary: '#f06292', // Same pink for brand
   danger: '#d32f2f',
   success: '#388e3c',

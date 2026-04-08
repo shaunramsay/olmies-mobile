@@ -45,7 +45,7 @@ export default function AlertsScreen() {
   const getIconForType = (type) => {
     switch (type) {
       case 'warning': return { name: 'alert-circle', color: '#ffb74d' };
-      case 'survey': return { name: 'clipboard', color: '#8A2BE2' };
+      case 'survey': return { name: 'clipboard', color: '#4A90E2' };
       default: return { name: 'information-circle', color: '#64b5f6' };
     }
   };
@@ -69,7 +69,7 @@ export default function AlertsScreen() {
       
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {loading ? (
-          <ActivityIndicator size="large" color="#8A2BE2" style={{ marginTop: 40 }} />
+          <ActivityIndicator size="large" color="#4A90E2" style={{ marginTop: 40 }} />
         ) : alerts.length === 0 ? (
           <Text style={{ color: '#888', textAlign: 'center', marginTop: 40 }}>You have no new notifications.</Text>
         ) : (
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#8A2BE2',
+    backgroundColor: '#4A90E2',
     marginLeft: 10,
   },
   modalOverlay: {
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   closeButton: {
-    backgroundColor: '#8A2BE2',
+    backgroundColor: '#4A90E2',
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',

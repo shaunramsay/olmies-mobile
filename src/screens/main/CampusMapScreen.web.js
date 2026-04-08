@@ -23,7 +23,7 @@ export default function CampusMapScreen() {
       </View>
 
       <View style={styles.mapPlaceholder}>
-        <Ionicons name="map" size={48} color="#8A2BE2" />
+        <Ionicons name="map" size={48} color="#4A90E2" />
         <Text style={styles.mapTitle}>Map Optimization</Text>
         <Text style={styles.mapSubtitle}>
           The interactive campus map leverages native hardware rendering and is only available on iOS and Android. Please open the Olmies app on your mobile device.

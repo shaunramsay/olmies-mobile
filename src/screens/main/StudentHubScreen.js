@@ -272,7 +272,7 @@ export default function StudentHubScreen({ navigation }) {
                </View>
             ) : (
                <View style={[styles.modalImage, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
-                  <Ionicons name="pricetag-outline" size={60} color={colors.primary || '#8A2BE2'} />
+                  <Ionicons name="pricetag-outline" size={60} color={colors.primary || '#4A90E2'} />
                </View>
             )}
             <View style={styles.modalTextContainer}>
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#8A2BE2', // Changed from plain to OLMIES purple to pop more than plain grey
+    backgroundColor: '#4A90E2', // Changed from plain to OLMIES purple to pop more than plain grey
   },
   progressTextRow: {
     flexDirection: 'row',
@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   moduleLabel: {
-    color: '#8A2BE2',
+    color: '#4A90E2',
     fontSize: 12,
     fontWeight: 'bold',
     marginBottom: 4,

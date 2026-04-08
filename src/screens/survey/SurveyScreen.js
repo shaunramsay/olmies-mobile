@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 8,
     borderLeftWidth: 4,
-    borderLeftColor: '#8A2BE2',
+    borderLeftColor: '#4A90E2',
     marginBottom: 20,
   },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 8,
   },
-  choiceButtonSelected: { backgroundColor: 'rgba(138, 43, 226, 0.15)', borderColor: '#8A2BE2' },
+  choiceButtonSelected: { backgroundColor: 'rgba(138, 43, 226, 0.15)', borderColor: '#4A90E2' },
   choiceText: { color: '#bbb', fontSize: 14 },
   choiceTextSelected: { color: '#fff', fontWeight: 'bold' },
 
