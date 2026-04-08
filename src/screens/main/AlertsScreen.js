@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../context/ThemeContext';
 import { useFocusEffect } from '@react-navigation/native';
+import API_BASE_URL from '../../config/api';
 
 export default function AlertsScreen() {
   const { user, fetchWithAuth, logout } = useAuth();
@@ -25,7 +26,7 @@ export default function AlertsScreen() {
               id: notification.id,
               title: notification.title,
               message: notification.message,
-              imageUrl: notification.imageUrl,
+              imageUrl: notification.imageUrl ? (notification.imageUrl.startsWith('http') ? notification.imageUrl : `${API_BASE_URL}${notification.imageUrl}`) : null,
               date: new Date(notification.createdAt).toLocaleString(),
               type: notification.type === 'Academic' ? 'warning' : (notification.type === 'Promo' ? 'survey' : 'info'),
               read: notification.isRead
