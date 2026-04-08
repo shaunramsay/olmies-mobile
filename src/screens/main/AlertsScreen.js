@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, ActivityIndicator, Image, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../context/ThemeContext';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function AlertsScreen() {
   const { user, fetchWithAuth, logout } = useAuth();
@@ -11,32 +12,35 @@ export default function AlertsScreen() {
   const [loading, setLoading] = useState(true);
   const [selectedAlert, setSelectedAlert] = useState(null);
 
-  useEffect(() => {
-    const fetchAnnouncements = async () => {
-      try {
-        const res = await fetchWithAuth('/api/v1/campushub/notifications');
-        if (res.ok) {
-          const data = await res.json();
-          // Map backend schema to UI format.
-          const mapped = data.map(notification => ({
-            id: notification.id,
-            title: notification.title,
-            message: notification.message,
-            imageUrl: notification.imageUrl,
-            date: new Date(notification.createdAt).toLocaleString(),
-            type: notification.type === 'Academic' ? 'warning' : (notification.type === 'Promo' ? 'survey' : 'info'),
-            read: notification.isRead
-          }));
-          setAlerts(mapped);
+  useFocusEffect(
+    useCallback(() => {
+      const fetchAnnouncements = async () => {
+        setLoading(true);
+        try {
+          const res = await fetchWithAuth('/api/v1/campushub/notifications');
+          if (res.ok) {
+            const data = await res.json();
+            // Map backend schema to UI format.
+            const mapped = data.map(notification => ({
+              id: notification.id,
+              title: notification.title,
+              message: notification.message,
+              imageUrl: notification.imageUrl,
+              date: new Date(notification.createdAt).toLocaleString(),
+              type: notification.type === 'Academic' ? 'warning' : (notification.type === 'Promo' ? 'survey' : 'info'),
+              read: notification.isRead
+            }));
+            setAlerts(mapped);
+          }
+        } catch (err) {
+          console.error('Failed to fetch announcements:', err);
+        } finally {
+          setLoading(false);
         }
-      } catch (err) {
-        console.error('Failed to fetch announcements:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchAnnouncements();
-  }, []);
+      };
+      fetchAnnouncements();
+    }, [user, fetchWithAuth])
+  );
 
   const getIconForType = (type) => {
     switch (type) {
