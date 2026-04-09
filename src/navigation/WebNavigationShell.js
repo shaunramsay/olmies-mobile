@@ -95,7 +95,9 @@ function CustomSidebar({ state, descriptors, navigation }) {
 export default function WebNavigationShell() {
   const { user } = useAuth();
   const { colors } = useAppTheme();
-  const isLecturer = user?.role?.toLowerCase() === 'lecturer';
+  const isLecturer = Array.isArray(user?.role) 
+    ? user.role.some(r => r.toLowerCase() === 'lecturer')
+    : user?.role?.toLowerCase() === 'lecturer';
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>

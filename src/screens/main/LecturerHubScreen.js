@@ -116,19 +116,7 @@ export default function LecturerHubScreen({ navigation }) {
           </View>
         )}
 
-        {/* Lecturer Info Card instead of Gamification */}
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.cardHeaderRow}>
-            <View style={styles.cardTitleContainer}>
-              <Ionicons name="analytics-outline" size={20} color={colors.text} />
-              <Text style={[styles.cardTitle, { color: colors.text }]}>Module Evaluations</Text>
-            </View>
-          </View>
-          
-          <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>
-            As an instructor, you can monitor the completion rates and feedback from your students in real-time on the Web Admin Panel. Full analytics will be continuously available.
-          </Text>
-        </View>
+
 
         {/* My Modules Card */}
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
