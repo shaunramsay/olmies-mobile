@@ -17,7 +17,9 @@ const Tab = createBottomTabNavigator();
 
 export default function MainTabNavigator() {
   const { user } = useAuth();
-  const isLecturer = user?.role?.toLowerCase() === 'lecturer';
+  const isLecturer = Array.isArray(user?.role) 
+    ? user.role.some(r => r.toLowerCase() === 'lecturer')
+    : user?.role?.toLowerCase() === 'lecturer';
   const insets = useSafeAreaInsets();
 
   return (
