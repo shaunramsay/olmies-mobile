@@ -1,12 +1,20 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 
 const { width } = Dimensions.get('window');
 
 export default function LandingScreen({ navigation }) {
   const { colors, toggleTheme, isDarkTheme } = useAppTheme();
+  const { token } = useAuth();
+
+  useEffect(() => {
+    if (token) {
+      navigation.replace('Main');
+    }
+  }, [token, navigation]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
