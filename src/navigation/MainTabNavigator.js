@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 // Main Tab Navigator Imports
 import StudentHubScreen from '../screens/main/StudentHubScreen';
 import LecturerHubScreen from '../screens/main/LecturerHubScreen';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 
 import AlertsScreen from '../screens/main/AlertsScreen';
@@ -17,6 +18,7 @@ const Tab = createBottomTabNavigator();
 export default function MainTabNavigator() {
   const { user } = useAuth();
   const isLecturer = user?.role?.toLowerCase() === 'lecturer';
+  const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
@@ -24,13 +26,13 @@ export default function MainTabNavigator() {
         headerShown: false,
         tabBarStyle: {
           backgroundColor: '#1E1E1E',
-          height: 70,
+          height: 60 + insets.bottom,
           borderTopWidth: 1,
           borderTopColor: '#333',
-          paddingBottom: 10,
+          paddingBottom: Math.max(10, insets.bottom),
           paddingTop: 10,
         },
-        tabBarActiveTintColor: '#8A2BE2',
+        tabBarActiveTintColor: '#4A90E2',
         tabBarInactiveTintColor: 'gray',
         tabBarLabelStyle: { fontSize: 12, marginTop: 4 },
         tabBarIcon: ({ focused, color, size }) => {

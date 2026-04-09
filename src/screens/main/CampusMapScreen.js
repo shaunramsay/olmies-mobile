@@ -3,17 +3,19 @@ import { View, Text, StyleSheet, SafeAreaView, TextInput, ActivityIndicator, Fla
 import Constants from 'expo-constants';
 
 // Dynamically import MapView to prevent web bundler from crashing
-let MapView, Marker, Callout, UrlTile;
+let MapView, Marker, Callout, UrlTile, Polygon;
 if (Platform.OS !== 'web') {
   const Maps = require('react-native-maps');
   MapView = Maps.default;
   Marker = Maps.Marker;
   Callout = Maps.Callout;
   UrlTile = Maps.UrlTile;
+  Polygon = Maps.Polygon;
 }
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../context/ThemeContext';
+import * as Location from 'expo-location';
 
 export default function CampusMapScreen() {
   const { user, fetchWithAuth, logout } = useAuth();
@@ -22,56 +24,80 @@ export default function CampusMapScreen() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPoi, setSelectedPoi] = useState(null);
+  const [hasLocationPermission, setHasLocationPermission] = useState(false);
   const mapRef = useRef(null);
+  const selectedMarkerRef = useRef(null);
+  const lastSearchSelectionRef = useRef(0);
 
   const handleSelectSearchResult = (poi) => {
-    setSearchQuery(''); // Hide dropdown
+    lastSearchSelectionRef.current = Date.now(); // Absolute Global Temporal Map Shield! 
+
+    // Delay the unmounting of the search dropdown to absorb the raw physical TouchEnd event
+    setTimeout(() => {
+      setSearchQuery(''); 
+      import('react-native').then(rn => rn.Keyboard.dismiss());
+    }, 250);
+    
     setSelectedPoi(poi); // Open popup
     
-    // Animate map to point
+    // Animate map to point safely using 2D Bounding Box Math
     if (mapRef.current) {
       const coords = getCoordinates(poi.coordinateX, poi.coordinateY);
-      mapRef.current.animateToRegion({
-        ...coords,
-        latitudeDelta: 0.002,
-        longitudeDelta: 0.002,
-      }, 1000);
+      // Wait roughly 450ms for React Native DOM AND CartoDB Tile shards to fully download/draw before violent Android Camera panning locks the thread!
+      setTimeout(() => {
+        mapRef.current.animateToRegion({
+          ...coords,
+          latitudeDelta: 0.005, 
+          longitudeDelta: 0.005,
+        }, 800);
+      }, 450);
+      
+      // Automatically pop the native Callout Bubble after the camera finishes flying to the location
+      setTimeout(() => {
+        if (selectedMarkerRef.current && selectedMarkerRef.current.showCallout) {
+          selectedMarkerRef.current.showCallout();
+        }
+      }, 1200);
     }
   };
 
   // UTech Jamaica Center Coordinates
   const mapRegion = {
-    latitude: 18.0167736,
-    longitude: -76.7464894,
+    latitude: 18.0180,
+    longitude: -76.7440,
     latitudeDelta: 0.005,
     longitudeDelta: 0.005,
   };
 
-  // The backend was originally seeded with CoordinateX/Y percentages (40-60). 
-  // However, the new Web Admin Map drops real Lat/Lng GPS coordinates (e.g. Lat: 18.01..., Lng: -76.74...).
-  // This logic dynamically detects real GPS vs legacy percentages.
   const getCoordinates = (x, y) => {
-    // If y looks like a raw Jamaica Latitude (around 18), use it directly.
     if (y > 10 && y < 30) {
       return { latitude: y, longitude: x };
     }
-    // Otherwise fallback to legacy percentage math
     return {
       latitude: 18.0167736 + (y - 50) * 0.00015,
       longitude: -76.7464894 + (x - 50) * 0.00015,
     };
   };
 
+  // Explicit Geometric GPS mapping representing the exact parameter walls framing the University Campus.
+  const UTECH_BOUNDARY_COORDS = [
+    { latitude: 18.0210, longitude: -76.7475 }, // North-West (Papine Road edge)
+    { latitude: 18.0210, longitude: -76.7380 }, // North-East (Hope River edge)
+    { latitude: 18.0140, longitude: -76.7380 }, // South-East (Eastern flank)
+    { latitude: 18.0125, longitude: -76.7440 }, // South (Old Hope Road bend)
+    { latitude: 18.0125, longitude: -76.7485 }, // South-West (Hospital flank)
+  ];
+
   const getCategoryColor = (category) => {
     switch(category) {
-      case 'Building': return '#8A2BE2';
-      case 'Vendor': return '#f06292';
-      case 'Office': return '#4CAF50';
-      case 'Restroom': return '#03A9F4';
-      case 'LectureTheatre': return '#FF9800';
-      case 'Lab': return '#00BCD4';
-      case 'FoodZone': return '#E91E63';
-      default: return '#9E9E9E';
+      case 'Building': return 'violet'; // 'purple' string crashes Android natively
+      case 'Vendor': return 'plum';
+      case 'Office': return 'green';
+      case 'Restroom': return 'turquoise';
+      case 'LectureTheatre': return 'orange';
+      case 'Lab': return 'blue';
+      case 'FoodZone': return 'tomato';
+      default: return 'red';
     }
   };
 
@@ -102,13 +128,29 @@ export default function CampusMapScreen() {
         setLoading(false);
       }
     };
+    
+    const requestGpsPermissions = async () => {
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          setHasLocationPermission(true);
+        }
+      } catch (error) {
+        console.warn("Failed to request GPS bounds securely:", error);
+      }
+    };
+    
     fetchPois();
+    requestGpsPermissions();
   }, []);
 
-  const safeSearch = searchQuery.trim().toLowerCase();
+  const safeSearch = searchQuery.trim().toLowerCase().replace(/[\s-]/g, '');
+  const isMatch = (text) => text && text.toLowerCase().replace(/[\s-]/g, '').includes(safeSearch);
+  
   const filteredPois = pois.filter(poi => 
-    poi.name.toLowerCase().includes(safeSearch) || 
-    (poi.description && poi.description.toLowerCase().includes(safeSearch))
+    isMatch(poi.name) || 
+    isMatch(poi.description) ||
+    isMatch(poi.associatedRooms)
   );
 
   return (
@@ -138,41 +180,24 @@ export default function CampusMapScreen() {
             placeholderTextColor="#888"
             value={searchQuery}
             onChangeText={setSearchQuery}
+            returnKeyType="search"
+            onSubmitEditing={() => {
+               if (filteredPois.length > 0) {
+                  handleSelectSearchResult(filteredPois[0]);
+               }
+            }}
           />
         </View>
-
-        {searchQuery.length > 0 && (
-          <View style={styles.searchDropdown}>
-            <FlatList
-              data={filteredPois}
-              keyExtractor={item => item.id.toString()}
-              keyboardShouldPersistTaps="handled"
-              style={{ maxHeight: 250 }}
-              renderItem={({ item }) => (
-                <TouchableOpacity style={styles.searchResultItem} onPress={() => handleSelectSearchResult(item)}>
-                  <Ionicons name={getCategoryIcon(item.category)} size={18} color={getCategoryColor(item.category)} />
-                  <View style={styles.searchResultTextContainer}>
-                    <Text style={styles.searchResultName}>{item.name}</Text>
-                    {item.description && <Text numberOfLines={1} style={styles.searchResultDesc}>{item.description}</Text>}
-                  </View>
-                </TouchableOpacity>
-              )}
-              ListEmptyComponent={
-                <Text style={styles.noResultsText}>No locations found matching "{searchQuery}"</Text>
-              }
-            />
-          </View>
-        )}
       </View>
 
       {loading ? (
         <View style={styles.mapPlaceholder}>
-          <ActivityIndicator size="large" color="#8A2BE2" />
+          <ActivityIndicator size="large" color="#4A90E2" />
           <Text style={styles.mapTitle}>Loading Map Data...</Text>
         </View>
       ) : Platform.OS === 'web' ? (
         <View style={styles.mapPlaceholder}>
-          <Ionicons name="map" size={48} color="#8A2BE2" />
+          <Ionicons name="map" size={48} color="#4A90E2" />
           <Text style={styles.mapTitle}>Map Optimization</Text>
           <Text style={styles.mapSubtitle}>
             The interactive campus map leverages native hardware rendering and is only available on iOS and Android. Please open the Olmies app on your mobile device.
@@ -184,37 +209,107 @@ export default function CampusMapScreen() {
             style={styles.map} 
             ref={mapRef}
             initialRegion={mapRegion}
-            showsUserLocation={true}
+            showsUserLocation={hasLocationPermission}
+            showsMyLocationButton={hasLocationPermission}
             showsPointsOfInterest={false}
             showsBuildings={false}
             userInterfaceStyle="light"
-            mapType="standard"
+            mapType="none"
             onPress={(e) => {
-              // Mitigation: Deselect the highlighted pin if the user legitimately taps the empty grass on the map
-              if(e.nativeEvent.action !== 'marker-press') setSelectedPoi(null);
+              // Imperenetrable Temporal Shield: Absolutely block ALL phantom taps bleeding through unmounting DOM nodes!
+              if (Date.now() - lastSearchSelectionRef.current < 1500) return;
+              
+              // Ensure we only dismiss if the user actually clicked the map deliberately
+              if(e.nativeEvent.coordinate && e.nativeEvent.action !== 'marker-press') {
+                setSelectedPoi(null);
+              }
             }}
           >
             <UrlTile
               urlTemplate="https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
               maximumZ={19}
               flipY={false}
-              zIndex={-1}
+              zIndex={0} // Ensure tiles render exactly on the base layer, natively preventing OpenGL canvas truncation!
             />
-            {filteredPois.map(poi => (
-              <Marker
-                key={poi.id}
-                coordinate={getCoordinates(poi.coordinateX, poi.coordinateY)}
-                title={poi.name}
-                description={poi.description}
-                pinColor={selectedPoi && selectedPoi.id === poi.id ? '#FFEA00' : getCategoryColor(poi.category)}
-                onPress={() => setSelectedPoi(poi)}
-                zIndex={selectedPoi && selectedPoi.id === poi.id ? 100 : 1}
-              />
-            ))}
+            
+            {/* Draw permanently visible dynamic pins natively exclusively if they are not selected */}
+            {filteredPois.filter(p => !selectedPoi || p.id !== selectedPoi.id).map(poi => {
+              let parsedPolygon = null;
+              if (poi.polygonCoordinates && poi.polygonCoordinates.startsWith('[')) {
+                try {
+                  const arr = JSON.parse(poi.polygonCoordinates);
+                  if (arr && arr.length > 2) {
+                    parsedPolygon = arr.map(coord => ({ latitude: coord[0], longitude: coord[1] }));
+                  }
+                } catch(e) {}
+              }
+
+              return (
+                <React.Fragment key={poi.id}>
+                  {parsedPolygon && (
+                    <Polygon
+                      coordinates={parsedPolygon}
+                      strokeColor="#4A90E2"
+                      strokeWidth={3}
+                      fillColor="rgba(138, 43, 226, 0.2)"
+                      zIndex={50}
+                      tappable={true}
+                      onPress={() => setSelectedPoi(poi)}
+                    />
+                  )}
+                  <Marker
+                    coordinate={getCoordinates(poi.coordinateX, poi.coordinateY)}
+                    title={poi.name}
+                    description={poi.description}
+                    onPress={() => setSelectedPoi(poi)}
+                  />
+                </React.Fragment>
+              );
+            })}
+            {/* Decoupled Selected Pin rendered distinctly to brutally override Map engine dropping rules */}
+            {selectedPoi && (() => {
+              let parsedSelectedPolygon = null;
+              if (selectedPoi.polygonCoordinates && selectedPoi.polygonCoordinates.startsWith('[')) {
+                try {
+                  const arr = JSON.parse(selectedPoi.polygonCoordinates);
+                  if (arr && arr.length > 2) {
+                    parsedSelectedPolygon = arr.map(coord => ({ latitude: coord[0], longitude: coord[1] }));
+                  }
+                } catch(e) {}
+              }
+
+              return (
+                <React.Fragment key={`selected-fragment-${selectedPoi.id}`}>
+                  {parsedSelectedPolygon && (
+                    <Polygon
+                      key={`selected-polygon-${selectedPoi.id}`}
+                      coordinates={parsedSelectedPolygon}
+                      strokeColor="#66FCF1"
+                      strokeWidth={4}
+                      fillColor="rgba(102, 252, 241, 0.4)"
+                      zIndex={100}
+                      tappable={true}
+                      onPress={() => setSelectedPoi(selectedPoi)}
+                    />
+                  )}
+                  <Marker
+                    ref={selectedMarkerRef}
+                    key={`selected-${selectedPoi.id}`}
+                    coordinate={getCoordinates(selectedPoi.coordinateX, selectedPoi.coordinateY)}
+                    title={selectedPoi.name}
+                    description={selectedPoi.description}
+                    pinColor="blue"
+                    zIndex={100}
+                    tracksViewChanges={false}
+                    onPress={() => setSelectedPoi(selectedPoi)}
+                  />
+                </React.Fragment>
+              );
+            })()}
           </MapView>
           
           {selectedPoi && (
-            <View style={styles.poiCardFloating}>
+            <TouchableOpacity activeOpacity={1} style={styles.poiCardFloating}>
               <View style={styles.poiHeader}>
                 <Ionicons 
                   name={getCategoryIcon(selectedPoi.category)} 
@@ -224,8 +319,38 @@ export default function CampusMapScreen() {
                 <Text style={styles.poiName}>{selectedPoi.name}</Text>
               </View>
               <Text style={styles.poiDesc}>{selectedPoi.description}</Text>
+            </TouchableOpacity>
+          )}
+
+          {searchQuery.length > 0 && (
+            <View style={[styles.searchDropdown, { top: 0, zIndex: 900 }]}>
+              <FlatList
+                data={filteredPois}
+                keyExtractor={item => item.id.toString()}
+                keyboardShouldPersistTaps="always"
+                style={{ maxHeight: 250 }}
+                renderItem={({ item }) => (
+                  <TouchableOpacity style={styles.searchResultItem} onPress={() => handleSelectSearchResult(item)}>
+                    <Ionicons name={getCategoryIcon(item.category)} size={18} color={getCategoryColor(item.category)} />
+                    <View style={styles.searchResultTextContainer}>
+                      <Text style={styles.searchResultName}>{item.name}</Text>
+                      {item.associatedRooms && safeSearch.length > 0 && isMatch(item.associatedRooms) ? (
+                        <Text numberOfLines={1} style={[styles.searchResultDesc, { color: '#4CAF50', fontWeight: '500' }]}>
+                          Contains Room: {searchQuery.toUpperCase()}
+                        </Text>
+                      ) : (
+                        item.description && <Text numberOfLines={1} style={styles.searchResultDesc}>{item.description}</Text>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                )}
+                ListEmptyComponent={
+                  <Text style={styles.noResultsText}>No locations found matching "{searchQuery}"</Text>
+                }
+              />
             </View>
           )}
+
         </View>
       )}
     </SafeAreaView>
@@ -353,16 +478,11 @@ const styles = StyleSheet.create({
   mapContainer: {
     flex: 1,
     position: 'relative',
-    borderRadius: 16,
-    overflow: 'hidden',
-    marginHorizontal: 15,
-    marginBottom: 15,
     borderWidth: 1,
     borderColor: '#333',
   },
   map: {
-    width: '100%',
-    height: '100%',
+    ...StyleSheet.absoluteFillObject,
   },
   poiCardFloating: {
     position: 'absolute',
@@ -417,7 +537,7 @@ const styles = StyleSheet.create({
   },
   directionsButton: {
     marginTop: 12,
-    backgroundColor: '#8A2BE2',
+    backgroundColor: '#4A90E2',
     paddingVertical: 10,
     paddingHorizontal: 15,
     borderRadius: 8,

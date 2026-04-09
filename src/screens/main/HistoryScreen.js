@@ -39,7 +39,7 @@ export default function HistoryScreen({ navigation }) {
       onPress={() => navigation.navigate('SurveyResults', { windowId: item.windowId, surveyName: item.name })}
     >
       <View style={styles.cardHeader}>
-        <Ionicons name="pie-chart" size={24} color="#8A2BE2" />
+        <Ionicons name="pie-chart" size={24} color="#4A90E2" />
         <View style={styles.cardTitleContainer}>
           <Text style={styles.cardTitle}>{item.name}</Text>
           <Text style={styles.cardSubtitle}>{item.semester} {item.year}</Text>
@@ -58,7 +58,7 @@ export default function HistoryScreen({ navigation }) {
 
       {loading ? (
         <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color="#8A2BE2" />
+          <ActivityIndicator size="large" color="#4A90E2" />
         </View>
       ) : error ? (
         <View style={styles.centerContent}>
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 15,
     borderLeftWidth: 4,
-    borderLeftColor: '#8A2BE2',
+    borderLeftColor: '#4A90E2',
   },
   cardHeader: {
     flexDirection: 'row',

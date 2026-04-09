@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, ActivityIndicator, Image, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../context/ThemeContext';
+import { useFocusEffect } from '@react-navigation/native';
+import API_BASE_URL from '../../config/api';
 
 export default function AlertsScreen() {
   const { user, fetchWithAuth, logout } = useAuth();
@@ -11,37 +13,40 @@ export default function AlertsScreen() {
   const [loading, setLoading] = useState(true);
   const [selectedAlert, setSelectedAlert] = useState(null);
 
-  useEffect(() => {
-    const fetchAnnouncements = async () => {
-      try {
-        const res = await fetchWithAuth('/api/v1/campushub/notifications');
-        if (res.ok) {
-          const data = await res.json();
-          // Map backend schema to UI format.
-          const mapped = data.map(notification => ({
-            id: notification.id,
-            title: notification.title,
-            message: notification.message,
-            imageUrl: notification.imageUrl,
-            date: new Date(notification.createdAt).toLocaleString(),
-            type: notification.type === 'Academic' ? 'warning' : (notification.type === 'Promo' ? 'survey' : 'info'),
-            read: notification.isRead
-          }));
-          setAlerts(mapped);
+  useFocusEffect(
+    useCallback(() => {
+      const fetchAnnouncements = async () => {
+        setLoading(true);
+        try {
+          const res = await fetchWithAuth('/api/v1/campushub/notifications');
+          if (res.ok) {
+            const data = await res.json();
+            // Map backend schema to UI format.
+            const mapped = data.map(notification => ({
+              id: notification.id,
+              title: notification.title,
+              message: notification.message,
+              imageUrl: notification.imageUrl ? (notification.imageUrl.startsWith('http') ? notification.imageUrl : `${API_BASE_URL}${notification.imageUrl}`) : null,
+              date: new Date(notification.createdAt).toLocaleString(),
+              type: notification.type === 'Academic' ? 'warning' : (notification.type === 'Promo' ? 'survey' : 'info'),
+              read: notification.isRead
+            }));
+            setAlerts(mapped);
+          }
+        } catch (err) {
+          console.error('Failed to fetch announcements:', err);
+        } finally {
+          setLoading(false);
         }
-      } catch (err) {
-        console.error('Failed to fetch announcements:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchAnnouncements();
-  }, []);
+      };
+      fetchAnnouncements();
+    }, [user, fetchWithAuth])
+  );
 
   const getIconForType = (type) => {
     switch (type) {
       case 'warning': return { name: 'alert-circle', color: '#ffb74d' };
-      case 'survey': return { name: 'clipboard', color: '#8A2BE2' };
+      case 'survey': return { name: 'clipboard', color: '#4A90E2' };
       default: return { name: 'information-circle', color: '#64b5f6' };
     }
   };
@@ -65,7 +70,7 @@ export default function AlertsScreen() {
       
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {loading ? (
-          <ActivityIndicator size="large" color="#8A2BE2" style={{ marginTop: 40 }} />
+          <ActivityIndicator size="large" color="#4A90E2" style={{ marginTop: 40 }} />
         ) : alerts.length === 0 ? (
           <Text style={{ color: '#888', textAlign: 'center', marginTop: 40 }}>You have no new notifications.</Text>
         ) : (
@@ -101,7 +106,7 @@ export default function AlertsScreen() {
       <Modal visible={!!selectedAlert} animationType="slide" transparent={true}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            {selectedAlert?.imageUrl && (
+            {selectedAlert?.imageUrl && typeof selectedAlert.imageUrl === 'string' && selectedAlert.imageUrl.trim().length > 5 && selectedAlert.imageUrl !== 'null' && (
               <Image source={{ uri: selectedAlert.imageUrl }} style={styles.modalImage} resizeMode="cover" />
             )}
             <View style={styles.modalTextContainer}>
@@ -206,7 +211,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#8A2BE2',
+    backgroundColor: '#4A90E2',
     marginLeft: 10,
   },
   modalOverlay: {
@@ -220,13 +225,15 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     maxHeight: '85%',
+    flexShrink: 1,
   },
   modalImage: {
     width: '100%',
-    height: 220,
+    height: 180,
   },
   modalTextContainer: {
     padding: 24,
+    flexShrink: 1,
   },
   modalTitle: {
     fontSize: 22,
@@ -240,7 +247,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalMessageBody: {
-    maxHeight: 250,
+    flexShrink: 1,
   },
   modalMessage: {
     fontSize: 16,
@@ -248,7 +255,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   closeButton: {
-    backgroundColor: '#8A2BE2',
+    backgroundColor: '#4A90E2',
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',

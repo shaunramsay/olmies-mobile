@@ -220,7 +220,7 @@ export default function LecturerHubScreen({ navigation }) {
                </View>
             ) : (
                <View style={[styles.modalImage, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
-                  <Ionicons name="pricetag-outline" size={60} color={colors.primary || '#8A2BE2'} />
+                  <Ionicons name="pricetag-outline" size={60} color={colors.primary || '#4A90E2'} />
                </View>
             )}
             <View style={styles.modalTextContainer}>
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
   lockedButtonText: { color: '#aaa', fontSize: 12, fontWeight: '600' },
   divider: { height: 1, backgroundColor: '#2A2A2A', marginVertical: 15 },
   moduleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  moduleLabel: { color: '#8A2BE2', fontSize: 12, fontWeight: 'bold', marginBottom: 4 },
+  moduleLabel: { color: '#4A90E2', fontSize: 12, fontWeight: 'bold', marginBottom: 4 },
   moduleCode: { color: '#fff', fontSize: 16, fontWeight: '600' },
   primaryButton: { flexDirection: 'row', backgroundColor: '#5C6BC0', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8, alignItems: 'center' },
   primaryButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' },
