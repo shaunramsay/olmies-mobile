@@ -334,11 +334,18 @@ export default function CampusMapScreen() {
                     <Ionicons name={getCategoryIcon(item.category)} size={18} color={getCategoryColor(item.category)} />
                     <View style={styles.searchResultTextContainer}>
                       <Text style={styles.searchResultName}>{item.name}</Text>
-                      {item.associatedRooms && safeSearch.length > 0 && isMatch(item.associatedRooms) ? (
-                        <Text numberOfLines={1} style={[styles.searchResultDesc, { color: '#4CAF50', fontWeight: '500' }]}>
-                          Contains Room: {searchQuery.toUpperCase()}
-                        </Text>
-                      ) : (
+                      {item.associatedRooms && safeSearch.length > 0 && isMatch(item.associatedRooms) ? (() => {
+                        const matchedRooms = item.associatedRooms
+                          .split(',')
+                          .map(r => r.trim())
+                          .filter(r => r.toLowerCase().replace(/[\s-]/g, '').includes(safeSearch))
+                          .join(', ');
+                        return (
+                          <Text numberOfLines={1} style={[styles.searchResultDesc, { color: '#4CAF50', fontWeight: '500' }]}>
+                            Contains Room: {matchedRooms || searchQuery.toUpperCase()}
+                          </Text>
+                        );
+                      })() : (
                         item.description && <Text numberOfLines={1} style={styles.searchResultDesc}>{item.description}</Text>
                       )}
                     </View>
