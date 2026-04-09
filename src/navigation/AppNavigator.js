@@ -9,8 +9,8 @@ import LoginScreen from '../screens/auth/LoginScreen';
 import DataProtectionScreen from '../screens/auth/DataProtectionScreen';
 import MainTabNavigator from './MainTabNavigator';
 import WebNavigationShell from './WebNavigationShell';
-import SurveyScreen from '../screens/survey/SurveyScreen';
-import SurveyResultsScreen from '../screens/survey/SurveyResultsScreen';
+import SurveyScreen from '../screens/surveys/SurveyScreen';
+import SurveyResultsScreen from '../screens/surveys/SurveyResultsScreen';
 
 const Stack = createNativeStackNavigator();
 
