@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView, TextInput, ActivityIndicator, Fla
 import Constants from 'expo-constants';
 
 // Dynamically import MapView to prevent web bundler from crashing
-let MapView, Marker, Callout, UrlTile, Polygon;
+let MapView, Marker, Callout, UrlTile, Polygon, PROVIDER_GOOGLE;
 if (Platform.OS !== 'web') {
   const Maps = require('react-native-maps');
   MapView = Maps.default;
@@ -11,6 +11,7 @@ if (Platform.OS !== 'web') {
   Callout = Maps.Callout;
   UrlTile = Maps.UrlTile;
   Polygon = Maps.Polygon;
+  PROVIDER_GOOGLE = Maps.PROVIDER_GOOGLE;
 }
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
@@ -208,13 +209,13 @@ export default function CampusMapScreen() {
           <MapView 
             style={styles.map} 
             ref={mapRef}
+            provider={PROVIDER_GOOGLE}
             initialRegion={mapRegion}
             showsUserLocation={hasLocationPermission}
             showsMyLocationButton={hasLocationPermission}
             showsPointsOfInterest={false}
             showsBuildings={false}
-            userInterfaceStyle="light"
-            mapType="none"
+            userInterfaceStyle="dark"
             onPress={(e) => {
               // Imperenetrable Temporal Shield: Absolutely block ALL phantom taps bleeding through unmounting DOM nodes!
               if (Date.now() - lastSearchSelectionRef.current < 1500) return;
@@ -225,12 +226,6 @@ export default function CampusMapScreen() {
               }
             }}
           >
-            <UrlTile
-              urlTemplate="https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
-              maximumZ={19}
-              flipY={false}
-              zIndex={0} // Ensure tiles render exactly on the base layer, natively preventing OpenGL canvas truncation!
-            />
             
             {/* Draw permanently visible dynamic pins natively exclusively if they are not selected */}
             {filteredPois.filter(p => !selectedPoi || p.id !== selectedPoi.id).map(poi => {
