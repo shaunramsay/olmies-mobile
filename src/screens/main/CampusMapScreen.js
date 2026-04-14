@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView, TextInput, ActivityIndicator, Fla
 import Constants from 'expo-constants';
 
 // Dynamically import MapView to prevent web bundler from crashing
-let MapView, Marker, Callout, UrlTile, Polygon, PROVIDER_GOOGLE;
+let MapView, Marker, Callout, UrlTile, Polygon, Polyline, PROVIDER_GOOGLE;
 if (Platform.OS !== 'web') {
   const Maps = require('react-native-maps');
   MapView = Maps.default;
@@ -11,12 +11,24 @@ if (Platform.OS !== 'web') {
   Callout = Maps.Callout;
   UrlTile = Maps.UrlTile;
   Polygon = Maps.Polygon;
+  Polyline = Maps.Polyline;
   PROVIDER_GOOGLE = Maps.PROVIDER_GOOGLE;
 }
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../context/ThemeContext';
 import * as Location from 'expo-location';
+
+const decodePolyline = (t, e) => {
+    for (var n, o, u = 0, l = 0, r = 0, d = [], h = 0, i = 0, a = null, c = Math.pow(10, e || 5); u < t.length; ) {
+        a = null, h = 0, i = 0;
+        do a = t.charCodeAt(u++) - 63, i |= (31 & a) << h, h += 5; while (a >= 32);
+        n = 1 & i ? ~(i >> 1) : i >> 1, h = i = 0;
+        do a = t.charCodeAt(u++) - 63, i |= (31 & a) << h, h += 5; while (a >= 32);
+        o = 1 & i ? ~(i >> 1) : i >> 1, l += n, r += o, d.push({ latitude: l / c, longitude: r / c });
+    }
+    return d;
+};
 
 export default function CampusMapScreen() {
   const { user, fetchWithAuth, logout } = useAuth();
@@ -26,6 +38,9 @@ export default function CampusMapScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPoi, setSelectedPoi] = useState(null);
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
+  const [currentRoute, setCurrentRoute] = useState(null);
+  const [routeInfo, setRouteInfo] = useState(null);
+  const [calculatingRoute, setCalculatingRoute] = useState(false);
   const mapRef = useRef(null);
   const selectedMarkerRef = useRef(null);
   const lastSearchSelectionRef = useRef(0);
@@ -39,6 +54,8 @@ export default function CampusMapScreen() {
       import('react-native').then(rn => rn.Keyboard.dismiss());
     }, 250);
     
+    setCurrentRoute(null);
+    setRouteInfo(null);
     setSelectedPoi(poi); // Open popup
     
     // Animate map to point safely using 2D Bounding Box Math
@@ -59,6 +76,60 @@ export default function CampusMapScreen() {
           selectedMarkerRef.current.showCallout();
         }
       }, 1200);
+    }
+  };
+
+  const handleGetDirections = async () => {
+    if (!selectedPoi) return;
+    setCalculatingRoute(true);
+    
+    try {
+      let location;
+      if (hasLocationPermission) {
+        location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      } else {
+        Alert.alert("Permission Required", "Please enable location services to get walking directions.");
+        setCalculatingRoute(false);
+        return;
+      }
+      
+      const originLat = location.coords.latitude;
+      const originLng = location.coords.longitude;
+      const destLat = parseFloat(selectedPoi.coordinateY);
+      const destLng = parseFloat(selectedPoi.coordinateX);
+      
+      const apiKey = Constants.expoConfig?.android?.config?.googleMaps?.apiKey || Constants.expoConfig?.ios?.config?.googleMapsApiKey || 'AIzaSyCp9p5NyeornCg5v32anUe7RbmHIXy6rZU';
+      const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${originLat},${originLng}&destination=${destLat},${destLng}&mode=walking&key=${apiKey}`;
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data.status === 'OK' && data.routes.length > 0) {
+        const route = data.routes[0];
+        const leg = route.legs[0];
+        
+        setRouteInfo({
+          distance: leg.distance.text,
+          duration: leg.duration.text
+        });
+        
+        const decodedPoints = decodePolyline(route.overview_polyline.points);
+        setCurrentRoute(decodedPoints);
+        
+        if (mapRef.current) {
+           mapRef.current.fitToCoordinates(decodedPoints, {
+             edgePadding: { top: 70, right: 70, bottom: 200, left: 70 },
+             animated: true
+           });
+        }
+      } else {
+        Alert.alert("Route Error", "Could not calculate walking directions to this location.");
+      }
+    } catch (err) {
+      console.warn("Direction fetch error:", err);
+      Alert.alert("Network Error", "Failed to contact routing servers.");
+    } finally {
+      setCalculatingRoute(false);
     }
   };
 
@@ -223,9 +294,20 @@ export default function CampusMapScreen() {
               // Ensure we only dismiss if the user actually clicked the map deliberately
               if(e.nativeEvent.coordinate && e.nativeEvent.action !== 'marker-press') {
                 setSelectedPoi(null);
+                setCurrentRoute(null);
+                setRouteInfo(null);
               }
             }}
           >
+            
+            {currentRoute && (
+              <Polyline
+                coordinates={currentRoute}
+                strokeColor="#66FCF1"
+                strokeWidth={5}
+                zIndex={200}
+              />
+            )}
             
             {/* Draw permanently visible dynamic pins natively exclusively if they are not selected */}
             {filteredPois.filter(p => !selectedPoi || p.id !== selectedPoi.id).map(poi => {
@@ -239,6 +321,12 @@ export default function CampusMapScreen() {
                 } catch(e) {}
               }
 
+              const onMarkerPress = () => {
+                setCurrentRoute(null);
+                setRouteInfo(null);
+                setSelectedPoi(poi);
+              };
+
               return (
                 <React.Fragment key={poi.id}>
                   {parsedPolygon && (
@@ -249,14 +337,14 @@ export default function CampusMapScreen() {
                       fillColor="rgba(138, 43, 226, 0.2)"
                       zIndex={50}
                       tappable={true}
-                      onPress={() => setSelectedPoi(poi)}
+                      onPress={onMarkerPress}
                     />
                   )}
                   <Marker
                     coordinate={getCoordinates(poi.coordinateX, poi.coordinateY)}
                     title={poi.name}
                     description={poi.description}
-                    onPress={() => setSelectedPoi(poi)}
+                    onPress={onMarkerPress}
                   />
                 </React.Fragment>
               );
@@ -284,7 +372,7 @@ export default function CampusMapScreen() {
                       fillColor="rgba(102, 252, 241, 0.4)"
                       zIndex={100}
                       tappable={true}
-                      onPress={() => setSelectedPoi(selectedPoi)}
+                      onPress={() => {}}
                     />
                   )}
                   <Marker
@@ -296,7 +384,7 @@ export default function CampusMapScreen() {
                     pinColor="blue"
                     zIndex={100}
                     tracksViewChanges={false}
-                    onPress={() => setSelectedPoi(selectedPoi)}
+                    onPress={() => {}}
                   />
                 </React.Fragment>
               );
@@ -314,6 +402,28 @@ export default function CampusMapScreen() {
                 <Text style={styles.poiName}>{selectedPoi.name}</Text>
               </View>
               <Text style={styles.poiDesc}>{selectedPoi.description}</Text>
+              
+              {routeInfo ? (
+                <View style={{ marginTop: 12, backgroundColor: 'rgba(102, 252, 241, 0.1)', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(102, 252, 241, 0.3)' }}>
+                   <Text style={{ color: '#66FCF1', fontWeight: 'bold', marginBottom: 4 }}><Ionicons name="walk" size={14} /> Walking Route Active</Text>
+                   <Text style={{ color: '#ddd', fontSize: 13 }}>Distance: {routeInfo.distance} • Est: {routeInfo.duration}</Text>
+                </View>
+              ) : (
+                <TouchableOpacity 
+                   style={[styles.directionsButton, calculatingRoute && { opacity: 0.7 }]} 
+                   onPress={handleGetDirections}
+                   disabled={calculatingRoute}
+                >
+                  {calculatingRoute ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <>
+                      <Ionicons name="navigate" size={18} color="#fff" />
+                      <Text style={styles.directionsButtonText}>Get Directions</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
             </TouchableOpacity>
           )}
 
