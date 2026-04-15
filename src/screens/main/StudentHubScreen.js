@@ -84,6 +84,23 @@ export default function StudentHubScreen({ navigation }) {
       
       <ScrollView contentContainerStyle={styles.scrollContent}>
 
+        {/* AI Help Desk Action Board */}
+        <TouchableOpacity 
+          style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, padding: 20 }]}
+          onPress={() => navigation.navigate('AskUTech')}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: `${colors.primary}26`, justifyContent: 'center', alignItems: 'center', marginRight: 15 }}>
+              <Ionicons name="chatbubbles-outline" size={24} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text, marginBottom: 4 }}>Ask AI Help Desk</Text>
+              <Text style={{ fontSize: 13, color: colors.textSecondary }}>Get instant answers on academic policies, handbooks, & more.</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.border} />
+          </View>
+        </TouchableOpacity>
+
         {/* Vendor Deals Carousel */}
         <View style={styles.carouselContainer}>
           <View style={styles.carouselHeader}>
