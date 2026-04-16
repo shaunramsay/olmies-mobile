@@ -103,8 +103,10 @@ export default function WebNavigationShell() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <Tab.Navigator
         tabBar={props => <CustomSidebar {...props} />}
-        screenOptions={{ headerShown: false }}
-        sceneContainerStyle={{ backgroundColor: colors.background, marginLeft: 250 }}
+        screenOptions={{ 
+          headerShown: false,
+          sceneStyle: { backgroundColor: colors.background, marginLeft: 250 }
+        }}
       >
         <Tab.Screen name="Hub" component={isLecturer ? LecturerHubScreen : StudentHubScreen} />
         <Tab.Screen name="Alerts" component={AlertsScreen} />
@@ -125,7 +127,7 @@ const styles = StyleSheet.create({
     paddingVertical: 30,
     display: 'flex',
     flexDirection: 'column',
-    position: 'absolute',
+    position: 'fixed',
     left: 0,
     top: 0,
     bottom: 0,

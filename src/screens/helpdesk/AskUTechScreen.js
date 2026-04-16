@@ -40,6 +40,14 @@ export default function AskUTechScreen({ navigation }) {
     setIsTyping(true);
 
     try {
+      const historyPayload = messages
+        .filter(m => m.id !== 'welcome_msg')
+        .slice(-5)
+        .map(m => ({
+          role: m.sender === 'ai' ? 'assistant' : 'user',
+          content: m.text
+        }));
+
       const response = await fetchWithAuth('/api/v1/helpdesk/ask', {
         method: 'POST',
         headers: {
@@ -47,7 +55,8 @@ export default function AskUTechScreen({ navigation }) {
         },
         body: JSON.stringify({
           question: userMessage.text,
-          studentId: user?.id || null 
+          studentId: user?.id || null,
+          history: historyPayload
         }),
       });
 
