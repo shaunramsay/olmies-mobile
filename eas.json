@@ -9,7 +9,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://olmies-ai-production.up.railway.app"
+        "EXPO_PUBLIC_API_URL": "https://olmies-ai-helpdesk.azurewebsites.net"
       }
     }
   }
