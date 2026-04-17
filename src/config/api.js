@@ -14,6 +14,9 @@ const defaultApiUrl = Platform.OS === 'web'
     ? 'http://localhost:5000' 
     : `http://${useIp}:5000`;
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || (__DEV__ ? defaultApiUrl : 'https://olmies-ai-production.up.railway.app');
+
+
+// Ensure Expo cache is cleared (expo start -c) when modifying .env variables!
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || (__DEV__ || Platform.OS === 'web' ? defaultApiUrl : 'https://olmies-ai-production.up.railway.app');
 
 export default API_BASE_URL;

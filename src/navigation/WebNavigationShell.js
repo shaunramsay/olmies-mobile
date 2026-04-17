@@ -108,10 +108,22 @@ export default function WebNavigationShell() {
           sceneStyle: { backgroundColor: colors.background, marginLeft: 250 }
         }}
       >
-        <Tab.Screen name="Hub" component={isLecturer ? LecturerHubScreen : StudentHubScreen} />
-        <Tab.Screen name="Alerts" component={AlertsScreen} />
-        <Tab.Screen name="Map" component={CampusMapScreen} />
-        <Tab.Screen name="Insights" component={InsightsScreen} />
+        <Tab.Screen name="Hub">
+          {(props) => (
+            <View style={{ flex: 1, paddingLeft: 250 }}>
+              {isLecturer ? <LecturerHubScreen {...props} /> : <StudentHubScreen {...props} />}
+            </View>
+          )}
+        </Tab.Screen>
+        <Tab.Screen name="Alerts">
+          {(props) => <View style={{ flex: 1, paddingLeft: 250 }}><AlertsScreen {...props} /></View>}
+        </Tab.Screen>
+        <Tab.Screen name="Map">
+          {(props) => <View style={{ flex: 1, paddingLeft: 250 }}><CampusMapScreen {...props} /></View>}
+        </Tab.Screen>
+        <Tab.Screen name="Insights">
+          {(props) => <View style={{ flex: 1, paddingLeft: 250 }}><InsightsScreen {...props} /></View>}
+        </Tab.Screen>
       </Tab.Navigator>
     </SafeAreaView>
   );
