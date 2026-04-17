@@ -10,13 +10,11 @@ const overrideIp = '192.168.5.206';
 const useIp = CLOUD_WIFI_IP || overrideIp;
 
 // Allow Web to use localhost to avoid CORS/IP drift, phones use the LAN IP
-const defaultApiUrl = Platform.OS === 'web'
-    ? 'http://localhost:5000' 
-    : `http://${useIp}:5000`;
+const defaultApiUrl = 'https://olmies-ai-helpdesk.azurewebsites.net';
 
 
 
 // Ensure Expo cache is cleared (expo start -c) when modifying .env variables!
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || (__DEV__ || Platform.OS === 'web' ? defaultApiUrl : 'https://olmies-ai-production.up.railway.app');
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || defaultApiUrl;
 
 export default API_BASE_URL;
