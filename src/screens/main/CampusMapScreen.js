@@ -41,6 +41,7 @@ export default function CampusMapScreen() {
   const [currentRoute, setCurrentRoute] = useState(null);
   const [routeInfo, setRouteInfo] = useState(null);
   const [calculatingRoute, setCalculatingRoute] = useState(false);
+  const [mapType, setMapType] = useState('hybrid'); // Expose toggle for Standard vs Hybrid
   const mapRef = useRef(null);
   const selectedMarkerRef = useRef(null);
   const lastSearchSelectionRef = useRef(0);
@@ -232,6 +233,12 @@ export default function CampusMapScreen() {
         <Text style={[styles.headerTitle, { color: colors.text, flex: 1, marginLeft: 10 }]}>Campus Map</Text>
         
         <View style={styles.topRightActions}>
+          <TouchableOpacity 
+            style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginRight: 8 }]} 
+            onPress={() => setMapType(prev => prev === 'standard' ? 'hybrid' : 'standard')}
+          >
+            <Ionicons name={mapType === 'standard' ? "earth" : "map-outline"} size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
           <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={toggleTheme}>
             <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={18} color={colors.textSecondary} />
           </TouchableOpacity>
@@ -284,9 +291,10 @@ export default function CampusMapScreen() {
             initialRegion={mapRegion}
             showsUserLocation={hasLocationPermission}
             showsMyLocationButton={hasLocationPermission}
-            showsPointsOfInterest={false}
-            showsBuildings={false}
-            userInterfaceStyle="dark"
+            showsPointsOfInterest={true}
+            showsBuildings={true}
+            mapType={mapType}
+            userInterfaceStyle={isDarkTheme ? "dark" : "light"}
             onPress={(e) => {
               // Imperenetrable Temporal Shield: Absolutely block ALL phantom taps bleeding through unmounting DOM nodes!
               if (Date.now() - lastSearchSelectionRef.current < 1500) return;
