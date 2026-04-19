@@ -257,6 +257,12 @@ export default function CampusMapScreen() {
       case 'LectureTheatre': return 'orange';
       case 'Lab': return 'blue';
       case 'FoodZone': return 'tomato';
+      case 'Recreation': return 'forestgreen';
+      case 'Landmark': return 'goldenrod';
+      case 'Parking': return 'slategray';
+      case 'StudyZone': return 'sandybrown';
+      case 'Security': return 'crimson';
+      case 'Clinic': return 'teal';
       default: return 'red';
     }
   };
@@ -270,6 +276,12 @@ export default function CampusMapScreen() {
       case 'LectureTheatre': return 'easel';
       case 'Lab': return 'flask';
       case 'FoodZone': return 'restaurant';
+      case 'Recreation': return 'leaf';
+      case 'Landmark': return 'star';
+      case 'Parking': return 'car';
+      case 'StudyZone': return 'book';
+      case 'Security': return 'shield-checkmark';
+      case 'Clinic': return 'medkit';
       default: return 'location';
     }
   };
@@ -605,7 +617,7 @@ export default function CampusMapScreen() {
 
               <Text style={styles.inputLabel}>Category</Text>
               <View style={styles.categoryContainer}>
-                {['Building', 'Vendor', 'FoodZone', 'Office', 'Restroom'].map(cat => (
+                {['Building', 'Restroom', 'FoodZone', 'StudyZone', 'Parking', 'Recreation', 'Vendor', 'Landmark', 'Office', 'Clinic', 'Security'].map(cat => (
                   <TouchableOpacity
                     key={cat}
                     style={[
