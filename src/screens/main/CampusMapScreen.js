@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TextInput, ActivityIndicator, FlatList, TouchableOpacity, Dimensions, Platform, Linking, Alert, Modal, ScrollView, Image } from 'react-native';
 import Constants from 'expo-constants';
 import * as ImagePicker from 'expo-image-picker';
+import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from 'expo-speech-recognition';
 import API_BASE_URL from '../../config/api';
 
 // Dynamically import MapView to prevent web bundler from crashing
@@ -57,6 +58,7 @@ export default function CampusMapScreen() {
   const [routeInfo, setRouteInfo] = useState(null);
   const [calculatingRoute, setCalculatingRoute] = useState(false);
   const [mapType, setMapType] = useState('hybrid'); // Expose toggle for Standard vs Hybrid
+  const [isListening, setIsListening] = useState(false); // Native Map Dictation state
 
   // Interactive Crowdsourcing State
   const [draftPin, setDraftPin] = useState(null);
@@ -69,6 +71,30 @@ export default function CampusMapScreen() {
   const mapRef = useRef(null);
   const selectedMarkerRef = useRef(null);
   const lastSearchSelectionRef = useRef(0);
+
+  // Hook directly into the OS Speech engine thread
+  useSpeechRecognitionEvent('result', (event) => {
+    setSearchQuery(event.results[0]?.transcript || "");
+  });
+
+  useSpeechRecognitionEvent('end', () => setIsListening(false));
+  useSpeechRecognitionEvent('error', () => setIsListening(false));
+
+  const toggleDictation = async () => {
+    if (isListening) {
+      ExpoSpeechRecognitionModule.stop();
+      setIsListening(false);
+    } else {
+      const result = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+      if (!result.granted) {
+        Alert.alert("Permissions needed", "Microphone access is required for voice search.");
+        return;
+      }
+      setSearchQuery(""); // Wipe input for fresh dictation
+      setIsListening(true);
+      ExpoSpeechRecognitionModule.start({ lang: 'en-JM', interimResults: true });
+    }
+  };
 
   const handleSelectSearchResult = (poi) => {
     lastSearchSelectionRef.current = Date.now(); // Absolute Global Temporal Map Shield! 
@@ -375,8 +401,8 @@ export default function CampusMapScreen() {
           <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
           <TextInput 
             style={styles.searchInput}
-            placeholder="Search locations, buildings, rooms..."
-            placeholderTextColor="#888"
+            placeholder={isListening ? "Listening natively..." : "Search locations, buildings, rooms..."}
+            placeholderTextColor={isListening ? "#66FCF1" : "#888"}
             value={searchQuery}
             onChangeText={setSearchQuery}
             returnKeyType="search"
@@ -386,6 +412,9 @@ export default function CampusMapScreen() {
                }
             }}
           />
+          <TouchableOpacity onPress={toggleDictation} style={{ padding: 8, marginLeft: 'auto' }}>
+            <Ionicons name={isListening ? "mic" : "mic-outline"} size={22} color={isListening ? "#66FCF1" : "#888"} />
+          </TouchableOpacity>
         </View>
       </View>
 
