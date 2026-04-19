@@ -197,9 +197,6 @@ export default function CampusMapScreen() {
 
       const res = await fetchWithAuth('/api/v1/mobile/map/submissions', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
         body: formData,
       });
 
