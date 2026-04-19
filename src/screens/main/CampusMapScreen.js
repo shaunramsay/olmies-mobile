@@ -31,6 +31,19 @@ const decodePolyline = (t, e) => {
     return d;
 };
 
+// Haversine formula to compute metric distance between coordinates
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371; // Radius of the Earth in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2); 
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+  return R * c; 
+};
+
 export default function CampusMapScreen() {
   const { user, fetchWithAuth, logout } = useAuth();
   const { colors, isDarkTheme, toggleTheme } = useAppTheme();
@@ -108,6 +121,13 @@ export default function CampusMapScreen() {
       const originLng = location.coords.longitude;
       const destLat = parseFloat(selectedPoi.coordinateY);
       const destLng = parseFloat(selectedPoi.coordinateX);
+      
+      const distanceToCampus = calculateDistance(originLat, originLng, mapRegion.latitude, mapRegion.longitude);
+      if (distanceToCampus > 5) { // Strict 5km Walking limit to prevent giant Map fetches
+        Alert.alert("Too Far", "Walking directions are only available when you are near the UTech Campus. Use a vehicle or arrive on campus first.");
+        setCalculatingRoute(false);
+        return;
+      }
       
       const apiKey = Constants.expoConfig?.android?.config?.googleMaps?.apiKey || Constants.expoConfig?.ios?.config?.googleMapsApiKey || 'AIzaSyCp9p5NyeornCg5v32anUe7RbmHIXy6rZU';
       const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${originLat},${originLng}&destination=${destLat},${destLng}&mode=walking&key=${apiKey}`;
@@ -522,9 +542,23 @@ export default function CampusMapScreen() {
               <Text style={styles.poiDesc}>{selectedPoi.description}</Text>
               
               {routeInfo ? (
-                <View style={{ marginTop: 12, backgroundColor: 'rgba(102, 252, 241, 0.1)', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(102, 252, 241, 0.3)' }}>
-                   <Text style={{ color: '#66FCF1', fontWeight: 'bold', marginBottom: 4 }}><Ionicons name="walk" size={14} /> Walking Route Active</Text>
-                   <Text style={{ color: '#ddd', fontSize: 13 }}>Distance: {routeInfo.distance} • Est: {routeInfo.duration}</Text>
+                <View style={{ marginTop: 12, backgroundColor: 'rgba(102, 252, 241, 0.1)', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(102, 252, 241, 0.3)', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                   <View style={{ flex: 1 }}>
+                     <Text style={{ color: '#66FCF1', fontWeight: 'bold', marginBottom: 4 }}><Ionicons name="walk" size={14} /> Walking Route Active</Text>
+                     <Text style={{ color: '#ddd', fontSize: 13 }}>Distance: {routeInfo.distance} • Est: {routeInfo.duration}</Text>
+                   </View>
+                   <TouchableOpacity 
+                     style={{ padding: 6, backgroundColor: 'rgba(102, 252, 241, 0.2)', borderRadius: 20, marginLeft: 10 }}
+                     onPress={() => {
+                       setCurrentRoute(null);
+                       setRouteInfo(null);
+                       if (mapRef.current) {
+                          mapRef.current.animateToRegion(getCoordinates(selectedPoi.coordinateX, selectedPoi.coordinateY), 500);
+                       }
+                     }}
+                   >
+                     <Ionicons name="close" size={22} color="#66FCF1" />
+                   </TouchableOpacity>
                 </View>
               ) : (
                 <TouchableOpacity 
