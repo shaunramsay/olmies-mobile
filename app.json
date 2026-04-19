@@ -52,7 +52,14 @@
           "locationAlwaysAndWhenInUsePermission": "Allow OLMIES to securely use your location to place your position dynamically on the physical campus map."
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Allow OLMIES to access your microphone for instantaneous voice-to-text dictation on the map.",
+          "speechRecognitionPermission": "Allow OLMIES to use native Speech Recognition to instantly route your voice into text queries."
+        }
+      ]
     ]
   }
 }
