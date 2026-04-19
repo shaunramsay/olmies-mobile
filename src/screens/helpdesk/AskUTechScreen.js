@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
 import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../context/ThemeContext';
 import Constants from 'expo-constants';
@@ -23,7 +24,64 @@ export default function AskUTechScreen({ navigation }) {
   ]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [recording, setRecording] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const flatListRef = useRef();
+
+  const startRecording = async () => {
+    try {
+      const permission = await Audio.requestPermissionsAsync();
+      if (permission.status === 'granted') {
+        await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+        const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+        setRecording(recording);
+        setIsRecording(true);
+      } else {
+        Alert.alert("Permission Needed", "Please enable microphone permissions to use voice search.");
+      }
+    } catch (err) {
+      console.error('Failed to start recording', err);
+    }
+  };
+
+  const stopRecording = async () => {
+    if (!recording) return;
+
+    setIsRecording(false);
+    await recording.stopAndUnloadAsync();
+    await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+    const uri = recording.getURI();
+    setRecording(null);
+    setIsTranscribing(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append('audio', {
+        uri: uri,
+        name: 'voice.m4a',
+        type: 'audio/m4a',
+      });
+
+      const res = await fetchWithAuth('/api/v1/helpdesk/audio/transcribe', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.text) {
+          setInputText((prev) => prev ? prev + ' ' + data.text : data.text); 
+        }
+      } else {
+        Alert.alert("Server Reject", "Audio could not be transcribed reliably.");
+      }
+    } catch (err) {
+      Alert.alert("Network Error", "Could not reach Transcription Server.");
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
 
   const handleSend = async () => {
     if (!inputText.trim()) return;
@@ -161,6 +219,12 @@ export default function AskUTechScreen({ navigation }) {
         )}
 
         {/* Input Area */}
+        {isRecording && (
+          <View style={{ paddingHorizontal: 16, paddingBottom: 8, flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: 'red', marginRight: 8 }} />
+            <Text style={{ color: 'red', fontWeight: 'bold', fontSize: 12 }}>Recording Audio...</Text>
+          </View>
+        )}
         <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 15) }]}>
           <TextInput
             style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
@@ -177,6 +241,18 @@ export default function AskUTechScreen({ navigation }) {
             disabled={!inputText.trim()}
           >
             <Ionicons name="send" size={20} color={inputText.trim() ? "#fff" : colors.textSecondary} />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.micButton, { backgroundColor: isRecording ? '#ef4444' : colors.surface, borderColor: isRecording ? '#dc2626' : colors.border, borderWidth: 1 }]}
+            onPressIn={startRecording}
+            onPressOut={stopRecording}
+            disabled={isTranscribing}
+          >
+            {isTranscribing ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+                <Ionicons name={isRecording ? "mic" : "mic-outline"} size={22} color={isRecording ? "#fff" : colors.textSecondary} />
+            )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -301,5 +377,13 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  micButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
   }
 });
