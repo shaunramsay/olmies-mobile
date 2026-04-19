@@ -183,7 +183,13 @@ export const AuthProvider = ({ children }) => {
         if (token) {
             headers['Authorization'] = `Bearer ${token}`;
         }
-        headers['Content-Type'] = options.headers && options.headers['Content-Type'] ? options.headers['Content-Type'] : 'application/json';
+        
+        // Prevent manual Content-Type overrides from breaking the auto-generated FormData boundary hashes natively.
+        if (options.body instanceof FormData) {
+            delete headers['Content-Type'];
+        } else if (!headers['Content-Type']) {
+            headers['Content-Type'] = 'application/json';
+        }
 
         const response = await fetch(fullUrl, { ...options, headers });
         if (response.status === 401 && token) {
