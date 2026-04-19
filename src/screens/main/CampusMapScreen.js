@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TextInput, ActivityIndicator, FlatList, TouchableOpacity, Dimensions, Platform, Linking, Alert, Modal, ScrollView, Image } from 'react-native';
 import Constants from 'expo-constants';
 import * as ImagePicker from 'expo-image-picker';
+import API_BASE_URL from '../../config/api';
 
 // Dynamically import MapView to prevent web bundler from crashing
 let MapView, Marker, Callout, UrlTile, Polygon, Polyline, PROVIDER_GOOGLE;
@@ -531,15 +532,42 @@ export default function CampusMapScreen() {
           
           {selectedPoi && (
             <TouchableOpacity activeOpacity={1} style={styles.poiCardFloating}>
-              <View style={styles.poiHeader}>
-                <Ionicons 
-                  name={getCategoryIcon(selectedPoi.category)} 
-                  size={24} 
-                  color={getCategoryColor(selectedPoi.category)} 
+              
+              {/* Dynamic Image Loader explicitly checking for Absolute vs Relative paths */}
+              {selectedPoi.imageUrl && (
+                <Image 
+                  source={{ uri: selectedPoi.imageUrl.startsWith('http') ? selectedPoi.imageUrl : `${API_BASE_URL}${selectedPoi.imageUrl}` }} 
+                  style={{ width: '100%', height: 140, borderRadius: 8, marginBottom: 12, backgroundColor: 'rgba(255,255,255,0.05)' }} 
+                  resizeMode="cover" 
                 />
-                <Text style={styles.poiName}>{selectedPoi.name}</Text>
+              )}
+
+              <View style={styles.poiHeader}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                  <Ionicons 
+                    name={getCategoryIcon(selectedPoi.category)} 
+                    size={24} 
+                    color={getCategoryColor(selectedPoi.category)} 
+                  />
+                  <Text style={styles.poiName} numberOfLines={1}>{selectedPoi.name}</Text>
+                </View>
+                
+                {/* Dynamically Render Community/Moderation Badges */}
+                {selectedPoi.type === 'Community' && (
+                  <View style={[styles.badge, { backgroundColor: selectedPoi.approvalStatus === 'Pending' ? 'rgba(255,165,0,0.2)' : 'rgba(138,43,226,0.2)', borderColor: selectedPoi.approvalStatus === 'Pending' ? 'orange' : 'violet' }]}>
+                     <Text style={{ color: selectedPoi.approvalStatus === 'Pending' ? 'orange' : 'violet', fontSize: 10, fontWeight: 'bold' }}>
+                       {selectedPoi.approvalStatus === 'Pending' ? 'PENDING' : 'COMMUNITY'}
+                     </Text>
+                  </View>
+                )}
+                {selectedPoi.type === 'Official' && (
+                   <View style={[styles.badge, { backgroundColor: 'rgba(74,144,226,0.2)', borderColor: '#4A90E2' }]}>
+                     <Text style={{ color: '#4A90E2', fontSize: 10, fontWeight: 'bold' }}>OFFICIAL</Text>
+                  </View>
+                )}
               </View>
-              <Text style={styles.poiDesc}>{selectedPoi.description}</Text>
+
+              {selectedPoi.description && <Text style={styles.poiDesc}>{selectedPoi.description}</Text>}
               
               {routeInfo ? (
                 <View style={{ marginTop: 12, backgroundColor: 'rgba(102, 252, 241, 0.1)', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(102, 252, 241, 0.3)', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -853,13 +881,22 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
-    marginLeft: 10
+    marginLeft: 10,
+    flexShrink: 1
   },
   poiDesc: {
     color: '#aaa',
     fontSize: 14,
     lineHeight: 20,
-    paddingLeft: 34
+    paddingLeft: 34,
+    marginBottom: 4
+  },
+  badge: {
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 4,
+    borderWidth: 1,
+    marginLeft: 10
   },
   calloutContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.85)',
