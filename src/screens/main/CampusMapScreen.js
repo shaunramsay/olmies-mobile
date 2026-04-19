@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TextInput, ActivityIndicator, FlatList, TouchableOpacity, Dimensions, Platform, Linking, Alert } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TextInput, ActivityIndicator, FlatList, TouchableOpacity, Dimensions, Platform, Linking, Alert, Modal, ScrollView, Image } from 'react-native';
 import Constants from 'expo-constants';
+import * as ImagePicker from 'expo-image-picker';
 
 // Dynamically import MapView to prevent web bundler from crashing
 let MapView, Marker, Callout, UrlTile, Polygon, Polyline, PROVIDER_GOOGLE;
@@ -42,6 +43,15 @@ export default function CampusMapScreen() {
   const [routeInfo, setRouteInfo] = useState(null);
   const [calculatingRoute, setCalculatingRoute] = useState(false);
   const [mapType, setMapType] = useState('hybrid'); // Expose toggle for Standard vs Hybrid
+
+  // Interactive Crowdsourcing State
+  const [draftPin, setDraftPin] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [pinName, setPinName] = useState('');
+  const [pinDesc, setPinDesc] = useState('');
+  const [pinCategory, setPinCategory] = useState('Building');
+  const [pinImage, setPinImage] = useState(null);
+  const [submittingPin, setSubmittingPin] = useState(false);
   const mapRef = useRef(null);
   const selectedMarkerRef = useRef(null);
   const lastSearchSelectionRef = useRef(0);
@@ -134,6 +144,86 @@ export default function CampusMapScreen() {
     }
   };
 
+  const handleMapLongPress = (e) => {
+    if (!user) {
+      Alert.alert("Login Required", "You must be logged in to contribute new map locations.");
+      return;
+    }
+    const { coordinate } = e.nativeEvent;
+    setDraftPin(coordinate);
+    setPinName('');
+    setPinDesc('');
+    setPinCategory('Building');
+    setPinImage(null);
+    setModalVisible(true);
+  };
+
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.5,
+    });
+
+    if (!result.canceled) {
+      setPinImage(result.assets[0]);
+    }
+  };
+
+  const submitDraftPin = async () => {
+    if (!pinName.trim()) {
+      Alert.alert("Error", "Please provide a name for this location.");
+      return;
+    }
+
+    setSubmittingPin(true);
+    try {
+      const formData = new FormData();
+      formData.append('Name', pinName);
+      formData.append('Description', pinDesc);
+      formData.append('Category', pinCategory);
+      formData.append('CoordinateX', draftPin.longitude.toString());
+      formData.append('CoordinateY', draftPin.latitude.toString());
+
+      if (pinImage) {
+        const localUri = pinImage.uri;
+        const filename = localUri.split('/').pop() || 'photo.jpg';
+        const match = /\.(\w+)$/.exec(filename);
+        const type = match ? `image/${match[1]}` : `image/jpeg`;
+
+        formData.append('Image', { uri: localUri, name: filename, type });
+      }
+
+      const res = await fetchWithAuth('/api/v1/mobile/map/submissions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        body: formData,
+      });
+
+      if (res.ok) {
+        Alert.alert("Success!", "Your pin was submitted and is waiting for administrator approval. You can now see it natively on your map!");
+        setModalVisible(false);
+        setDraftPin(null);
+        // Refresh POIs to show the newly pending pin
+        const fetchRes = await fetchWithAuth('/api/v1/mobile/map/pins');
+        if (fetchRes.ok) {
+          const data = await fetchRes.json();
+          setPois(data);
+        }
+      } else {
+        const errText = await res.text();
+        Alert.alert("Submission Failed", errText || "Could not submit your location.");
+      }
+    } catch (err) {
+      Alert.alert("Network Error", "Unable to reach servers.");
+    } finally {
+      setSubmittingPin(false);
+    }
+  };
+
   // UTech Jamaica Center Coordinates
   const mapRegion = {
     latitude: 18.0180,
@@ -190,7 +280,7 @@ export default function CampusMapScreen() {
   useEffect(() => {
     const fetchPois = async () => {
       try {
-        const res = await fetchWithAuth('/api/v1/mobile/pois');
+        const res = await fetchWithAuth('/api/v1/mobile/map/pins');
         if (res.ok) {
           const data = await res.json();
           setPois(data);
@@ -295,6 +385,7 @@ export default function CampusMapScreen() {
             showsBuildings={true}
             mapType={mapType}
             userInterfaceStyle={isDarkTheme ? "dark" : "light"}
+            onLongPress={handleMapLongPress}
             onPress={(e) => {
               // Imperenetrable Temporal Shield: Absolutely block ALL phantom taps bleeding through unmounting DOM nodes!
               if (Date.now() - lastSearchSelectionRef.current < 1500) return;
@@ -314,6 +405,16 @@ export default function CampusMapScreen() {
                 strokeColor="#66FCF1"
                 strokeWidth={5}
                 zIndex={200}
+              />
+            )}
+            
+            {draftPin && (
+              <Marker
+                coordinate={draftPin}
+                pinColor="yellow"
+                title="New Location"
+                description="Drafting contribution..."
+                zIndex={300}
               />
             )}
             
@@ -473,6 +574,86 @@ export default function CampusMapScreen() {
 
         </View>
       )}
+
+      {/* Crowdsourcing Modal */}
+      <Modal
+        visible={modalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Contribute Location</Text>
+            
+            <ScrollView style={{ width: '100%', maxHeight: '80%' }}>
+              <Text style={styles.inputLabel}>Name / Title</Text>
+              <TextInput
+                style={[styles.modalInput, { color: colors.text, borderColor: colors.border }]}
+                placeholder="e.g. Science Lab 3"
+                placeholderTextColor={colors.textSecondary}
+                value={pinName}
+                onChangeText={setPinName}
+              />
+
+              <Text style={styles.inputLabel}>Description (Optional)</Text>
+              <TextInput
+                style={[styles.modalInput, { color: colors.text, borderColor: colors.border, height: 60 }]}
+                placeholder="Details about this place..."
+                placeholderTextColor={colors.textSecondary}
+                multiline
+                value={pinDesc}
+                onChangeText={setPinDesc}
+              />
+
+              <Text style={styles.inputLabel}>Category</Text>
+              <View style={styles.categoryContainer}>
+                {['Building', 'Vendor', 'FoodZone', 'Office', 'Restroom'].map(cat => (
+                  <TouchableOpacity
+                    key={cat}
+                    style={[
+                      styles.catChip, 
+                      pinCategory === cat && { backgroundColor: getCategoryColor(cat), borderColor: getCategoryColor(cat) }
+                    ]}
+                    onPress={() => setPinCategory(cat)}
+                  >
+                    <Text style={{ color: pinCategory === cat ? '#fff' : colors.text }}>{cat}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.inputLabel}>Photo (Optional)</Text>
+              <TouchableOpacity style={styles.imagePickerBtn} onPress={pickImage}>
+                {pinImage ? (
+                  <Image source={{ uri: pinImage.uri }} style={{ width: '100%', height: 150, borderRadius: 8 }} />
+                ) : (
+                   <View style={styles.imagePlaceholder}>
+                     <Ionicons name="camera-outline" size={32} color={colors.textSecondary} />
+                     <Text style={{ color: colors.textSecondary, marginTop: 8 }}>Tap to add photo</Text>
+                   </View>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => {
+                setModalVisible(false);
+                setDraftPin(null);
+              }}>
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.submitBtn, (!pinName.trim() || submittingPin) && { opacity: 0.5 }]} 
+                onPress={submitDraftPin}
+                disabled={!pinName.trim() || submittingPin}
+              >
+                {submittingPin ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.submitBtnText}>Submit Pin</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -670,5 +851,108 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 15,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20
+  },
+  modalContent: {
+    width: '100%',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    alignSelf: 'flex-start'
+  },
+  inputLabel: {
+    alignSelf: 'flex-start',
+    color: '#888',
+    fontSize: 13,
+    marginBottom: 6,
+    marginTop: 15,
+    fontWeight: '600',
+    textTransform: 'uppercase'
+  },
+  modalInput: {
+    width: '100%',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 14,
+    fontSize: 16,
+    backgroundColor: 'transparent'
+  },
+  categoryContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    width: '100%'
+  },
+  catChip: {
+    borderWidth: 1,
+    borderColor: '#444',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: 'transparent'
+  },
+  imagePickerBtn: {
+    width: '100%',
+    minHeight: 150,
+    borderWidth: 1,
+    borderColor: '#444',
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    overflow: 'hidden'
+  },
+  imagePlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    width: '100%',
+    marginTop: 25,
+    gap: 15
+  },
+  cancelBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  submitBtn: {
+    backgroundColor: '#4A90E2',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 120
+  },
+  cancelBtnText: {
+    color: '#aaa',
+    fontSize: 16,
+    fontWeight: 'bold'
+  },
+  submitBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold'
   }
 });
