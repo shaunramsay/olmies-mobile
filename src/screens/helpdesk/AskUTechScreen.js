@@ -242,18 +242,20 @@ export default function AskUTechScreen({ navigation }) {
           >
             <Ionicons name="send" size={20} color={inputText.trim() ? "#fff" : colors.textSecondary} />
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.micButton, { backgroundColor: isRecording ? '#ef4444' : colors.surface, borderColor: isRecording ? '#dc2626' : colors.border, borderWidth: 1 }]}
-            onPressIn={startRecording}
-            onPressOut={stopRecording}
-            disabled={isTranscribing}
-          >
-            {isTranscribing ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-            ) : (
-                <Ionicons name={isRecording ? "mic" : "mic-outline"} size={22} color={isRecording ? "#fff" : colors.textSecondary} />
-            )}
-          </TouchableOpacity>
+          {user && (
+            <TouchableOpacity 
+              style={[styles.micButton, { backgroundColor: isRecording ? '#ef4444' : colors.surface, borderColor: isRecording ? '#dc2626' : colors.border, borderWidth: 1 }]}
+              onPressIn={startRecording}
+              onPressOut={stopRecording}
+              disabled={isTranscribing}
+            >
+              {isTranscribing ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                  <Ionicons name={isRecording ? "mic" : "mic-outline"} size={22} color={isRecording ? "#fff" : colors.textSecondary} />
+              )}
+            </TouchableOpacity>
+          )}
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
