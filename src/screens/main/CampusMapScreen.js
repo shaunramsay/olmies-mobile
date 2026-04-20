@@ -2,20 +2,38 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TextInput, ActivityIndicator, FlatList, TouchableOpacity, Dimensions, Platform, Linking, Alert, Modal, ScrollView, Image } from 'react-native';
 import Constants from 'expo-constants';
 import * as ImagePicker from 'expo-image-picker';
-import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from 'expo-speech-recognition';
+import { useIsFocused } from '@react-navigation/native';
 import API_BASE_URL from '../../config/api';
+
+let ExpoSpeechRecognitionModule = null;
+let useSpeechRecognitionEvent = (eventName, callback) => {};
+
+try {
+  if (Constants.appOwnership !== 'expo') {
+    const Speech = require('expo-speech-recognition');
+    ExpoSpeechRecognitionModule = Speech.ExpoSpeechRecognitionModule;
+    useSpeechRecognitionEvent = Speech.useSpeechRecognitionEvent;
+  }
+} catch (e) {
+  console.warn("Speech recognition native module not loaded.");
+}
 
 // Dynamically import MapView to prevent web bundler from crashing
 let MapView, Marker, Callout, UrlTile, Polygon, Polyline, PROVIDER_GOOGLE;
 if (Platform.OS !== 'web') {
-  const Maps = require('react-native-maps');
-  MapView = Maps.default;
-  Marker = Maps.Marker;
-  Callout = Maps.Callout;
-  UrlTile = Maps.UrlTile;
-  Polygon = Maps.Polygon;
-  Polyline = Maps.Polyline;
-  PROVIDER_GOOGLE = Maps.PROVIDER_GOOGLE;
+  try {
+    const Maps = require('react-native-maps');
+    const MapsModule = Maps?.default ? Maps : { default: Maps, ...Maps };
+    MapView = MapsModule.default;
+    Marker = MapsModule.Marker;
+    Callout = MapsModule.Callout;
+    UrlTile = MapsModule.UrlTile;
+    Polygon = MapsModule.Polygon;
+    Polyline = MapsModule.Polyline;
+    PROVIDER_GOOGLE = MapsModule.PROVIDER_GOOGLE;
+  } catch (e) {
+    console.warn('react-native-maps native module not loaded.', e);
+  }
 }
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
@@ -49,6 +67,7 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 export default function CampusMapScreen() {
   const { user, fetchWithAuth, logout } = useAuth();
   const { colors, isDarkTheme, toggleTheme } = useAppTheme();
+  const isFocused = useIsFocused();
   const [pois, setPois] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -71,6 +90,7 @@ export default function CampusMapScreen() {
   const mapRef = useRef(null);
   const selectedMarkerRef = useRef(null);
   const lastSearchSelectionRef = useRef(0);
+  const speechAvailable = !!ExpoSpeechRecognitionModule;
 
   // Hook directly into the OS Speech engine thread
   useSpeechRecognitionEvent('result', (event) => {
@@ -81,6 +101,11 @@ export default function CampusMapScreen() {
   useSpeechRecognitionEvent('error', () => setIsListening(false));
 
   const toggleDictation = async () => {
+    if (!speechAvailable) {
+      Alert.alert("Feature Unavailable", "Voice search requires a custom native app build. Not available in standard Expo Go.");
+      return;
+    }
+
     if (isListening) {
       ExpoSpeechRecognitionModule.stop();
       setIsListening(false);
@@ -334,20 +359,31 @@ export default function CampusMapScreen() {
   };
 
   useEffect(() => {
+    let isCancelled = false;
+
     const fetchPois = async () => {
+      if (!isFocused) return;
       try {
         const res = await fetchWithAuth('/api/v1/mobile/map/pins');
         if (res.ok) {
           const data = await res.json();
-          setPois(data);
+          if (!isCancelled) setPois(data);
         }
       } catch (err) {
         console.error('Failed to fetch POIs:', err);
       } finally {
-        setLoading(false);
+        if (!isCancelled) setLoading(false);
       }
     };
     
+    fetchPois();
+
+    return () => {
+       isCancelled = true;
+    };
+  }, [isFocused, user?.username]);
+
+  useEffect(() => {
     const requestGpsPermissions = async () => {
       try {
         let { status } = await Location.requestForegroundPermissionsAsync();
@@ -359,7 +395,6 @@ export default function CampusMapScreen() {
       }
     };
     
-    fetchPois();
     requestGpsPermissions();
   }, []);
 
@@ -412,8 +447,16 @@ export default function CampusMapScreen() {
                }
             }}
           />
-          <TouchableOpacity onPress={toggleDictation} style={{ padding: 8, marginLeft: 'auto' }}>
-            <Ionicons name={isListening ? "mic" : "mic-outline"} size={22} color={isListening ? "#66FCF1" : "#888"} />
+          <TouchableOpacity
+            onPress={toggleDictation}
+            disabled={!speechAvailable}
+            style={{ padding: 8, marginLeft: 'auto', opacity: speechAvailable ? 1 : 0.35 }}
+          >
+            <Ionicons
+              name={isListening ? "mic" : "mic-outline"}
+              size={22}
+              color={isListening ? "#66FCF1" : speechAvailable ? "#888" : "#666"}
+            />
           </TouchableOpacity>
         </View>
       </View>
@@ -423,12 +466,14 @@ export default function CampusMapScreen() {
           <ActivityIndicator size="large" color="#4A90E2" />
           <Text style={styles.mapTitle}>Loading Map Data...</Text>
         </View>
-      ) : Platform.OS === 'web' ? (
+      ) : Platform.OS === 'web' || !MapView ? (
         <View style={styles.mapPlaceholder}>
           <Ionicons name="map" size={48} color="#4A90E2" />
-          <Text style={styles.mapTitle}>Map Optimization</Text>
+          <Text style={styles.mapTitle}>{Platform.OS === 'web' ? 'Map Optimization' : 'Map Unavailable'}</Text>
           <Text style={styles.mapSubtitle}>
-            The interactive campus map leverages native hardware rendering and is only available on iOS and Android. Please open the Olmies app on your mobile device.
+            {Platform.OS === 'web'
+              ? 'The interactive campus map leverages native hardware rendering and is only available on iOS and Android. Please open the Olmies app on your mobile device.'
+              : 'This app build could not load the native map module. Please reinstall the latest mobile build.'}
           </Text>
         </View>
       ) : (

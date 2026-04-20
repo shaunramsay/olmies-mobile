@@ -2,10 +2,18 @@ import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Audio } from 'expo-av';
 import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../context/ThemeContext';
 import Constants from 'expo-constants';
+
+let Audio = null;
+try {
+  if (Constants.appOwnership !== 'expo') {
+    Audio = require('expo-av').Audio;
+  }
+} catch (e) {
+  console.warn('expo-av native module not loaded.');
+}
 
 export default function AskUTechScreen({ navigation }) {
   const { colors } = useAppTheme();
@@ -28,8 +36,14 @@ export default function AskUTechScreen({ navigation }) {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const flatListRef = useRef();
+  const audioAvailable = !!Audio;
 
   const startRecording = async () => {
+    if (!audioAvailable) {
+      Alert.alert("Feature Unavailable", "Voice recording requires a custom native app build. Not available in standard Expo Go.");
+      return;
+    }
+
     try {
       const permission = await Audio.requestPermissionsAsync();
       if (permission.status === 'granted') {
@@ -244,15 +258,15 @@ export default function AskUTechScreen({ navigation }) {
           </TouchableOpacity>
           {user && (
             <TouchableOpacity 
-              style={[styles.micButton, { backgroundColor: isRecording ? '#ef4444' : colors.surface, borderColor: isRecording ? '#dc2626' : colors.border, borderWidth: 1 }]}
+              style={[styles.micButton, { backgroundColor: isRecording ? '#ef4444' : colors.surface, borderColor: isRecording ? '#dc2626' : colors.border, borderWidth: 1, opacity: audioAvailable ? 1 : 0.35 }]}
               onPressIn={startRecording}
               onPressOut={stopRecording}
-              disabled={isTranscribing}
+              disabled={isTranscribing || !audioAvailable}
             >
               {isTranscribing ? (
                   <ActivityIndicator size="small" color={colors.primary} />
               ) : (
-                  <Ionicons name={isRecording ? "mic" : "mic-outline"} size={22} color={isRecording ? "#fff" : colors.textSecondary} />
+                  <Ionicons name={isRecording ? "mic" : "mic-outline"} size={22} color={isRecording ? "#fff" : audioAvailable ? colors.textSecondary : '#666'} />
               )}
             </TouchableOpacity>
           )}

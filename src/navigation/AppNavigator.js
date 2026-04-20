@@ -9,6 +9,7 @@ import LoginScreen from '../screens/auth/LoginScreen';
 import DataProtectionScreen from '../screens/auth/DataProtectionScreen';
 import MainTabNavigator from './MainTabNavigator';
 import WebNavigationShell from './WebNavigationShell';
+import AskUTechScreen from '../screens/helpdesk/AskUTechScreen';
 import SurveyScreen from '../screens/survey/SurveyScreen';
 import SurveyResultsScreen from '../screens/survey/SurveyResultsScreen';
 
@@ -38,7 +39,7 @@ export default function AppNavigator() {
       <Stack.Screen name="Landing" component={LandingScreen} />
       <Stack.Screen name="Main" component={MainComponent} />
       <Stack.Screen name="Login" component={LoginScreen} options={{ presentation: 'modal' }} />
-      <Stack.Screen name="AskUTech" component={require('../screens/helpdesk/AskUTechScreen').default} />
+      <Stack.Screen name="AskUTech" component={AskUTechScreen} />
       <Stack.Screen name="Survey" component={SurveyScreen} options={{ presentation: 'fullScreenModal' }} />
       <Stack.Screen name="SurveyResults" component={SurveyResultsScreen} options={{ presentation: 'fullScreenModal' }} />
       <Stack.Screen name="DataProtection" component={DataProtectionScreen} options={{ presentation: 'fullScreenModal' }} />
