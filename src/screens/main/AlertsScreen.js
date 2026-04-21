@@ -6,7 +6,7 @@ import { useAppTheme } from '../../context/ThemeContext';
 import { useFocusEffect } from '@react-navigation/native';
 import API_BASE_URL from '../../config/api';
 
-export default function AlertsScreen() {
+export default function AlertsScreen({ navigation }) {
   const { user, fetchWithAuth, logout } = useAuth();
   const { colors, isDarkTheme, toggleTheme } = useAppTheme();
   const [alerts, setAlerts] = useState([]);
@@ -60,10 +60,14 @@ export default function AlertsScreen() {
           <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={toggleTheme}>
             <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={18} color={colors.textSecondary} />
           </TouchableOpacity>
-          {user && (
+          {user ? (
             <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={logout}>
               <Ionicons name="log-out-outline" size={18} color={colors.textSecondary} />
             </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={() => navigation.navigate('Login')}>
+              <Ionicons name="log-in-outline" size={18} color={colors.textSecondary} />
+             </TouchableOpacity>
           )}
         </View>
       </View>
