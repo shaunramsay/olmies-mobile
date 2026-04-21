@@ -79,13 +79,21 @@ function CustomSidebar({ state, descriptors, navigation }) {
          <Text style={[styles.navText, { color: colors.textSecondary }]}>Toggle Theme</Text>
       </TouchableOpacity>
 
-      {user && (
+      {user ? (
         <TouchableOpacity 
             style={[styles.logoutButton, { borderTopColor: colors.border, marginTop: 0 }]} 
             onPress={logout}
         >
            <Ionicons name="log-out-outline" size={24} color={colors.textSecondary} style={{ marginRight: 15 }} />
            <Text style={[styles.navText, { color: colors.textSecondary }]}>Logout</Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity 
+            style={[styles.logoutButton, { borderTopColor: colors.border, marginTop: 0 }]} 
+            onPress={() => navigation.navigate('Login')}
+        >
+           <Ionicons name="log-in-outline" size={24} color={colors.textSecondary} style={{ marginRight: 15 }} />
+           <Text style={[styles.navText, { color: colors.textSecondary }]}>Login</Text>
         </TouchableOpacity>
       )}
     </View>

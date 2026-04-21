@@ -74,9 +74,13 @@ export default function StudentHubScreen({ navigation }) {
           <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={toggleTheme}>
             <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={18} color={colors.textSecondary} />
           </TouchableOpacity>
-          {user && (
+          {user ? (
             <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={logout}>
               <Ionicons name="log-out-outline" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={() => navigation.navigate('Login')}>
+              <Ionicons name="log-in-outline" size={18} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
