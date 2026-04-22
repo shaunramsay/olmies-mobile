@@ -9,8 +9,14 @@ const CLOUD_WIFI_IP = debuggerHost.split(':')[0];
 const overrideIp = '192.168.5.206';
 const useIp = CLOUD_WIFI_IP || overrideIp;
 
-// Allow Web to use localhost to avoid CORS/IP drift, phones use the LAN IP
-const defaultApiUrl = 'https://olmies-ai-helpdesk.azurewebsites.net';
+// Allow an explicit env override first. Otherwise, keep production for web and use
+// the LAN-hosted backend in Expo/native development for faster local recovery.
+const localApiUrl = Platform.OS === 'web'
+  ? 'http://localhost:5000'
+  : `http://${useIp}:5000`;
+const defaultApiUrl = __DEV__
+  ? localApiUrl
+  : 'https://olmies-ai-helpdesk.azurewebsites.net';
 
 
 

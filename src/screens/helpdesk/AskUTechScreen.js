@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../context/ThemeContext';
 import Constants from 'expo-constants';
+import API_BASE_URL from '../../config/api';
 
 let Audio = null;
 try {
@@ -37,6 +38,39 @@ export default function AskUTechScreen({ navigation }) {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const flatListRef = useRef();
   const audioAvailable = !!Audio;
+
+  const buildHelpdeskErrorMessage = async (response) => {
+    const fallback = "I'm sorry, I couldn't connect to my knowledge base right now. Please try again later.";
+
+    try {
+      const rawText = await response.text();
+      if (!rawText) {
+        return fallback;
+      }
+
+      try {
+        const data = JSON.parse(rawText);
+        if (typeof data === 'string' && data.trim()) {
+          return data.trim();
+        }
+        if (data?.message) {
+          return data.message;
+        }
+        if (data?.error) {
+          return data.error;
+        }
+        if (data?.title) {
+          return data.title;
+        }
+      } catch {
+        // Fall through and use the raw text if it is not JSON.
+      }
+
+      return rawText.trim() || fallback;
+    } catch {
+      return fallback;
+    }
+  };
 
   const startRecording = async () => {
     if (!audioAvailable) {
@@ -136,7 +170,7 @@ export default function AskUTechScreen({ navigation }) {
         const data = await response.json();
         const aiMessage = {
           id: (Date.now() + 1).toString(),
-          text: data.answer,
+          text: data.answer || "I couldn't find a complete answer just now. Please try again shortly.",
           sources: data.sources || [],
           isCohortSpecific: data.isCohortSpecific,
           sender: 'ai',
@@ -144,9 +178,10 @@ export default function AskUTechScreen({ navigation }) {
         };
         setMessages(prev => [...prev, aiMessage]);
       } else {
+        const serverMessage = await buildHelpdeskErrorMessage(response);
         const aiError = {
           id: (Date.now() + 1).toString(),
-          text: "I'm sorry, I couldn't connect to my knowledge base right now. Please try again later.",
+          text: serverMessage,
           sender: 'ai',
           timestamp: new Date().toISOString()
         };
@@ -156,7 +191,9 @@ export default function AskUTechScreen({ navigation }) {
       console.error(error);
       const aiError = {
         id: (Date.now() + 1).toString(),
-        text: "I'm having trouble connecting to the network. Please check your connection.",
+        text: __DEV__
+          ? `I'm having trouble reaching the API at ${API_BASE_URL}. Please make sure the local backend is running and reachable from this device.`
+          : "I'm having trouble connecting to the network. Please check your connection.",
         sender: 'ai',
         timestamp: new Date().toISOString()
       };
