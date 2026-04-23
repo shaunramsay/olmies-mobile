@@ -7,10 +7,10 @@
       "channel": "preview",
       "android": {
         "buildType": "apk"
-      },
-      "env": {
-        "EXPO_PUBLIC_API_URL": "https://olmies-ai-helpdesk.azurewebsites.net"
       }
+    },
+    "production": {
+      "channel": "production"
     }
   }
 }

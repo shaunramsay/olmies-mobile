@@ -3,9 +3,14 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "check:env": "node ./scripts/validate-env.js",
+    "start:checked": "npm run check:env && expo start",
     "start": "expo start",
+    "android:checked": "npm run check:env && expo start --android",
     "android": "expo start --android",
+    "ios:checked": "npm run check:env && expo start --ios",
     "ios": "expo start --ios",
+    "web:checked": "npm run check:env && expo start --web --port 3000",
     "web": "expo start --web --port 3000"
   },
   "dependencies": {
