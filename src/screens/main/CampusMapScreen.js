@@ -91,6 +91,10 @@ export default function CampusMapScreen({ navigation }) {
   const selectedMarkerRef = useRef(null);
   const lastSearchSelectionRef = useRef(0);
   const speechAvailable = !!ExpoSpeechRecognitionModule;
+  const googleMapsApiKey =
+    Constants.expoConfig?.extra?.googleMapsApiKey ||
+    process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ||
+    '';
 
   // Hook directly into the OS Speech engine thread
   useSpeechRecognitionEvent('result', (event) => {
@@ -181,8 +185,13 @@ export default function CampusMapScreen({ navigation }) {
         return;
       }
       
-      const apiKey = Constants.expoConfig?.android?.config?.googleMaps?.apiKey || Constants.expoConfig?.ios?.config?.googleMapsApiKey || 'AIzaSyCp9p5NyeornCg5v32anUe7RbmHIXy6rZU';
-      const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${originLat},${originLng}&destination=${destLat},${destLng}&mode=walking&key=${apiKey}`;
+      if (!googleMapsApiKey) {
+        Alert.alert("Map Key Missing", "Set EXPO_PUBLIC_GOOGLE_MAPS_API_KEY before testing directions in this environment.");
+        setCalculatingRoute(false);
+        return;
+      }
+
+      const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${originLat},${originLng}&destination=${destLat},${destLng}&mode=walking&key=${googleMapsApiKey}`;
       
       const response = await fetch(url);
       const data = await response.json();

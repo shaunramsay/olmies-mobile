@@ -1,26 +1,17 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
-// Dynamically grab the laptop's Wi-Fi IP address automatically assigned by Expo
+// Prefer an explicit env var, but keep a LAN fallback for quick local Expo sessions.
 const debuggerHost = Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost || '';
-const CLOUD_WIFI_IP = debuggerHost.split(':')[0];
+const lanHost = debuggerHost.split(':')[0];
 
-// Physical phones CANNOT use 'localhost' to reach the laptop's backend!
-const overrideIp = '192.168.5.206';
-const useIp = CLOUD_WIFI_IP || overrideIp;
-
-// Allow an explicit env override first. Otherwise, keep production for web and use
-// the LAN-hosted backend in Expo/native development for faster local recovery.
-const localApiUrl = Platform.OS === 'web'
-  ? 'http://localhost:5000'
-  : `http://${useIp}:5000`;
-const defaultApiUrl = __DEV__
-  ? localApiUrl
-  : 'https://olmies-ai-helpdesk.azurewebsites.net';
-
-
-
-// Ensure Expo cache is cleared (expo start -c) when modifying .env variables!
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || defaultApiUrl;
+const localApiUrl = Platform.select({
+  web: 'http://localhost:5000',
+  android: lanHost ? `http://${lanHost}:5000` : 'http://10.0.2.2:5000',
+  ios: lanHost ? `http://${lanHost}:5000` : 'http://localhost:5000',
+  default: 'http://localhost:5000',
+});
+const configuredApiUrl = process.env.EXPO_PUBLIC_API_URL || Constants.expoConfig?.extra?.apiBaseUrl || '';
+const API_BASE_URL = configuredApiUrl || (__DEV__ ? localApiUrl : '');
 
 export default API_BASE_URL;
