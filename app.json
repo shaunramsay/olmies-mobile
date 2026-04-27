@@ -14,7 +14,7 @@
     "ios": {
       "supportsTablet": true,
       "config": {
-        "googleMapsApiKey": ""
+        "googleMapsApiKey": "AIzaSyCp9p5NyeornCg5v32anUe7RbmHIXy6rZU"
       }
     },
     "android": {
@@ -27,7 +27,7 @@
       "package": "com.shaunramsay14.olmiesmobile",
       "config": {
         "googleMaps": {
-          "apiKey": ""
+          "apiKey": "AIzaSyCp9p5NyeornCg5v32anUe7RbmHIXy6rZU"
         }
       }
     },
