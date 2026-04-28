@@ -5,12 +5,23 @@
   "build": {
     "preview": {
       "channel": "preview",
+      "env": {
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyD-h7DMbTT-k6abJcX_sP2CiDEzDkgFxmg",
+        "EXPO_PUBLIC_API_URL": "https://olmies-ai-helpdesk.azurewebsites.net"
+      },
       "android": {
         "buildType": "apk"
       }
     },
     "production": {
-      "channel": "production"
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyD-h7DMbTT-k6abJcX_sP2CiDEzDkgFxmg",
+        "EXPO_PUBLIC_API_URL": "https://olmies-ai-helpdesk.azurewebsites.net"
+      },
+      "android": {
+        "buildType": "apk"
+      }
     }
   }
 }

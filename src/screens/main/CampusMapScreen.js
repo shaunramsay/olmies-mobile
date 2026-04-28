@@ -542,7 +542,7 @@ export default function CampusMapScreen({ navigation }) {
                 try {
                   const arr = JSON.parse(poi.polygonCoordinates);
                   if (arr && arr.length > 2) {
-                    parsedPolygon = arr.map(coord => ({ latitude: coord[0], longitude: coord[1] }));
+                    parsedPolygon = arr.map(coord => ({ latitude: parseFloat(coord[0]), longitude: parseFloat(coord[1]) }));
                   }
                 } catch(e) {}
               }
@@ -582,7 +582,7 @@ export default function CampusMapScreen({ navigation }) {
                 try {
                   const arr = JSON.parse(selectedPoi.polygonCoordinates);
                   if (arr && arr.length > 2) {
-                    parsedSelectedPolygon = arr.map(coord => ({ latitude: coord[0], longitude: coord[1] }));
+                    parsedSelectedPolygon = arr.map(coord => ({ latitude: parseFloat(coord[0]), longitude: parseFloat(coord[1]) }));
                   }
                 } catch(e) {}
               }
