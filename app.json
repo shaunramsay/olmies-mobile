@@ -12,10 +12,7 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true,
-      "config": {
-        "googleMapsApiKey": "AIzaSyCp9p5NyeornCg5v32anUe7RbmHIXy6rZU"
-      }
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
@@ -24,12 +21,7 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "com.shaunramsay14.olmiesmobile",
-      "config": {
-        "googleMaps": {
-          "apiKey": "AIzaSyCp9p5NyeornCg5v32anUe7RbmHIXy6rZU"
-        }
-      }
+      "package": "com.shaunramsay14.olmiesmobile"
     },
     "web": {
       "favicon": "./assets/favicon.png"
