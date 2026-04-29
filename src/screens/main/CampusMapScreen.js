@@ -271,7 +271,8 @@ export default function CampusMapScreen({ navigation }) {
         const localUri = pinImage.uri;
         const filename = localUri.split('/').pop() || 'photo.jpg';
         const match = /\.(\w+)$/.exec(filename);
-        const type = match ? `image/${match[1]}` : `image/jpeg`;
+        let type = match ? `image/${match[1]}` : `image/jpeg`;
+        if (type === 'image/jpg') type = 'image/jpeg';
 
         formData.append('Image', { uri: localUri, name: filename, type });
       }
