@@ -5,12 +5,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { useAppTheme } from '../context/ThemeContext';
 import { getUTechSemester } from '../utils/dateUtils';
+import API_BASE_URL from '../config/api';
 
 const formatNotificationDate = (value) => {
   if (!value) return 'Recently';
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return 'Recently';
   return parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+};
+
+const resolveImageUrl = (imageUrl) => {
+  if (!imageUrl || typeof imageUrl !== 'string') return null;
+  if (imageUrl.startsWith('http')) return imageUrl;
+  return `${API_BASE_URL}${imageUrl}`;
 };
 
 const getNotificationIcon = (type) => {
@@ -35,6 +42,7 @@ export default function HomeDashboard({ navigation, title, fallbackName, iconNam
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDeal, setSelectedDeal] = useState(null);
+  const [selectedNotification, setSelectedNotification] = useState(null);
 
   const accentColor = colors[accentKey] || colors.primary;
   const semester = getUTechSemester().fullDisplay;
@@ -65,8 +73,10 @@ export default function HomeDashboard({ navigation, title, fallbackName, iconNam
             title: item.title,
             message: item.message,
             date: formatNotificationDate(item.createdAt),
+            fullDate: item.createdAt ? new Date(item.createdAt).toLocaleString() : 'Recently',
             type: item.type,
-            isRead: item.isRead
+            isRead: item.isRead,
+            imageUrl: resolveImageUrl(item.imageUrl)
           })));
         }
       } catch (err) {
@@ -170,7 +180,7 @@ export default function HomeDashboard({ navigation, title, fallbackName, iconNam
             notifications.map((item, index) => {
               const icon = getNotificationIcon(item.type);
               return (
-                <TouchableOpacity key={item.id || index} style={styles.notificationRow} onPress={() => navigation.navigate('Alerts')}>
+                <TouchableOpacity key={item.id || index} style={styles.notificationRow} onPress={() => setSelectedNotification(item)}>
                   <View style={[styles.notificationIcon, { backgroundColor: `${icon.color}22` }]}>
                     <Ionicons name={icon.name} size={18} color={icon.color} />
                   </View>
@@ -253,6 +263,36 @@ export default function HomeDashboard({ navigation, title, fallbackName, iconNam
                 onPress={() => setSelectedDeal(null)}
               >
                 <Text style={[styles.closeButtonText, { color: colors.text }]}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={!!selectedNotification} animationType="slide" transparent={true} onRequestClose={() => setSelectedNotification(null)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            {selectedNotification?.imageUrl && (
+              <Image source={{ uri: selectedNotification.imageUrl }} style={styles.modalImage} resizeMode="cover" />
+            )}
+            <View style={styles.modalTextContainer}>
+              <View style={styles.notificationModalHeader}>
+                <Text style={[styles.modalTitle, { color: colors.text, flex: 1 }]}>{selectedNotification?.title}</Text>
+                {selectedNotification?.type && (
+                  <View style={[styles.typeBadge, { borderColor: colors.border }]}>
+                    <Text style={[styles.typeBadgeText, { color: colors.textSecondary }]}>{selectedNotification.type}</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={[styles.modalDate, { color: colors.textSecondary }]}>{selectedNotification?.fullDate}</Text>
+              <ScrollView style={styles.modalMessageBody}>
+                <Text style={[styles.modalMessage, { color: colors.textSecondary }]}>{selectedNotification?.message}</Text>
+              </ScrollView>
+              <TouchableOpacity
+                style={[styles.closeButton, { backgroundColor: colors.primary, marginTop: 24 }]}
+                onPress={() => setSelectedNotification(null)}
+              >
+                <Text style={styles.closeButtonText}>Close</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -414,6 +454,25 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     marginBottom: 12,
+  },
+  modalDate: {
+    fontSize: 13,
+    marginBottom: 18,
+  },
+  notificationModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  typeBadge: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  typeBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
   },
   modalMessageBody: {
     maxHeight: 250,
