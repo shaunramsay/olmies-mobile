@@ -43,14 +43,6 @@ export default function AlertsScreen({ navigation }) {
     }, [user, fetchWithAuth])
   );
 
-  const getIconForType = (type) => {
-    switch (type) {
-      case 'warning': return { name: 'alert-circle', color: '#ffb74d' };
-      case 'survey': return { name: 'clipboard', color: '#4A90E2' };
-      default: return { name: 'information-circle', color: '#64b5f6' };
-    }
-  };
-
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
@@ -79,7 +71,6 @@ export default function AlertsScreen({ navigation }) {
           <Text style={{ color: '#888', textAlign: 'center', marginTop: 40 }}>You have no new notifications.</Text>
         ) : (
           alerts.map(alert => {
-            const icon = getIconForType(alert.type);
             return (
               <TouchableOpacity 
                 key={alert.id} 
@@ -91,7 +82,9 @@ export default function AlertsScreen({ navigation }) {
                   {alert.imageUrl ? (
                     <Image source={{ uri: alert.imageUrl }} style={styles.thumbnailImage} />
                   ) : (
-                    <Ionicons name={icon.name} size={24} color={icon.color} />
+                    <View style={[styles.notificationPlaceholder, { backgroundColor: `${colors.primary}24`, borderColor: `${colors.primary}66` }]}>
+                      <Ionicons name="notifications-outline" size={22} color={colors.primary} />
+                    </View>
                   )}
                 </View>
                 <View style={styles.alertContent}>
@@ -185,7 +178,17 @@ const styles = StyleSheet.create({
     borderColor: '#372054',
   },
   iconContainer: {
+    width: 44,
+    height: 44,
     marginRight: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  notificationPlaceholder: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },

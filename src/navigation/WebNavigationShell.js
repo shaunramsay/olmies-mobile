@@ -1,16 +1,20 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAppTheme } from '../context/ThemeContext';
 
 const Tab = createBottomTabNavigator();
+const UTECH_CREST = require('../../assets/utech-crest.png');
 
 // Import our original screens
 import StudentHubScreen from '../screens/main/StudentHubScreen';
 import LecturerHubScreen from '../screens/main/LecturerHubScreen';
 import AlertsScreen from '../screens/main/AlertsScreen';
 import CampusMapScreen from '../screens/main/CampusMapScreen';
+import SurveysScreen from '../screens/main/SurveysScreen';
+import AskUTechScreen from '../screens/helpdesk/AskUTechScreen';
+import HistoryScreen from '../screens/main/HistoryScreen';
 import InsightsScreen from '../screens/main/InsightsScreen';
 import { useAuth } from '../context/AuthContext';
 
@@ -19,22 +23,28 @@ function CustomSidebar({ state, descriptors, navigation }) {
   const { colors, toggleTheme, isDarkTheme } = useAppTheme();
   
   const navItems = [
-    { id: 'Hub', icon: 'home-outline', activeIcon: 'home' },
+    { id: 'Home', icon: 'home-outline', activeIcon: 'home' },
+    { id: 'Help Desk', icon: 'chatbubbles-outline', activeIcon: 'chatbubbles' },
     { id: 'Alerts', icon: 'notifications-outline', activeIcon: 'notifications' },
     { id: 'Map', icon: 'map-outline', activeIcon: 'map' },
-    { id: 'Insights', icon: 'pie-chart-outline', activeIcon: 'pie-chart' },
+    { id: 'Surveys', icon: 'clipboard-outline', activeIcon: 'clipboard' },
   ];
 
   return (
     <View style={[styles.sidebar, { backgroundColor: colors.surface, borderRightColor: colors.border }]}>
       <View style={styles.branding}>
-        <Text style={[styles.brandText, { color: colors.primary }]}>Olmies</Text>
+        <View style={[styles.brandBadge, { borderColor: colors.border }]}>
+          <Image source={UTECH_CREST} style={styles.brandLogo} resizeMode="contain" />
+        </View>
       </View>
 
       <ScrollView style={styles.navContainer}>
-        {state.routes.map((route, index) => {
+        {navItems.map(itemConfig => {
+          const index = state.routes.findIndex(route => route.name === itemConfig.id);
+          if (index === -1) return null;
+
+          const route = state.routes[index];
           const isFocused = state.index === index;
-          const itemConfig = navItems.find(item => item.id === route.name) || { icon: 'ellipse-outline', activeIcon: 'ellipse' };
           
           const onPress = () => {
             const event = navigation.emit({
@@ -113,21 +123,30 @@ export default function WebNavigationShell() {
         tabBar={props => <CustomSidebar {...props} />}
         screenOptions={{ 
           headerShown: false,
-          sceneStyle: { backgroundColor: colors.background, marginLeft: 250 }
+          sceneStyle: { backgroundColor: colors.background, marginLeft: 190 }
         }}
       >
-        <Tab.Screen name="Hub">
+        <Tab.Screen name="Home">
           {(props) => (
             <View style={{ flex: 1 }}>
               {isLecturer ? <LecturerHubScreen {...props} /> : <StudentHubScreen {...props} />}
             </View>
           )}
         </Tab.Screen>
+        <Tab.Screen name="Help Desk">
+          {(props) => <View style={{ flex: 1 }}><AskUTechScreen {...props} /></View>}
+        </Tab.Screen>
         <Tab.Screen name="Alerts">
           {(props) => <View style={{ flex: 1 }}><AlertsScreen {...props} /></View>}
         </Tab.Screen>
         <Tab.Screen name="Map">
           {(props) => <View style={{ flex: 1 }}><CampusMapScreen {...props} /></View>}
+        </Tab.Screen>
+        <Tab.Screen name="Surveys">
+          {(props) => <View style={{ flex: 1 }}><SurveysScreen {...props} /></View>}
+        </Tab.Screen>
+        <Tab.Screen name="History">
+          {(props) => <View style={{ flex: 1 }}><HistoryScreen {...props} /></View>}
         </Tab.Screen>
         <Tab.Screen name="Insights">
           {(props) => <View style={{ flex: 1 }}><InsightsScreen {...props} /></View>}
@@ -142,7 +161,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sidebar: {
-    width: 250,
+    width: 190,
     borderRightWidth: 1,
     paddingVertical: 30,
     display: 'flex',
@@ -154,12 +173,22 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   branding: {
-    paddingHorizontal: 25,
-    marginBottom: 40,
+    paddingHorizontal: 22,
+    marginBottom: 34,
   },
-  brandText: {
-    fontSize: 28,
-    fontWeight: 'bold',
+  brandBadge: {
+    width: 76,
+    height: 86,
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 8,
+  },
+  brandLogo: {
+    width: '100%',
+    height: '100%',
   },
   navContainer: {
     flex: 1,
@@ -168,7 +197,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 15,
-    paddingHorizontal: 25,
+    paddingHorizontal: 22,
     marginBottom: 5,
   },
   navText: {
@@ -179,7 +208,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 15,
-    paddingHorizontal: 25,
+    paddingHorizontal: 22,
     marginTop: 20,
     borderTopWidth: 1,
   },

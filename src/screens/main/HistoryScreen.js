@@ -10,6 +10,16 @@ export default function HistoryScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const returnToSurveys = () => {
+    const routeNames = navigation.getState?.().routeNames || [];
+    if (routeNames.includes('Surveys')) {
+      navigation.navigate('Surveys');
+      return;
+    }
+
+    navigation.navigate('Main', { screen: 'Surveys' });
+  };
+
   const loadPastSurveys = async () => {
     setLoading(true);
     setError(null);
@@ -52,8 +62,13 @@ export default function HistoryScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Community Results</Text>
-        <Text style={styles.headerSubtitle}>View analytics from past Open Campus Surveys</Text>
+        <TouchableOpacity style={styles.backButton} onPress={returnToSurveys}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </TouchableOpacity>
+        <View style={styles.headerCopy}>
+          <Text style={styles.headerTitle}>Community Results</Text>
+          <Text style={styles.headerSubtitle}>View analytics from past Open Campus Surveys</Text>
+        </View>
       </View>
 
       {loading ? (
@@ -88,10 +103,14 @@ export default function HistoryScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0A0A0A' },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#1E1E1E',
   },
+  backButton: { marginRight: 15, padding: 4 },
+  headerCopy: { flex: 1 },
   headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff', marginBottom: 5 },
   headerSubtitle: { fontSize: 14, color: '#aaa' },
   listContent: { padding: 15 },

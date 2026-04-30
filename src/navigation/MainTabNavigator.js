@@ -10,8 +10,8 @@ import { useAuth } from '../context/AuthContext';
 
 import AlertsScreen from '../screens/main/AlertsScreen';
 import MapScreen from '../screens/main/CampusMapScreen';
-import InsightsScreen from '../screens/main/InsightsScreen';
-import HistoryScreen from '../screens/main/HistoryScreen';
+import SurveysScreen from '../screens/main/SurveysScreen';
+import AskUTechScreen from '../screens/helpdesk/AskUTechScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -36,27 +36,27 @@ export default function MainTabNavigator() {
         },
         tabBarActiveTintColor: '#4A90E2',
         tabBarInactiveTintColor: 'gray',
-        tabBarLabelStyle: { fontSize: 12, marginTop: 4 },
+        tabBarLabelStyle: { fontSize: 11, marginTop: 4 },
         tabBarIcon: ({ focused, color, size }) => {
           let iconName = '';
-          if (route.name === 'Hub') iconName = focused ? 'home' : 'home-outline';
+          if (route.name === 'Home') iconName = focused ? 'home' : 'home-outline';
+          if (route.name === 'Help Desk') iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
           if (route.name === 'Alerts') iconName = focused ? 'notifications' : 'notifications-outline';
           if (route.name === 'Map') iconName = focused ? 'map' : 'map-outline';
-          if (route.name === 'Insights') iconName = focused ? 'pie-chart' : 'pie-chart-outline';
-          if (route.name === 'History') iconName = focused ? 'time' : 'time-outline';
+          if (route.name === 'Surveys') iconName = focused ? 'clipboard' : 'clipboard-outline';
           return <Ionicons name={iconName} size={24} color={color} />;
         },
       })}
     >
-      <Tab.Screen 
-        name="Hub" 
-        component={isLecturer ? LecturerHubScreen : StudentHubScreen} 
-        options={{ title: 'Hub' }} 
+      <Tab.Screen
+        name="Home"
+        component={isLecturer ? LecturerHubScreen : StudentHubScreen}
+        options={{ title: 'Home' }}
       />
+      <Tab.Screen name="Help Desk" component={AskUTechScreen} options={{ title: 'Help Desk' }} />
       <Tab.Screen name="Alerts" component={AlertsScreen} options={{ title: 'Alerts' }} />
       <Tab.Screen name="Map" component={MapScreen} options={{ title: 'Map' }} />
-      <Tab.Screen name="History" component={HistoryScreen} options={{ title: 'History' }} />
-      <Tab.Screen name="Insights" component={InsightsScreen} options={{ title: 'Insights' }} />
+      <Tab.Screen name="Surveys" component={SurveysScreen} options={{ title: 'Surveys' }} />
     </Tab.Navigator>
   );
 }
