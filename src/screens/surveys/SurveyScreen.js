@@ -211,7 +211,7 @@ export default function SurveyScreen({ route, navigation }) {
             ))}
 
             <View style={styles.footer}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
                 disabled={submitting}
                 onPress={handleSubmit}
