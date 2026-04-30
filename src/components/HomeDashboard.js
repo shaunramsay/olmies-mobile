@@ -130,12 +130,11 @@ export default function HomeDashboard({ navigation, title, fallbackName, iconNam
         )}
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={[styles.heroCard, isCompactPreview && styles.heroCardCompact, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <View style={[styles.bannerDock, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <View style={[styles.heroCard, isCompactPreview && styles.heroCardCompact]}>
           <View style={[styles.heroCopy, isCompactPreview && styles.heroCopyCompact]}>
             <Text style={styles.heroEyebrow}>University of Technology, Jamaica</Text>
             <Text style={[styles.heroTitle, isCompactPreview && styles.heroTitleCompact, { color: colors.text }]}>UTech Campus Companion</Text>
-            <Text style={[styles.heroBody, { color: colors.textSecondary }]}>Your daily view of campus alerts, services, surveys, and student life.</Text>
             <View style={styles.heroPills}>
               <View style={styles.semesterPill}>
                 <Ionicons name="calendar-outline" size={13} color="#f6c943" />
@@ -148,7 +147,9 @@ export default function HomeDashboard({ navigation, title, fallbackName, iconNam
             </View>
           </View>
         </View>
+      </View>
 
+      <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={[styles.sectionHeader, isCompactPreview && styles.sectionHeaderCompact]}>
             <View style={styles.cardTitleContainer}>
@@ -293,15 +294,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  scrollContent: { padding: 20, paddingBottom: 40 },
+  bannerDock: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    zIndex: 5,
+  },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40 },
   heroCard: {
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 24,
-    borderWidth: 1,
     flexDirection: 'row',
-    alignItems: 'center',
-    overflow: 'hidden',
+    alignItems: 'flex-start',
   },
   heroCardCompact: {
     flexDirection: 'column',
@@ -314,11 +317,10 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     textTransform: 'uppercase',
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  heroTitle: { fontSize: 22, fontWeight: '800', lineHeight: 27, marginBottom: 8 },
-  heroTitleCompact: { fontSize: 20, lineHeight: 25 },
-  heroBody: { fontSize: 13, lineHeight: 19, marginBottom: 14 },
+  heroTitle: { fontSize: 20, fontWeight: '800', lineHeight: 24, marginBottom: 9 },
+  heroTitleCompact: { fontSize: 19, lineHeight: 23 },
   heroPills: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   semesterPill: {
     backgroundColor: '#111046',
