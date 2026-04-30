@@ -10,8 +10,8 @@ import DataProtectionScreen from '../screens/auth/DataProtectionScreen';
 import MainTabNavigator from './MainTabNavigator';
 import WebNavigationShell from './WebNavigationShell';
 import AskUTechScreen from '../screens/helpdesk/AskUTechScreen';
-import SurveyScreen from '../screens/survey/SurveyScreen';
-import SurveyResultsScreen from '../screens/survey/SurveyResultsScreen';
+import SurveyScreen from '../screens/surveys/SurveyScreen';
+import SurveyResultsScreen from '../screens/surveys/SurveyResultsScreen';
 import HistoryScreen from '../screens/main/HistoryScreen';
 import InsightsScreen from '../screens/main/InsightsScreen';
 
