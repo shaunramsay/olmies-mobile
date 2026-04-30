@@ -12,6 +12,8 @@ import WebNavigationShell from './WebNavigationShell';
 import AskUTechScreen from '../screens/helpdesk/AskUTechScreen';
 import SurveyScreen from '../screens/survey/SurveyScreen';
 import SurveyResultsScreen from '../screens/survey/SurveyResultsScreen';
+import HistoryScreen from '../screens/main/HistoryScreen';
+import InsightsScreen from '../screens/main/InsightsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -43,6 +45,8 @@ export default function AppNavigator() {
       <Stack.Screen name="Survey" component={SurveyScreen} options={{ presentation: 'fullScreenModal' }} />
       <Stack.Screen name="SurveyResults" component={SurveyResultsScreen} options={{ presentation: 'fullScreenModal' }} />
       <Stack.Screen name="DataProtection" component={DataProtectionScreen} options={{ presentation: 'fullScreenModal' }} />
+      <Stack.Screen name="History" component={HistoryScreen} />
+      <Stack.Screen name="Insights" component={InsightsScreen} />
     </Stack.Navigator>
   );
 }

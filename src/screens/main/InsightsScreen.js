@@ -10,10 +10,23 @@ export default function InsightsScreen() {
   const navigation = useNavigation();
   const { colors, isDarkTheme, toggleTheme } = useAppTheme();
 
+  const returnToSurveys = () => {
+    const routeNames = navigation.getState?.().routeNames || [];
+    if (routeNames.includes('Surveys')) {
+      navigation.navigate('Surveys');
+      return;
+    }
+
+    navigation.navigate('Main', { screen: 'Surveys' });
+  };
+
   if (!user) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <TouchableOpacity style={styles.backButton} onPress={returnToSurveys}>
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
           <Ionicons name="stats-chart" size={28} color={colors.primary} />
           <Text style={[styles.headerTitle, { color: colors.text }]}>Survey Insights</Text>
           <View style={styles.topRightActions}>
@@ -43,6 +56,9 @@ export default function InsightsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <TouchableOpacity style={styles.backButton} onPress={returnToSurveys}>
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
+        </TouchableOpacity>
         <Ionicons name="stats-chart" size={28} color={colors.primary} />
         <Text style={[styles.headerTitle, { color: colors.text }]}>Survey Insights</Text>
         <View style={styles.topRightActions}>
@@ -144,6 +160,10 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginLeft: 10,
     flex: 1,
+  },
+  backButton: {
+    marginRight: 12,
+    padding: 4,
   },
   topRightActions: {
     flexDirection: 'row',

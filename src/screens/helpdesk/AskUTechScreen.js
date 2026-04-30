@@ -16,10 +16,11 @@ try {
   console.warn('expo-av native module not loaded.');
 }
 
-export default function AskUTechScreen({ navigation }) {
+export default function AskUTechScreen({ navigation, route }) {
   const { colors } = useAppTheme();
   const { user, fetchWithAuth } = useAuth();
   const insets = useSafeAreaInsets();
+  const isPrimaryTab = route?.name === 'Help Desk';
   
   const [messages, setMessages] = useState([
     {
@@ -241,14 +242,18 @@ export default function AskUTechScreen({ navigation }) {
       >
         {/* Header */}
         <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
-          </TouchableOpacity>
+          {isPrimaryTab ? (
+            <View style={styles.headerSide} />
+          ) : (
+            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+              <Ionicons name="arrow-back" size={24} color={colors.text} />
+            </TouchableOpacity>
+          )}
           <View style={styles.headerTitleContainer}>
             <Text style={[styles.headerTitle, { color: colors.text }]}>Ask UTech AI</Text>
             <Text style={[styles.headerSubtitle, { color: colors.success }]}>Online</Text>
           </View>
-          <View style={styles.headerRight} />
+          <View style={styles.headerSide} />
         </View>
 
         {/* Chat Area */}
@@ -327,6 +332,9 @@ const styles = StyleSheet.create({
   backButton: {
     padding: 8,
   },
+  headerSide: {
+    width: 40,
+  },
   headerTitleContainer: {
     flex: 1,
     alignItems: 'center',
@@ -339,9 +347,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     marginTop: 2,
-  },
-  headerRight: {
-    width: 40,
   },
   chatContent: {
     padding: 16,

@@ -11,6 +11,15 @@ export default function SurveyResultsScreen({ route, navigation }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const returnToPrevious = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+
+    navigation.navigate('Main', { screen: 'Surveys' });
+  };
+
   useEffect(() => {
     const fetchResults = async () => {
       try {
@@ -68,7 +77,7 @@ export default function SurveyResultsScreen({ route, navigation }) {
       <View style={[styles.container, styles.centerContent]}>
         <Ionicons name="lock-closed-outline" size={48} color="#f06292" style={{marginBottom: 10}}/>
         <Text style={styles.errorText}>{error || 'This survey has not met the threshold to publish results.'}</Text>
-        <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={styles.secondaryButton} onPress={returnToPrevious}>
           <Text style={styles.secondaryButtonText}>Go Back</Text>
         </TouchableOpacity>
       </View>
@@ -81,7 +90,7 @@ export default function SurveyResultsScreen({ route, navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={styles.backButton} onPress={returnToPrevious}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
         <View style={styles.headerTextContainer}>
