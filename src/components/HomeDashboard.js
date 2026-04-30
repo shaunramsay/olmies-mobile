@@ -271,11 +271,11 @@ export default function HomeDashboard({ navigation, title, fallbackName, iconNam
 
       <Modal visible={!!selectedNotification} animationType="slide" transparent={true} onRequestClose={() => setSelectedNotification(null)}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+          <View style={[styles.modalContent, styles.notificationModalContent, { backgroundColor: colors.surface }]}>
             {selectedNotification?.imageUrl && (
-              <Image source={{ uri: selectedNotification.imageUrl }} style={styles.modalImage} resizeMode="cover" />
+              <Image source={{ uri: selectedNotification.imageUrl }} style={styles.notificationModalImage} resizeMode="cover" />
             )}
-            <View style={styles.modalTextContainer}>
+            <View style={styles.notificationModalTextContainer}>
               <View style={styles.notificationModalHeader}>
                 <Text style={[styles.modalTitle, { color: colors.text, flex: 1 }]}>{selectedNotification?.title}</Text>
                 {selectedNotification?.type && (
@@ -285,7 +285,7 @@ export default function HomeDashboard({ navigation, title, fallbackName, iconNam
                 )}
               </View>
               <Text style={[styles.modalDate, { color: colors.textSecondary }]}>{selectedNotification?.fullDate}</Text>
-              <ScrollView style={styles.modalMessageBody}>
+              <ScrollView style={styles.notificationModalMessageBody}>
                 <Text style={[styles.modalMessage, { color: colors.textSecondary }]}>{selectedNotification?.message}</Text>
               </ScrollView>
               <TouchableOpacity
@@ -447,8 +447,19 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 220,
   },
+  notificationModalContent: {
+    flexShrink: 1,
+  },
+  notificationModalImage: {
+    width: '100%',
+    height: 170,
+  },
   modalTextContainer: {
     padding: 24,
+  },
+  notificationModalTextContainer: {
+    padding: 24,
+    flexShrink: 1,
   },
   modalTitle: {
     fontSize: 22,
@@ -476,6 +487,9 @@ const styles = StyleSheet.create({
   },
   modalMessageBody: {
     maxHeight: 250,
+  },
+  notificationModalMessageBody: {
+    flexShrink: 1,
   },
   modalMessage: {
     fontSize: 16,
