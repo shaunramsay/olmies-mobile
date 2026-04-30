@@ -181,53 +181,63 @@ export default function SurveyScreen({ route, navigation }) {
       </View>
       
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {(survey.sections || []).map((section, idx) => (
-          <View key={section.id || idx} style={styles.sectionContainer}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{section.title}</Text>
-              {section.instructions && (
-                <Text style={styles.sectionInstructions}>{section.instructions}</Text>
-              )}
-            </View>
+        {(!survey.sections || survey.sections.length === 0) ? (
+          <View style={{ alignItems: 'center', marginTop: 50, paddingHorizontal: 20 }}>
+            <Ionicons name="document-text-outline" size={60} color="#444" />
+            <Text style={{ color: '#aaa', fontSize: 16, marginTop: 15, textAlign: 'center', lineHeight: 24 }}>
+              This survey is currently empty or has not been fully configured yet. Please check back later!
+            </Text>
+          </View>
+        ) : (
+          <>
+            {survey.sections.map((section, idx) => (
+              <View key={section.id || idx} style={styles.sectionContainer}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>{section.title}</Text>
+                  {section.instructions && (
+                    <Text style={styles.sectionInstructions}>{section.instructions}</Text>
+                  )}
+                </View>
 
-            {(section.questions || []).map((question, qIdx) => (
-              <View key={question.id || qIdx} style={styles.questionContainer}>
-                <Text style={styles.questionText}>
-                  {qIdx + 1}. {question.text}
-                </Text>
-                {renderQuestionInput(question)}
+                {(section.questions || []).map((question, qIdx) => (
+                  <View key={question.id || qIdx} style={styles.questionContainer}>
+                    <Text style={styles.questionText}>
+                      {qIdx + 1}. {question.text}
+                    </Text>
+                    {renderQuestionInput(question)}
+                  </View>
+                ))}
               </View>
             ))}
-          </View>
-        ))}
 
-        <View style={styles.footer}>
-          <TouchableOpacity 
-            style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
-            disabled={submitting}
-            onPress={handleSubmit}
-          >
-            {submitting ? (
-              <ActivityIndicator size="small" color="#fff" style={{marginRight: 8}}/>
-            ) : (
-              <Ionicons name="paper-plane-outline" size={20} color="#fff" style={{marginRight: 8}} />
-            )}
-            <Text style={styles.submitButtonText}>{submitting ? 'Submitting...' : 'Submit Evaluation'}</Text>
-          </TouchableOpacity>
-        </View>
+            <View style={styles.footer}>
+              <TouchableOpacity 
+                style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+                disabled={submitting}
+                onPress={handleSubmit}
+              >
+                {submitting ? (
+                  <ActivityIndicator size="small" color="#fff" style={{marginRight: 8}}/>
+                ) : (
+                  <Ionicons name="paper-plane-outline" size={20} color="#fff" style={{marginRight: 8}} />
+                )}
+                <Text style={styles.submitButtonText}>{submitting ? 'Submitting...' : 'Submit Evaluation'}</Text>
+              </TouchableOpacity>
+            </View>
 
-        <Modal visible={showSuccessModal} transparent animationType="none">
-          <View style={styles.modalOverlay}>
-            <Animated.View style={[styles.successCard, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
-              <View style={styles.checkmarkCircle}>
-                <Ionicons name="checkmark-sharp" size={55} color="#fff" />
+            <Modal visible={showSuccessModal} transparent animationType="none">
+              <View style={styles.modalOverlay}>
+                <Animated.View style={[styles.successCard, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
+                  <View style={styles.checkmarkCircle}>
+                    <Ionicons name="checkmark-sharp" size={55} color="#fff" />
+                  </View>
+                  <Text style={styles.successTitle}>Thank You!</Text>
+                  <Text style={styles.successMessage}>Your response has been successfully recorded.</Text>
+                </Animated.View>
               </View>
-              <Text style={styles.successTitle}>Thank You!</Text>
-              <Text style={styles.successMessage}>Your response has been successfully recorded.</Text>
-            </Animated.View>
-          </View>
-        </Modal>
-
+            </Modal>
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
