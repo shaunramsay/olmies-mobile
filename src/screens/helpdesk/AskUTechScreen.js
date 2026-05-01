@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,13 +21,14 @@ export default function AskUTechScreen({ navigation, route }) {
   const { user, fetchWithAuth } = useAuth();
   const insets = useSafeAreaInsets();
   const isPrimaryTab = route?.name === 'Help Desk';
+  const getWelcomeText = (currentUser) => currentUser
+    ? `Hello ${currentUser.username}! I am the UTech AI Help Desk. I can answer questions regarding academic policies based on your cohort.`
+    : "Hello! I am the UTech AI Help Desk. Since you are not logged in, I will provide general answers based on the current handbook.";
   
   const [messages, setMessages] = useState([
     {
       id: 'welcome_msg',
-      text: user 
-        ? `Hello ${user.username}! I am the UTech AI Help Desk. I can answer questions regarding academic policies based on your cohort.`
-        : "Hello! I am the UTech AI Help Desk. Since you are not logged in, I will provide general answers based on the current handbook.",
+      text: getWelcomeText(user),
       sender: 'ai',
       timestamp: new Date().toISOString()
     }
@@ -39,6 +40,14 @@ export default function AskUTechScreen({ navigation, route }) {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const flatListRef = useRef();
   const audioAvailable = !!Audio;
+
+  useEffect(() => {
+    setMessages((prev) => prev.map((message) => (
+      message.id === 'welcome_msg'
+        ? { ...message, text: getWelcomeText(user) }
+        : message
+    )));
+  }, [user?.username]);
 
   const buildHelpdeskErrorMessage = async (response) => {
     const fallback = "I'm sorry, I couldn't connect to my knowledge base right now. Please try again later.";
@@ -162,7 +171,7 @@ export default function AskUTechScreen({ navigation, route }) {
         },
         body: JSON.stringify({
           question: userMessage.text,
-          studentId: user?.id || null,
+          studentId: user?.username || user?.id || null,
           history: historyPayload
         }),
       });
