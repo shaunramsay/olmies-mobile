@@ -35,7 +35,9 @@ ui-mockup-*.png
 *.pem
 
 # local env files
+.env
 .env*.local
+!.env.example
 
 # typescript
 *.tsbuildinfo

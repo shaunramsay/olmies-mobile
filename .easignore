@@ -9,3 +9,6 @@ npm-debug.*
 *.mobileprovision
 *.orig.*
 eas.json
+.env
+.env.local
+.env.*.local
