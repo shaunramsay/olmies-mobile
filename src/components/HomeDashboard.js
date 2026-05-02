@@ -33,7 +33,7 @@ const getNotificationIcon = (type) => {
   }
 };
 
-export default function HomeDashboard({ navigation, title, fallbackName, iconName, accentKey = 'primary' }) {
+export default function HomeDashboard({ navigation, fallbackName }) {
   const insets = useSafeAreaInsets();
   const { user, fetchWithAuth, logout } = useAuth();
   const { colors, isDarkTheme, toggleTheme } = useAppTheme();
@@ -44,10 +44,8 @@ export default function HomeDashboard({ navigation, title, fallbackName, iconNam
   const [selectedDeal, setSelectedDeal] = useState(null);
   const [selectedNotification, setSelectedNotification] = useState(null);
 
-  const accentColor = colors[accentKey] || colors.primary;
   const semester = getUTechSemester().fullDisplay;
   const isCompactPreview = Platform.OS === 'web' && width < 760;
-  const showHeaderActions = !(Platform.OS === 'web' && width < 760);
 
   useEffect(() => {
     let isMounted = true;
@@ -107,37 +105,27 @@ export default function HomeDashboard({ navigation, title, fallbackName, iconNam
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: Math.max(insets.top, Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0) }]}>
-      <View style={[styles.stickyHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <View style={styles.titleRow}>
-          <Ionicons name={iconName} size={28} color={accentColor} />
-          <Text style={[styles.titleText, { color: accentColor }]}>{title}</Text>
+      <View style={[styles.utilityHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+            onPress={() => navigation.navigate('DataProtection', { isReviewMode: true })}
+          >
+            <Ionicons name="shield-checkmark-outline" size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={toggleTheme}>
+            <Ionicons name={isDarkTheme ? 'sunny-outline' : 'moon-outline'} size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
+          {user ? (
+            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={logout}>
+              <Ionicons name="log-out-outline" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={() => navigation.navigate('Login')}>
+              <Ionicons name="log-in-outline" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
         </View>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Welcome back, {user?.username || fallbackName}.
-        </Text>
-
-        {showHeaderActions && (
-          <View style={styles.topRightActions}>
-            <TouchableOpacity
-              style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border }]}
-              onPress={() => navigation.navigate('DataProtection', { isReviewMode: true })}
-            >
-              <Ionicons name="shield-checkmark-outline" size={18} color={colors.textSecondary} />
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={toggleTheme}>
-              <Ionicons name={isDarkTheme ? 'sunny-outline' : 'moon-outline'} size={18} color={colors.textSecondary} />
-            </TouchableOpacity>
-            {user ? (
-              <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={logout}>
-                <Ionicons name="log-out-outline" size={18} color={colors.textSecondary} />
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={() => navigation.navigate('Login')}>
-                <Ionicons name="log-in-outline" size={18} color={colors.textSecondary} />
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
       </View>
 
       <View style={[styles.bannerDock, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
@@ -145,14 +133,13 @@ export default function HomeDashboard({ navigation, title, fallbackName, iconNam
           <View style={[styles.heroCopy, isCompactPreview && styles.heroCopyCompact]}>
             <Text style={styles.heroEyebrow}>University of Technology, Jamaica</Text>
             <Text style={[styles.heroTitle, isCompactPreview && styles.heroTitleCompact, { color: colors.text }]}>UTech Campus Companion</Text>
+            <Text style={[styles.heroGreeting, { color: colors.textSecondary }]}>
+              Welcome back, {user?.username || fallbackName}.
+            </Text>
             <View style={styles.heroPills}>
               <View style={styles.semesterPill}>
                 <Ionicons name="calendar-outline" size={13} color="#f6c943" />
                 <Text style={styles.semesterPillText}>{semester}</Text>
-              </View>
-              <View style={[styles.statusPill, { borderColor: colors.border }]}>
-                <Ionicons name="radio-outline" size={13} color={colors.success} />
-                <Text style={[styles.statusPillText, { color: colors.textSecondary }]}>Live campus feed</Text>
               </View>
             </View>
           </View>
@@ -304,12 +291,14 @@ export default function HomeDashboard({ navigation, title, fallbackName, iconNam
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  stickyHeader: {
+  utilityHeader: {
     paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingVertical: 10,
     borderBottomWidth: 1,
-    flexDirection: 'column',
-    alignItems: 'flex-start',
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    minHeight: 56,
     zIndex: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -317,13 +306,7 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 3,
   },
-  titleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 5 },
-  titleText: { fontSize: 24, fontWeight: 'bold', marginLeft: 10 },
-  subtitle: { fontSize: 13, paddingHorizontal: 0 },
-  topRightActions: {
-    position: 'absolute',
-    top: 15,
-    right: 20,
+  headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -359,8 +342,9 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: 4,
   },
-  heroTitle: { fontSize: 20, fontWeight: '800', lineHeight: 24, marginBottom: 9 },
+  heroTitle: { fontSize: 20, fontWeight: '800', lineHeight: 24, marginBottom: 4 },
   heroTitleCompact: { fontSize: 19, lineHeight: 23 },
+  heroGreeting: { fontSize: 13, lineHeight: 18, marginBottom: 10 },
   heroPills: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   semesterPill: {
     backgroundColor: '#111046',
@@ -372,16 +356,6 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   semesterPillText: { color: '#f6c943', fontSize: 11, fontWeight: '800' },
-  statusPill: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  statusPillText: { fontSize: 11, fontWeight: '700' },
   card: {
     borderRadius: 16,
     padding: 18,

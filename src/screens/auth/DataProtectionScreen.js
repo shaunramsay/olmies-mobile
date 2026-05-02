@@ -40,27 +40,27 @@ export default function DataProtectionScreen({ navigation, route }) {
                 <Text style={[styles.title, { color: colors.text }]}>Privacy & Data Protection</Text>
                 
                 <Text style={[styles.bodyText, { color: colors.textSecondary }]}>
-                    In compliance with the Data Protection Act of Jamaica, we want to ensure you understand how your data is collected, used, and stored within the Olmies application.
+                    In compliance with the Data Protection Act of Jamaica, we want to ensure you understand how your data is collected, used, and stored within Campus Companion.
                 </Text>
                 
                 <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                     <Text style={[styles.sectionTitle, { color: colors.text }]}>1. Information We Collect</Text>
                     <Text style={[styles.sectionBody, { color: colors.textSecondary }]}>
-                        Olmies does not store personal passwords. We operate a "stateless" identity model by verifying your Moodle JWT credentials. The only data we actively collect from your device is an anonymized "Device ID" and an Expo Push Token to send you academic alerts. We retrieve read-only enrollment data straight from the university ISAS database.
+                        Campus Companion does not store personal passwords. We operate a "stateless" identity model by verifying your Moodle JWT credentials. The only data we actively collect from your device is an anonymized "Device ID" and an Expo Push Token to send you academic alerts. We retrieve read-only enrollment data straight from the university ISAS database.
                     </Text>
                     
                     <View style={[styles.divider, { backgroundColor: colors.border }]} />
                     
                     <Text style={[styles.sectionTitle, { color: colors.text }]}>2. Third-Party Data Processors</Text>
                     <Text style={[styles.sectionBody, { color: colors.textSecondary }]}>
-                        To provide advanced functionality, Olmies utilizes third-party infrastructure. Your written survey feedback is processed by OpenAI's API to generate qualitative summaries for administration. Your primary responses and Expo Tokens are securely hosted using Supabase's managed Postgres databases. Your notifications are securely routed via the Expo messaging infrastructure.
+                        To provide advanced functionality, Campus Companion utilizes third-party infrastructure. Your written survey feedback is processed by OpenAI's API to generate qualitative summaries for administration. Your primary responses and Expo Tokens are securely hosted using Supabase's managed Postgres databases. Your notifications are securely routed via the Expo messaging infrastructure.
                     </Text>
                     
                     <View style={[styles.divider, { backgroundColor: colors.border }]} />
                     
                     <Text style={[styles.sectionTitle, { color: colors.text }]}>3. Security & Your Rights</Text>
                     <Text style={[styles.sectionBody, { color: colors.textSecondary }]}>
-                        All data transmitted between your device and our APIs is heavily encrypted in transit. Because Olmies acts as an extension for the university's core ISAS and Moodle data, any requests for complete erasure of your central academic identity records should be directed to the University's official IT or Data Protection Officer.
+                        All data transmitted between your device and our APIs is heavily encrypted in transit. Because Campus Companion acts as an extension for the university's core ISAS and Moodle data, any requests for complete erasure of your central academic identity records should be directed to the University's official IT or Data Protection Officer.
                     </Text>
                 </View>
                 <View style={{height: 40}} />

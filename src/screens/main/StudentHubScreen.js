@@ -5,10 +5,7 @@ export default function StudentHubScreen({ navigation }) {
   return (
     <HomeDashboard
       navigation={navigation}
-      title="UTech Home"
       fallbackName="Student"
-      iconName="ribbon-outline"
-      accentKey="secondary"
     />
   );
 }

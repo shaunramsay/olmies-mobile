@@ -486,7 +486,7 @@ export default function CampusMapScreen({ navigation }) {
           <Text style={styles.mapTitle}>{Platform.OS === 'web' ? 'Map Optimization' : 'Map Unavailable'}</Text>
           <Text style={styles.mapSubtitle}>
             {Platform.OS === 'web'
-              ? 'The interactive campus map leverages native hardware rendering and is only available on iOS and Android. Please open the Olmies app on your mobile device.'
+              ? 'The interactive campus map leverages native hardware rendering and is only available on iOS and Android. Please open Campus Companion on your mobile device.'
               : 'This app build could not load the native map module. Please reinstall the latest mobile build.'}
           </Text>
         </View>
