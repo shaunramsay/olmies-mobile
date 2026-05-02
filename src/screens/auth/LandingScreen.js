@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 
-const { width } = Dimensions.get('window');
+const UTECH_CREST = require('../../../assets/utech-crest.png');
 
 export default function LandingScreen({ navigation }) {
   const { colors, toggleTheme, isDarkTheme } = useAppTheme();
@@ -26,12 +26,11 @@ export default function LandingScreen({ navigation }) {
       </TouchableOpacity>
 
       <View style={styles.content}>
-        
-        {/* Mock Logo / Branding */}
-        <View style={styles.logoContainer}>
-            <Ionicons name="cube" size={80} color={colors.primary} />
-            <Text style={[styles.title, { color: colors.text }]}>OLMIES</Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Student & Lecturer Portal</Text>
+
+        <View style={styles.brandContainer}>
+            <Image source={UTECH_CREST} style={styles.crest} resizeMode="contain" />
+            <Text style={[styles.institutionName, { color: colors.text }]}>University of Technology, Jamaica</Text>
+            <Text style={[styles.productName, { color: colors.text }]}>Campus Companion</Text>
         </View>
 
         <View style={styles.bottomSection}>
@@ -39,13 +38,13 @@ export default function LandingScreen({ navigation }) {
                 style={[styles.primaryButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
                 onPress={() => navigation.replace('Main')}
             >
-                <Text style={styles.primaryButtonText}>Experience UTech!</Text>
+                <Text style={styles.primaryButtonText}>Enter Campus Companion</Text>
                 <Ionicons name="arrow-forward" size={20} color="#fff" />
             </TouchableOpacity>
 
             <TouchableOpacity style={{ marginTop: 24, padding: 10, alignItems: 'center' }} onPress={() => navigation.navigate('Login')}>
                 <Text style={{ color: colors.textSecondary, fontSize: 16, fontWeight: '600' }}>
-                    Already a student? <Text style={{ color: colors.primary }}>Log in here</Text>
+                    Have a UTech account? <Text style={{ color: colors.primary }}>Log in here</Text>
                 </Text>
             </TouchableOpacity>
 
@@ -69,20 +68,30 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  logoContainer: {
+  brandContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    width: '100%',
   },
-  title: {
-    fontSize: 48,
+  crest: {
+    width: 176,
+    height: 220,
+    marginBottom: 24,
+  },
+  institutionName: {
+    fontSize: 26,
     fontWeight: '800',
-    marginTop: 20,
-    letterSpacing: 2,
+    lineHeight: 32,
+    textAlign: 'center',
+    maxWidth: 320,
   },
-  subtitle: {
-    fontSize: 16,
-    marginTop: 10,
+  productName: {
+    fontSize: 32,
+    fontWeight: '900',
+    lineHeight: 38,
+    textAlign: 'center',
+    marginTop: 8,
   },
   bottomSection: {
     width: '100%',

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "olmies-mobile",
+    "name": "Campus Companion",
     "slug": "olmies-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -16,10 +16,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#ffffff",
+        "foregroundImage": "./assets/android-icon-foreground.png"
       },
       "package": "com.shaunramsay14.olmiesmobile"
     },
@@ -41,15 +39,15 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow OLMIES to securely use your location to place your position dynamically on the physical campus map."
+          "locationAlwaysAndWhenInUsePermission": "Allow Campus Companion to securely use your location to place your position dynamically on the physical campus map."
         }
       ],
       "expo-secure-store",
       [
         "expo-speech-recognition",
         {
-          "microphonePermission": "Allow OLMIES to access your microphone for instantaneous voice-to-text dictation on the map.",
-          "speechRecognitionPermission": "Allow OLMIES to use native Speech Recognition to instantly route your voice into text queries."
+          "microphonePermission": "Allow Campus Companion to access your microphone for instantaneous voice-to-text dictation on the map.",
+          "speechRecognitionPermission": "Allow Campus Companion to use native Speech Recognition to instantly route your voice into text queries."
         }
       ]
     ]
