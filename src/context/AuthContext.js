@@ -7,21 +7,33 @@ import Constants from 'expo-constants';
 import API_BASE_URL from '../config/api';
 
 const isExpoGo = Constants.executionEnvironment === 'storeClient' || Constants.appOwnership === 'expo';
+const CAMPUS_ALERTS_CHANNEL_ID = 'campus-alerts';
+
+const getNotificationsModule = () => {
+    if (Platform.OS === 'web' || isExpoGo) return null;
+
+    try {
+        return require('expo-notifications');
+    } catch (e) {
+        console.warn('Push notifications module unavailable in this runtime:', e);
+        return null;
+    }
+};
 
 // Safely init notifications only if we are outside of Expo Go
-if (Platform.OS !== 'web' && !isExpoGo) {
-    try {
-        const Notifications = require('expo-notifications');
-        Notifications.setNotificationHandler({
-            handleNotification: async () => ({
-                shouldShowAlert: true,
-                shouldPlaySound: true,
-                shouldSetBadge: false,
-            }),
-        });
-    } catch (e) { 
-        console.warn('Push handled safely outside Expo Go', e); 
-    }
+const Notifications = getNotificationsModule();
+if (Notifications) {
+    Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+            shouldShowBanner: true,
+            shouldShowList: true,
+            shouldPlaySound: true,
+            shouldSetBadge: false,
+        }),
+        handleError: (notificationId, error) => {
+            console.warn('Failed to present incoming push notification:', notificationId, error);
+        },
+    });
 }
 
 const AuthContext = createContext(null);
@@ -83,6 +95,34 @@ export const AuthProvider = ({ children }) => {
         loadToken();
     }, []);
 
+    useEffect(() => {
+        const Notifications = getNotificationsModule();
+        if (!Notifications) return undefined;
+
+        const receivedSubscription = Notifications.addNotificationReceivedListener((notification) => {
+            const content = notification?.request?.content;
+            console.info('Received OS push notification:', {
+                title: content?.title,
+                body: content?.body,
+                data: content?.data,
+            });
+        });
+
+        const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
+            const content = response?.notification?.request?.content;
+            console.info('Opened OS push notification:', {
+                title: content?.title,
+                body: content?.body,
+                data: content?.data,
+            });
+        });
+
+        return () => {
+            receivedSubscription?.remove?.();
+            responseSubscription?.remove?.();
+        };
+    }, []);
+
     const acceptDPA = async () => {
         try {
             await TokenStorage.setItemAsync('olmies_dpa_accepted', 'true');
@@ -118,32 +158,65 @@ export const AuthProvider = ({ children }) => {
     };
 
     const registerForPushNotificationsAsync = async (currentUser) => {
-        if (Platform.OS === 'web' || !Device.isDevice || isExpoGo) return;
+        if (Platform.OS === 'web' || !Device.isDevice) {
+            console.info('Push registration skipped: physical mobile device required.');
+            return;
+        }
 
-        const Notifications = require('expo-notifications');
+        if (isExpoGo) {
+            console.info('Push registration skipped: remote push notifications require a development or production build, not Expo Go.');
+            return;
+        }
+
+        const Notifications = getNotificationsModule();
+        if (!Notifications) return;
+
+        if (Platform.OS === 'android') {
+            await Notifications.setNotificationChannelAsync(CAMPUS_ALERTS_CHANNEL_ID, {
+                name: 'Campus Alerts',
+                importance: Notifications.AndroidImportance.MAX,
+                vibrationPattern: [0, 250, 250, 250],
+                lightColor: '#0055A4',
+                sound: 'default',
+            });
+        }
+
         const { status: existingStatus } = await Notifications.getPermissionsAsync();
         let finalStatus = existingStatus;
         if (existingStatus !== 'granted') {
             const { status } = await Notifications.requestPermissionsAsync();
             finalStatus = status;
         }
-        if (finalStatus !== 'granted') return;
+        if (finalStatus !== 'granted') {
+            console.warn('Push registration skipped: notification permission was not granted.');
+            return;
+        }
 
         try {
             const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
-            if (!projectId) return;
+            if (!projectId) {
+                console.warn('Push registration skipped: Expo EAS projectId is missing.');
+                return;
+            }
 
             const tokenObj = await Notifications.getExpoPushTokenAsync({ projectId });
             
             // Send to our backend
             if (tokenObj && tokenObj.data && currentUser?.username) {
-                await fetchWithAuth('/api/v1/mobile/tokens', {
+                const response = await fetchWithAuth('/api/v1/mobile/tokens', {
                     method: 'POST',
                     body: JSON.stringify({
                         Username: currentUser.username,
                         ExpoToken: tokenObj.data
                     })
                 });
+
+                if (!response.ok) {
+                    const body = await response.text().catch(() => '');
+                    console.warn('Failed to register Expo push token with API:', response.status, body);
+                } else {
+                    console.info('Registered Expo push token for OS notifications.');
+                }
             }
         } catch (error) {
             console.error('Error fetching Expo token:', error);
