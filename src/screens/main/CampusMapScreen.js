@@ -64,6 +64,96 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return R * c; 
 };
 
+const UTECH_CENTER = {
+  latitude: 18.0180,
+  longitude: -76.7440,
+};
+
+const UTECH_BOUNDARY_COORDS = [
+  { latitude: 18.0210, longitude: -76.7475 }, // North-West (Papine Road edge)
+  { latitude: 18.0210, longitude: -76.7380 }, // North-East (Hope River edge)
+  { latitude: 18.0140, longitude: -76.7380 }, // South-East (Eastern flank)
+  { latitude: 18.0125, longitude: -76.7440 }, // South (Old Hope Road bend)
+  { latitude: 18.0125, longitude: -76.7485 }, // South-West (Hospital flank)
+];
+
+const UTECH_BOUNDS = UTECH_BOUNDARY_COORDS.reduce(
+  (bounds, coord) => ({
+    minLat: Math.min(bounds.minLat, coord.latitude),
+    maxLat: Math.max(bounds.maxLat, coord.latitude),
+    minLng: Math.min(bounds.minLng, coord.longitude),
+    maxLng: Math.max(bounds.maxLng, coord.longitude),
+  }),
+  { minLat: Infinity, maxLat: -Infinity, minLng: Infinity, maxLng: -Infinity }
+);
+
+const isFiniteNumber = (value) => Number.isFinite(value);
+
+const isValidLatLng = (coord) => (
+  coord &&
+  isFiniteNumber(coord.latitude) &&
+  isFiniteNumber(coord.longitude) &&
+  Math.abs(coord.latitude) <= 90 &&
+  Math.abs(coord.longitude) <= 180
+);
+
+const isWithinCampusBounds = (coord) => (
+  isValidLatLng(coord) &&
+  coord.latitude >= UTECH_BOUNDS.minLat &&
+  coord.latitude <= UTECH_BOUNDS.maxLat &&
+  coord.longitude >= UTECH_BOUNDS.minLng &&
+  coord.longitude <= UTECH_BOUNDS.maxLng
+);
+
+const toLegacyMapCoordinates = (x, y) => ({
+  latitude: 18.0167736 + (y - 50) * 0.00015,
+  longitude: -76.7464894 + (x - 50) * 0.00015,
+});
+
+const getCoordinates = (x, y) => {
+  const parsedX = Number.parseFloat(x);
+  const parsedY = Number.parseFloat(y);
+
+  if (!isFiniteNumber(parsedX) || !isFiniteNumber(parsedY)) {
+    return { latitude: NaN, longitude: NaN };
+  }
+
+  const storedCoords = { latitude: parsedY, longitude: parsedX };
+  const reversedCoords = { latitude: parsedX, longitude: parsedY };
+
+  if (isValidLatLng(storedCoords) && isWithinCampusBounds(storedCoords)) {
+    return storedCoords;
+  }
+
+  if (isValidLatLng(reversedCoords) && isWithinCampusBounds(reversedCoords)) {
+    console.warn('[CampusMap] POI coordinates appear reversed; using corrected latitude/longitude.', {
+      coordinateX: x,
+      coordinateY: y,
+      corrected: reversedCoords,
+    });
+    return reversedCoords;
+  }
+
+  if (parsedX >= 0 && parsedX <= 100 && parsedY >= 0 && parsedY <= 100) {
+    return toLegacyMapCoordinates(parsedX, parsedY);
+  }
+
+  if (isValidLatLng(storedCoords)) {
+    return storedCoords;
+  }
+
+  if (isValidLatLng(reversedCoords)) {
+    console.warn('[CampusMap] POI coordinates appear reversed but outside campus bounds.', {
+      coordinateX: x,
+      coordinateY: y,
+      corrected: reversedCoords,
+    });
+    return reversedCoords;
+  }
+
+  return { latitude: NaN, longitude: NaN };
+};
+
 export default function CampusMapScreen({ navigation }) {
   const { user, fetchWithAuth, logout } = useAuth();
   const { colors, isDarkTheme, toggleTheme } = useAppTheme();
@@ -159,67 +249,258 @@ export default function CampusMapScreen({ navigation }) {
     }
   };
 
+  const openExternalMaps = async (destination, origin = null, mode = 'walking') => {
+    const travelMode = mode.toLowerCase();
+    const params = [
+      'api=1',
+      `destination=${destination.latitude},${destination.longitude}`,
+      `travelmode=${travelMode}`,
+    ];
+
+    if (origin) {
+      params.push(`origin=${origin.latitude},${origin.longitude}`);
+    }
+
+    const mapsUrl = `https://www.google.com/maps/dir/?${params.join('&')}`;
+
+    try {
+      await Linking.openURL(mapsUrl);
+    } catch (error) {
+      console.warn('[CampusMap] Failed to open Google Maps externally.', { error, mapsUrl });
+      Alert.alert('Map Error', 'Could not open Google Maps on this device.');
+    }
+  };
+
+  const focusOnDestination = (destination) => {
+    if (!mapRef.current || !isValidLatLng(destination)) return;
+
+    mapRef.current.animateToRegion({
+      ...destination,
+      latitudeDelta: 0.003,
+      longitudeDelta: 0.003,
+    }, 500);
+  };
+
+  const showApproximateRoute = (origin, destination) => {
+    const straightLineDistance = calculateDistance(
+      origin.latitude,
+      origin.longitude,
+      destination.latitude,
+      destination.longitude
+    );
+    const approximateRoute = [origin, destination];
+
+    setCurrentRoute(approximateRoute);
+    setRouteInfo({
+      distance: `~${straightLineDistance.toFixed(2)} km`,
+      duration: 'estimate only',
+      icon: 'navigate',
+      label: 'Approximate Location',
+      note: 'Straight-line campus path estimate',
+    });
+
+    if (mapRef.current) {
+      mapRef.current.fitToCoordinates(approximateRoute, {
+        edgePadding: { top: 70, right: 70, bottom: 200, left: 70 },
+        animated: true,
+      });
+    }
+  };
+
+  const fetchGoogleDirections = async (origin, destination, mode) => {
+    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&mode=${mode}&key=${googleMapsApiKey}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    const status = data.status || 'UNKNOWN_STATUS';
+    const errorMessage = data.error_message || null;
+
+    if (status === 'OK') {
+      console.info('[CampusMap] Google Directions route calculated.', {
+        mode,
+        status,
+        routes: data.routes?.length || 0,
+      });
+    } else {
+      console.warn('[CampusMap] Google Directions route failed.', {
+        mode,
+        status,
+        errorMessage,
+        origin,
+        destination,
+        poiId: selectedPoi?.id,
+        poiName: selectedPoi?.name,
+      });
+    }
+
+    return { data, status, errorMessage };
+  };
+
+  const applyGoogleRoute = (route, mode) => {
+    const leg = route.legs[0];
+    const decodedPoints = decodePolyline(route.overview_polyline.points);
+
+    setRouteInfo({
+      distance: leg.distance.text,
+      duration: leg.duration.text,
+      icon: mode === 'driving' ? 'car' : 'walk',
+      label: mode === 'driving' ? 'Driving Route Active' : 'Walking Route Active',
+    });
+
+    setCurrentRoute(decodedPoints);
+
+    if (mapRef.current) {
+       mapRef.current.fitToCoordinates(decodedPoints, {
+         edgePadding: { top: 70, right: 70, bottom: 200, left: 70 },
+         animated: true
+       });
+    }
+  };
+
   const handleGetDirections = async () => {
     if (!selectedPoi) return;
     setCalculatingRoute(true);
     
     try {
+      const destination = getCoordinates(selectedPoi.coordinateX, selectedPoi.coordinateY);
+
+      if (!isValidLatLng(destination)) {
+        console.warn('[CampusMap] Invalid POI coordinates for directions.', {
+          poiId: selectedPoi.id,
+          poiName: selectedPoi.name,
+          coordinateX: selectedPoi.coordinateX,
+          coordinateY: selectedPoi.coordinateY,
+          destination,
+        });
+        Alert.alert('Location Error', 'This map pin has invalid coordinates, so directions are unavailable.');
+        return;
+      }
+
+      if (!isWithinCampusBounds(destination)) {
+        console.warn('[CampusMap] POI appears outside UTech campus bounds.', {
+          poiId: selectedPoi.id,
+          poiName: selectedPoi.name,
+          destination,
+        });
+      }
+
       let location;
       if (hasLocationPermission) {
         location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       } else {
-        Alert.alert("Permission Required", "Please enable location services to get walking directions.");
-        setCalculatingRoute(false);
+        focusOnDestination(destination);
+        Alert.alert(
+          "Permission Required",
+          "Please enable location services to calculate a route. Showing this location on the campus map instead.",
+          [
+            { text: 'Open Google Maps', onPress: () => openExternalMaps(destination) },
+            { text: 'OK' },
+          ]
+        );
         return;
       }
       
-      const originLat = location.coords.latitude;
-      const originLng = location.coords.longitude;
-      const destLat = parseFloat(selectedPoi.coordinateY);
-      const destLng = parseFloat(selectedPoi.coordinateX);
+      const origin = {
+        latitude: Number.parseFloat(location?.coords?.latitude),
+        longitude: Number.parseFloat(location?.coords?.longitude),
+      };
+
+      if (!isValidLatLng(origin)) {
+        console.warn('[CampusMap] Invalid current location for directions.', {
+          location,
+          origin,
+        });
+        focusOnDestination(destination);
+        Alert.alert(
+          'Location Unavailable',
+          'Your current location is unavailable. Showing this location on the campus map instead.',
+          [
+            { text: 'Open Google Maps', onPress: () => openExternalMaps(destination) },
+            { text: 'OK' },
+          ]
+        );
+        return;
+      }
       
-      const distanceToCampus = calculateDistance(originLat, originLng, mapRegion.latitude, mapRegion.longitude);
+      const distanceToCampus = calculateDistance(origin.latitude, origin.longitude, mapRegion.latitude, mapRegion.longitude);
       if (distanceToCampus > 5) { // Strict 5km Walking limit to prevent giant Map fetches
-        Alert.alert("Too Far", "Walking directions are only available when you are near the UTech Campus. Use a vehicle or arrive on campus first.");
-        setCalculatingRoute(false);
+        focusOnDestination(destination);
+        Alert.alert(
+          "Too Far",
+          "Walking directions are only available when you are near the UTech Campus. Showing this location on the campus map instead.",
+          [
+            { text: 'Open Google Maps', onPress: () => openExternalMaps(destination, origin, 'driving') },
+            { text: 'OK' },
+          ]
+        );
         return;
       }
       
       if (!googleMapsApiKey) {
-        Alert.alert("Map Key Missing", "Set EXPO_PUBLIC_GOOGLE_MAPS_API_KEY before testing directions in this environment.");
-        setCalculatingRoute(false);
+        focusOnDestination(destination);
+        Alert.alert(
+          "Map Key Missing",
+          "Map routing is not configured in this environment. Showing this location on the campus map instead.",
+          [
+            { text: 'Open Google Maps', onPress: () => openExternalMaps(destination, origin) },
+            { text: 'OK' },
+          ]
+        );
         return;
       }
 
-      const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${originLat},${originLng}&destination=${destLat},${destLng}&mode=walking&key=${googleMapsApiKey}`;
+      const walkingResult = await fetchGoogleDirections(origin, destination, 'walking');
       
-      const response = await fetch(url);
-      const data = await response.json();
-      
-      if (data.status === 'OK' && data.routes.length > 0) {
-        const route = data.routes[0];
-        const leg = route.legs[0];
-        
-        setRouteInfo({
-          distance: leg.distance.text,
-          duration: leg.duration.text
-        });
-        
-        const decodedPoints = decodePolyline(route.overview_polyline.points);
-        setCurrentRoute(decodedPoints);
-        
-        if (mapRef.current) {
-           mapRef.current.fitToCoordinates(decodedPoints, {
-             edgePadding: { top: 70, right: 70, bottom: 200, left: 70 },
-             animated: true
-           });
-        }
-      } else {
-        Alert.alert("Route Error", "Could not calculate walking directions to this location.");
+      if (walkingResult.status === 'OK' && walkingResult.data.routes?.length > 0) {
+        applyGoogleRoute(walkingResult.data.routes[0], 'walking');
+        return;
       }
+
+      if (walkingResult.status === 'OK') {
+        console.warn('[CampusMap] Google Directions returned OK without route data.', {
+          mode: 'walking',
+          routes: walkingResult.data.routes?.length || 0,
+          poiId: selectedPoi.id,
+          poiName: selectedPoi.name,
+        });
+      }
+
+      if (walkingResult.status === 'ZERO_RESULTS') {
+        const drivingResult = await fetchGoogleDirections(origin, destination, 'driving');
+
+        if (drivingResult.status === 'OK' && drivingResult.data.routes?.length > 0) {
+          applyGoogleRoute(drivingResult.data.routes[0], 'driving');
+          Alert.alert('Walking Route Unavailable', 'Walking route unavailable. Showing a driving route instead.');
+          return;
+        }
+
+        showApproximateRoute(origin, destination);
+        Alert.alert(
+          'Walking Route Unavailable',
+          'Walking route unavailable. Showing approximate location / opening Google Maps.',
+          [
+            { text: 'Open Google Maps', onPress: () => openExternalMaps(destination, origin) },
+            { text: 'OK' },
+          ]
+        );
+        return;
+      }
+
+      showApproximateRoute(origin, destination);
+      Alert.alert(
+        'Route Unavailable',
+        'Walking route unavailable. Showing approximate location / opening Google Maps.',
+        [
+          { text: 'Open Google Maps', onPress: () => openExternalMaps(destination, origin) },
+          { text: 'OK' },
+        ]
+      );
     } catch (err) {
-      console.warn("Direction fetch error:", err);
-      Alert.alert("Network Error", "Failed to contact routing servers.");
+      console.warn("[CampusMap] Direction fetch error:", err);
+      const destination = selectedPoi ? getCoordinates(selectedPoi.coordinateX, selectedPoi.coordinateY) : null;
+      if (isValidLatLng(destination)) {
+        focusOnDestination(destination);
+      }
+      Alert.alert("Network Error", "Failed to contact routing servers. Showing this location on the campus map instead.");
     } finally {
       setCalculatingRoute(false);
     }
@@ -305,30 +586,11 @@ export default function CampusMapScreen({ navigation }) {
 
   // UTech Jamaica Center Coordinates
   const mapRegion = {
-    latitude: 18.0180,
-    longitude: -76.7440,
+    latitude: UTECH_CENTER.latitude,
+    longitude: UTECH_CENTER.longitude,
     latitudeDelta: 0.005,
     longitudeDelta: 0.005,
   };
-
-  const getCoordinates = (x, y) => {
-    if (y > 10 && y < 30) {
-      return { latitude: y, longitude: x };
-    }
-    return {
-      latitude: 18.0167736 + (y - 50) * 0.00015,
-      longitude: -76.7464894 + (x - 50) * 0.00015,
-    };
-  };
-
-  // Explicit Geometric GPS mapping representing the exact parameter walls framing the University Campus.
-  const UTECH_BOUNDARY_COORDS = [
-    { latitude: 18.0210, longitude: -76.7475 }, // North-West (Papine Road edge)
-    { latitude: 18.0210, longitude: -76.7380 }, // North-East (Hope River edge)
-    { latitude: 18.0140, longitude: -76.7380 }, // South-East (Eastern flank)
-    { latitude: 18.0125, longitude: -76.7440 }, // South (Old Hope Road bend)
-    { latitude: 18.0125, longitude: -76.7485 }, // South-West (Hospital flank)
-  ];
 
   const getCategoryColor = (category) => {
     switch(category) {
@@ -660,8 +922,9 @@ export default function CampusMapScreen({ navigation }) {
               {routeInfo ? (
                 <View style={{ marginTop: 12, backgroundColor: 'rgba(102, 252, 241, 0.1)', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(102, 252, 241, 0.3)', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                    <View style={{ flex: 1 }}>
-                     <Text style={{ color: '#66FCF1', fontWeight: 'bold', marginBottom: 4 }}><Ionicons name="walk" size={14} /> Walking Route Active</Text>
+                     <Text style={{ color: '#66FCF1', fontWeight: 'bold', marginBottom: 4 }}><Ionicons name={routeInfo.icon || "walk"} size={14} /> {routeInfo.label || 'Walking Route Active'}</Text>
                      <Text style={{ color: '#ddd', fontSize: 13 }}>Distance: {routeInfo.distance} • Est: {routeInfo.duration}</Text>
+                     {routeInfo.note && <Text style={{ color: '#aaa', fontSize: 12, marginTop: 4 }}>{routeInfo.note}</Text>}
                    </View>
                    <TouchableOpacity 
                      style={{ padding: 6, backgroundColor: 'rgba(102, 252, 241, 0.2)', borderRadius: 20, marginLeft: 10 }}

@@ -156,13 +156,27 @@ export default function AskUTechScreen({ navigation, route }) {
     setIsTyping(true);
 
     try {
-      const historyPayload = messages
-        .filter(m => m.id !== 'welcome_msg')
-        .slice(-5)
-        .map(m => ({
-          role: m.sender === 'ai' ? 'assistant' : 'user',
-          content: m.text
-        }));
+      const normalizedInput = userMessage.text
+        .toLowerCase()
+        .replace(/[?!.,]/g, ' ')
+        .trim();
+      const historyTokens = normalizedInput.split(/\s+/).filter(Boolean);
+      const dependsOnHistory = normalizedInput.length < 90 && (
+        ['that', 'this', 'those', 'these', 'it', 'they', 'same', 'previous', 'above', 'more', 'also'].some(token => historyTokens.includes(token)) ||
+        normalizedInput.startsWith('what about') ||
+        normalizedInput.startsWith('how about') ||
+        normalizedInput.startsWith('and ') ||
+        normalizedInput.startsWith('but ')
+      );
+      const historyPayload = dependsOnHistory
+        ? messages
+            .filter(m => m.id !== 'welcome_msg')
+            .slice(-3)
+            .map(m => ({
+              role: m.sender === 'ai' ? 'assistant' : 'user',
+              content: m.text.length > 1200 ? `${m.text.slice(0, 1200).trim()}...` : m.text
+            }))
+        : [];
 
       const response = await fetchWithAuth('/api/v1/helpdesk/ask', {
         method: 'POST',
