@@ -2,13 +2,14 @@ import API_BASE_URL from './api';
 
 const GOOGLE_DIRECTIONS_URL = 'https://maps.googleapis.com/maps/api/directions/json';
 const BACKEND_DIRECTIONS_PATH = '/api/v1/mobile/map/directions';
+const runtimeGlobal = globalThis;
 
 const getOriginalFetch = () => {
-  if (!global.__olmiesOriginalFetch) {
-    global.__olmiesOriginalFetch = global.fetch.bind(global);
+  if (!runtimeGlobal.__olmiesOriginalFetch) {
+    runtimeGlobal.__olmiesOriginalFetch = runtimeGlobal.fetch.bind(runtimeGlobal);
   }
 
-  return global.__olmiesOriginalFetch;
+  return runtimeGlobal.__olmiesOriginalFetch;
 };
 
 const getQueryParam = (url, paramName) => {
@@ -75,15 +76,15 @@ const parseBackendErrorPayload = (status, body) => {
 };
 
 export const installGoogleDirectionsProxy = (getToken = () => null) => {
-  global.__olmiesDirectionsProxyGetToken = getToken;
+  runtimeGlobal.__olmiesDirectionsProxyGetToken = getToken;
 
-  if (global.__olmiesDirectionsProxyInstalled) {
+  if (runtimeGlobal.__olmiesDirectionsProxyInstalled) {
     return;
   }
 
   const originalFetch = getOriginalFetch();
 
-  global.fetch = async (input, init) => {
+  runtimeGlobal.fetch = async (input, init) => {
     const requestUrl = typeof input === 'string' ? input : input?.url;
 
     if (typeof requestUrl === 'string' && requestUrl.startsWith(GOOGLE_DIRECTIONS_URL)) {
@@ -110,7 +111,7 @@ export const installGoogleDirectionsProxy = (getToken = () => null) => {
       }
 
       try {
-        const token = global.__olmiesDirectionsProxyGetToken?.();
+        const token = runtimeGlobal.__olmiesDirectionsProxyGetToken?.();
         const headers = { 'Content-Type': 'application/json' };
         if (token) {
           headers.Authorization = `Bearer ${token}`;
@@ -147,5 +148,5 @@ export const installGoogleDirectionsProxy = (getToken = () => null) => {
     return originalFetch(input, init);
   };
 
-  global.__olmiesDirectionsProxyInstalled = true;
+  runtimeGlobal.__olmiesDirectionsProxyInstalled = true;
 };
