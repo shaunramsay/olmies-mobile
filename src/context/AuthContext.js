@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import API_BASE_URL from '../config/api';
+import { installGoogleDirectionsProxy } from '../config/googleDirectionsProxy';
 
 const isExpoGo = Constants.executionEnvironment === 'storeClient' || Constants.appOwnership === 'expo';
 const CAMPUS_ALERTS_CHANNEL_ID = 'campus-alerts';
@@ -66,6 +67,10 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [hasAcceptedDPA, setHasAcceptedDPA] = useState(null);
+
+    useEffect(() => {
+        installGoogleDirectionsProxy(() => token);
+    }, [token]);
 
     // Initial load of the token from SecureStore or Web Storage
     useEffect(() => {
