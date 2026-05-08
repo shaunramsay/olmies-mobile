@@ -1,8 +1,10 @@
 import { registerRootComponent } from 'expo';
 
+import { installCampusMapRoutingUx } from './src/config/campusMapRoutingUx';
 import { installGoogleDirectionsProxy } from './src/config/googleDirectionsProxy';
 import App from './App';
 
+installCampusMapRoutingUx();
 installGoogleDirectionsProxy();
 
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);
