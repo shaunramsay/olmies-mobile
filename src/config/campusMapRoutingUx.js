@@ -1,7 +1,8 @@
 import { Alert, Platform } from 'react-native';
 
+const APPROXIMATE_ROUTE_TITLE = 'Approximate Campus Route';
 const APPROXIMATE_ROUTE_MESSAGE = 'Walking route unavailable. Showing approximate campus route.';
-const MIN_ROUTE_BOTTOM_PADDING = 320;
+const MIN_ROUTE_BOTTOM_PADDING = 360;
 const runtimeGlobal = globalThis;
 
 const shouldRewriteApproximateRouteAlert = (title, message) => {
@@ -21,7 +22,7 @@ const installApproximateRouteAlertCopy = () => {
   const originalAlert = Alert.alert.bind(Alert);
   Alert.alert = (title, message, buttons, options) => {
     if (shouldRewriteApproximateRouteAlert(title, message)) {
-      return originalAlert('Walking Route Unavailable', APPROXIMATE_ROUTE_MESSAGE, buttons, options);
+      return originalAlert(APPROXIMATE_ROUTE_TITLE, APPROXIMATE_ROUTE_MESSAGE, buttons, options);
     }
 
     return originalAlert(title, message, buttons, options);
