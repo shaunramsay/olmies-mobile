@@ -5,11 +5,31 @@ const BACKEND_DIRECTIONS_PATH = '/api/v1/mobile/map/directions';
 const runtimeGlobal = globalThis;
 
 const getOriginalFetch = () => {
+  if (typeof runtimeGlobal.fetch !== 'function') {
+    return null;
+  }
+
   if (!runtimeGlobal.__olmiesOriginalFetch) {
     runtimeGlobal.__olmiesOriginalFetch = runtimeGlobal.fetch.bind(runtimeGlobal);
   }
 
   return runtimeGlobal.__olmiesOriginalFetch;
+};
+
+const isGoogleDirectionsRequest = (url) => (
+  typeof url === 'string'
+  && url.startsWith(GOOGLE_DIRECTIONS_URL)
+);
+
+const buildBackendDirectionsUrl = () => {
+  const baseUrl = (API_BASE_URL || '').replace(/\/+$/, '');
+  if (!baseUrl) return '';
+
+  if (baseUrl.endsWith('/api/v1')) {
+    return `${baseUrl}/mobile/map/directions`;
+  }
+
+  return `${baseUrl}${BACKEND_DIRECTIONS_PATH}`;
 };
 
 const getQueryParam = (url, paramName) => {
@@ -83,16 +103,26 @@ export const installGoogleDirectionsProxy = (getToken = () => null) => {
   }
 
   const originalFetch = getOriginalFetch();
+  if (!originalFetch) {
+    console.warn('[CampusMap] Directions proxy skipped: global fetch is unavailable.');
+    return;
+  }
+
+  const backendDirectionsUrl = buildBackendDirectionsUrl();
+  console.info('[CampusMap] Google Directions proxy installed.', {
+    hasApiBaseUrl: Boolean(API_BASE_URL),
+    backendDirectionsUrl,
+  });
 
   runtimeGlobal.fetch = async (input, init) => {
     const requestUrl = typeof input === 'string' ? input : input?.url;
 
-    if (typeof requestUrl === 'string' && requestUrl.startsWith(GOOGLE_DIRECTIONS_URL)) {
+    if (isGoogleDirectionsRequest(requestUrl)) {
       const origin = parseLatLng(getQueryParam(requestUrl, 'origin'));
       const destination = parseLatLng(getQueryParam(requestUrl, 'destination'));
       const mode = getQueryParam(requestUrl, 'mode') || 'walking';
 
-      if (!API_BASE_URL) {
+      if (!backendDirectionsUrl) {
         console.warn('[CampusMap] Directions proxy skipped: API base URL is not configured.');
         return createJsonResponse({
           status: 'CONFIGURATION_ERROR',
@@ -110,6 +140,13 @@ export const installGoogleDirectionsProxy = (getToken = () => null) => {
         });
       }
 
+      console.info('[CampusMap] Routing directions request through backend.', {
+        backendDirectionsUrl,
+        mode,
+        origin,
+        destination,
+      });
+
       try {
         const token = runtimeGlobal.__olmiesDirectionsProxyGetToken?.();
         const headers = { 'Content-Type': 'application/json' };
@@ -117,7 +154,7 @@ export const installGoogleDirectionsProxy = (getToken = () => null) => {
           headers.Authorization = `Bearer ${token}`;
         }
 
-        const backendResponse = await originalFetch(`${API_BASE_URL}${BACKEND_DIRECTIONS_PATH}`, {
+        const backendResponse = await originalFetch(backendDirectionsUrl, {
           method: 'POST',
           headers,
           body: JSON.stringify({ origin, destination, mode }),
@@ -132,6 +169,18 @@ export const installGoogleDirectionsProxy = (getToken = () => null) => {
             errorMessage: payload.error_message,
           });
           return createJsonResponse(payload);
+        }
+
+        if (typeof backendResponse.clone === 'function') {
+          backendResponse.clone().json()
+            .then((payload) => {
+              console.info('[CampusMap] Backend directions route returned.', {
+                routeStatus: payload?.status,
+                errorMessage: payload?.error_message,
+                routeCount: payload?.routes?.length || 0,
+              });
+            })
+            .catch(() => {});
         }
 
         return backendResponse;
