@@ -140,6 +140,15 @@ export const installGoogleDirectionsProxy = (getToken = () => null) => {
         });
       }
 
+      if (mode !== 'walking') {
+        console.info('[CampusMap] Skipping in-app non-walking directions fallback.', { mode });
+        return createJsonResponse({
+          status: 'ZERO_RESULTS',
+          error_message: 'In-app campus routing is limited to walking directions. Showing approximate campus route.',
+          routes: [],
+        });
+      }
+
       console.info('[CampusMap] Routing directions request through backend.', {
         backendDirectionsUrl,
         mode,
