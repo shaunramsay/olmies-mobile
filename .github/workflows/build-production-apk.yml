@@ -3,7 +3,7 @@ name: Build Production APK
 on:
   push:
     branches:
-      - main
+      - production-2
   workflow_dispatch:
 
 jobs:
@@ -13,7 +13,7 @@ jobs:
       contents: read
 
     steps:
-      - name: Check out main
+      - name: Check out production-2
         uses: actions/checkout@v4
 
       - name: Set up Node.js
