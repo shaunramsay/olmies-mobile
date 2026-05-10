@@ -6,12 +6,17 @@ import { useAuth } from '../context/AuthContext';
 import { useAppTheme } from '../context/ThemeContext';
 import { getUTechSemester } from '../utils/dateUtils';
 import FullscreenImageViewer from './FullscreenImageViewer';
+import NotificationDetailModal from './NotificationDetailModal';
 import API_BASE_URL from '../config/api';
 
 const formatNotificationDate = (value) => {
   if (!value) return 'Recently';
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return 'Recently';
+  const ageMs = Date.now() - parsed.getTime();
+  if (ageMs >= 0 && ageMs < 24 * 60 * 60 * 1000) {
+    return parsed.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  }
   return parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 };
 
@@ -343,46 +348,13 @@ export default function HomeDashboard({ navigation, fallbackName }) {
         </View>
       </Modal>
 
-      <Modal visible={!!selectedNotification} animationType="slide" transparent={true} onRequestClose={() => setSelectedNotification(null)}>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, styles.notificationModalContent, { backgroundColor: colors.surface }]}>
-            {hasValidImageUrl(selectedNotification?.imageUrl) && (
-              <TouchableOpacity
-                activeOpacity={0.9}
-                onPress={() => setFullscreenImage({ imageUrl: selectedNotification.imageUrl, title: selectedNotification.title })}
-              >
-                <View style={[styles.notificationModalImageFrame, { backgroundColor: colors.background }]}>
-                  <Image source={{ uri: selectedNotification.imageUrl }} style={styles.notificationModalImage} resizeMode="contain" />
-                </View>
-                <View style={[styles.imageHintRow, { backgroundColor: colors.background }]}>
-                  <Ionicons name="expand-outline" size={14} color={colors.primary} />
-                  <Text style={[styles.imageHintText, { color: colors.textSecondary }]}>Tap image to view full size</Text>
-                </View>
-              </TouchableOpacity>
-            )}
-            <View style={styles.notificationModalTextContainer}>
-              <View style={styles.notificationModalHeader}>
-                <Text style={[styles.modalTitle, { color: colors.text, flex: 1 }]}>{selectedNotification?.title}</Text>
-                {selectedNotification?.type && (
-                  <View style={[styles.typeBadge, { borderColor: colors.border }]}>
-                    <Text style={[styles.typeBadgeText, { color: colors.textSecondary }]}>{selectedNotification.type}</Text>
-                  </View>
-                )}
-              </View>
-              <Text style={[styles.modalDate, { color: colors.textSecondary }]}>{selectedNotification?.fullDate}</Text>
-              <ScrollView style={styles.notificationModalMessageBody}>
-                <Text style={[styles.modalMessage, { color: colors.textSecondary }]}>{selectedNotification?.message}</Text>
-              </ScrollView>
-              <TouchableOpacity
-                style={[styles.closeButton, { backgroundColor: colors.primary, marginTop: 24 }]}
-                onPress={() => setSelectedNotification(null)}
-              >
-                <Text style={styles.closeButtonText}>Close</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <NotificationDetailModal
+        visible={!!selectedNotification}
+        notification={selectedNotification}
+        colors={colors}
+        onClose={() => setSelectedNotification(null)}
+        onOpenImage={setFullscreenImage}
+      />
 
       <FullscreenImageViewer
         visible={!!fullscreenImage}
