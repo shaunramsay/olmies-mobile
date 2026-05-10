@@ -212,7 +212,9 @@ export default function HomeDashboard({ navigation, fallbackName }) {
                       onPress={() => setSelectedNotification(item)}
                     >
                       {hasImage && (
-                        <Image source={{ uri: item.imageUrl }} style={[styles.notificationCardImage, { width: notificationCardWidth }]} resizeMode="cover" />
+                        <View style={[styles.notificationCardImageFrame, { width: notificationCardWidth, backgroundColor: colors.background }]}>
+                          <Image source={{ uri: item.imageUrl }} style={styles.notificationCardImage} resizeMode="contain" />
+                        </View>
                       )}
                       <View style={styles.notificationCardHeader}>
                         <View style={[styles.notificationIcon, { backgroundColor: `${icon.color}22` }]}>
@@ -458,11 +460,16 @@ const styles = StyleSheet.create({
   notificationCardWithImage: {
     paddingTop: 0,
   },
-  notificationCardImage: {
-    width: '100%',
-    height: 88,
+  notificationCardImageFrame: {
+    height: 116,
     marginHorizontal: -14,
     marginBottom: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notificationCardImage: {
+    width: '100%',
+    height: '100%',
   },
   notificationCardHeader: {
     flexDirection: 'row',
