@@ -8,8 +8,8 @@ import { useAppTheme } from '../../context/ThemeContext';
 
 export default function SurveysScreen({ navigation }) {
   const insets = useSafeAreaInsets();
-  const { user, fetchWithAuth } = useAuth();
-  const { colors } = useAppTheme();
+  const { user, fetchWithAuth, logout } = useAuth();
+  const { colors, isDarkTheme, toggleTheme } = useAppTheme();
 
   const [modules, setModules] = useState([]);
   const [openSurveys, setOpenSurveys] = useState([]);
@@ -56,9 +56,25 @@ export default function SurveysScreen({ navigation }) {
 
       {/* Sticky Header Section */}
       <View style={[styles.stickyHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <View style={styles.titleRow}>
-          <Ionicons name="clipboard-outline" size={28} color={colors.secondary} />
-          <Text style={[styles.titleText, { color: colors.secondary }]}>Surveys</Text>
+        <View style={styles.headerTopRow}>
+          <View style={styles.titleRow}>
+            <Ionicons name="clipboard-outline" size={28} color={colors.secondary} />
+            <Text style={[styles.titleText, { color: colors.secondary }]} numberOfLines={1}>Surveys</Text>
+          </View>
+          <View style={styles.topRightActions}>
+            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={toggleTheme}>
+              <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+            {user ? (
+              <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={logout}>
+                <Ionicons name="log-out-outline" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={() => navigation.navigate('Login')}>
+                <Ionicons name="log-in-outline" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
           Manage module evaluations and campus surveys.
@@ -248,8 +264,26 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 3,
   },
-  titleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 5 },
-  titleText: { fontSize: 24, fontWeight: 'bold', marginLeft: 10 },
+  headerTopRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 5,
+  },
+  titleRow: { flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 12 },
+  titleText: { fontSize: 24, fontWeight: 'bold', marginLeft: 10, flexShrink: 1 },
+  topRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionButton: {
+    padding: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   subtitle: { fontSize: 13, paddingHorizontal: 0 },
   scrollContent: { padding: 20, paddingBottom: 40 },
   quickActionsContainer: {

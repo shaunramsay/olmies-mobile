@@ -43,9 +43,12 @@ export default function HomeDashboard({ navigation, fallbackName }) {
   const [loading, setLoading] = useState(true);
   const [selectedDeal, setSelectedDeal] = useState(null);
   const [selectedNotification, setSelectedNotification] = useState(null);
+  const [activeNotificationIndex, setActiveNotificationIndex] = useState(0);
 
   const semester = getUTechSemester().fullDisplay;
   const isCompactPreview = Platform.OS === 'web' && width < 760;
+  const notificationCardWidth = Math.min(Math.max(width - 98, 230), isCompactPreview ? 310 : 320);
+  const notificationSnapInterval = notificationCardWidth + 12;
 
   useEffect(() => {
     let isMounted = true;
@@ -90,6 +93,10 @@ export default function HomeDashboard({ navigation, fallbackName }) {
       isMounted = false;
     };
   }, [fetchWithAuth]);
+
+  useEffect(() => {
+    setActiveNotificationIndex(0);
+  }, [notifications.length]);
 
   const dealData = deals.length >= 3
     ? deals.slice(0, 3)
@@ -164,21 +171,73 @@ export default function HomeDashboard({ navigation, fallbackName }) {
           ) : notifications.length === 0 ? (
             <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>No new notifications right now.</Text>
           ) : (
-            notifications.map((item, index) => {
-              const icon = getNotificationIcon(item.type);
-              return (
-                <TouchableOpacity key={item.id || index} style={styles.notificationRow} onPress={() => setSelectedNotification(item)}>
-                  <View style={[styles.notificationIcon, { backgroundColor: `${icon.color}22` }]}>
-                    <Ionicons name={icon.name} size={18} color={icon.color} />
-                  </View>
-                  <View style={styles.notificationCopy}>
-                    <Text style={[styles.notificationTitle, { color: item.isRead ? colors.text : colors.primary }]} numberOfLines={1}>{item.title}</Text>
-                    <Text style={[styles.notificationMessage, { color: colors.textSecondary }]} numberOfLines={2}>{item.message}</Text>
-                  </View>
-                  <Text style={[styles.notificationDate, { color: colors.textSecondary }]}>{item.date}</Text>
-                </TouchableOpacity>
-              );
-            })
+            <>
+              <FlatList
+                data={notifications}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(item, index) => `${item.id || 'notification'}-${index}`}
+                snapToInterval={notificationSnapInterval}
+                snapToAlignment="start"
+                decelerationRate="fast"
+                contentContainerStyle={styles.notificationCarouselContent}
+                onMomentumScrollEnd={(event) => {
+                  const nextIndex = Math.round(event.nativeEvent.contentOffset.x / notificationSnapInterval);
+                  setActiveNotificationIndex(Math.min(Math.max(nextIndex, 0), notifications.length - 1));
+                }}
+                renderItem={({ item }) => {
+                  const icon = getNotificationIcon(item.type);
+
+                  return (
+                    <TouchableOpacity
+                      style={[
+                        styles.notificationCard,
+                        {
+                          width: notificationCardWidth,
+                          backgroundColor: item.isRead ? colors.background : `${colors.primary}14`,
+                          borderColor: item.isRead ? colors.border : colors.primary
+                        }
+                      ]}
+                      activeOpacity={0.82}
+                      onPress={() => setSelectedNotification(item)}
+                    >
+                      <View style={styles.notificationCardHeader}>
+                        <View style={[styles.notificationIcon, { backgroundColor: `${icon.color}22` }]}>
+                          <Ionicons name={icon.name} size={18} color={icon.color} />
+                        </View>
+                        <View style={styles.notificationMeta}>
+                          <Text style={[styles.notificationType, { color: colors.textSecondary }]} numberOfLines={1}>
+                            {item.type || 'Campus Alert'}
+                          </Text>
+                          <Text style={[styles.notificationDate, { color: colors.textSecondary }]}>{item.date}</Text>
+                        </View>
+                        <Ionicons name="chevron-forward-circle" size={20} color={item.isRead ? colors.textSecondary : colors.primary} />
+                      </View>
+
+                      <Text style={[styles.notificationTitle, { color: item.isRead ? colors.text : colors.primary }]} numberOfLines={2}>{item.title}</Text>
+                      <Text style={[styles.notificationMessage, { color: colors.textSecondary }]} numberOfLines={3}>{item.message}</Text>
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+
+              {notifications.length > 1 && (
+                <View style={styles.paginationDots}>
+                  {notifications.map((item, index) => (
+                    <View
+                      key={`${item.id || 'notification-dot'}-${index}`}
+                      style={[
+                        styles.paginationDot,
+                        {
+                          backgroundColor: index === activeNotificationIndex ? colors.primary : colors.border,
+                          opacity: index === activeNotificationIndex ? 1 : 0.75
+                        }
+                      ]}
+                    />
+                  ))}
+                </View>
+              )}
+            </>
           )}
         </View>
 
@@ -374,10 +433,18 @@ const styles = StyleSheet.create({
   cardDescription: { fontSize: 14, lineHeight: 22 },
   textButton: { flexDirection: 'row', alignItems: 'center', paddingLeft: 10 },
   textButtonLabel: { fontSize: 13, fontWeight: '800' },
-  notificationRow: {
+  notificationCarouselContent: { paddingRight: 6 },
+  notificationCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    marginRight: 12,
+    padding: 14,
+    minHeight: 142,
+  },
+  notificationCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    marginBottom: 10,
   },
   notificationIcon: {
     width: 34,
@@ -387,10 +454,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 12,
   },
-  notificationCopy: { flex: 1, paddingRight: 8 },
-  notificationTitle: { fontSize: 14, fontWeight: '800', marginBottom: 3 },
-  notificationMessage: { fontSize: 12, lineHeight: 17 },
+  notificationMeta: { flex: 1, paddingRight: 8 },
+  notificationType: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', marginBottom: 2 },
+  notificationTitle: { fontSize: 15, fontWeight: '800', marginBottom: 6, lineHeight: 20 },
+  notificationMessage: { fontSize: 13, lineHeight: 18 },
   notificationDate: { fontSize: 11, fontWeight: '700' },
+  paginationDots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  paginationDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginHorizontal: 3,
+  },
   carouselContainer: { marginBottom: 20 },
   carouselHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, paddingHorizontal: 5 },
   carouselTitle: { fontSize: 18, fontWeight: 'bold', marginLeft: 8 },
