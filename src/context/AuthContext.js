@@ -220,7 +220,7 @@ export const AuthProvider = ({ children }) => {
                     const body = await response.text().catch(() => '');
                     console.warn('Failed to register Expo push token with API:', response.status, body);
                 } else {
-                    console.info('Registered Expo push token for OS notifications.');
+                    console.info('Registered Expo push token for OS notifications:', tokenObj.data);
                 }
             }
         } catch (error) {
