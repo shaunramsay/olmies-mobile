@@ -16,9 +16,17 @@ const formatNotificationDate = (value) => {
 
 const resolveImageUrl = (imageUrl) => {
   if (!imageUrl || typeof imageUrl !== 'string') return null;
-  if (imageUrl.startsWith('http')) return imageUrl;
-  return `${API_BASE_URL}${imageUrl}`;
+  const trimmedUrl = imageUrl.trim();
+  if (!trimmedUrl || trimmedUrl === 'null') return null;
+  if (trimmedUrl.startsWith('http')) return trimmedUrl;
+  return `${API_BASE_URL}${trimmedUrl}`;
 };
+
+const hasNotificationImage = (imageUrl) => (
+  typeof imageUrl === 'string' &&
+  imageUrl.trim().length > 5 &&
+  imageUrl.trim() !== 'null'
+);
 
 const getNotificationIcon = (type) => {
   switch (type) {
@@ -187,11 +195,13 @@ export default function HomeDashboard({ navigation, fallbackName }) {
                 }}
                 renderItem={({ item }) => {
                   const icon = getNotificationIcon(item.type);
+                  const hasImage = hasNotificationImage(item.imageUrl);
 
                   return (
                     <TouchableOpacity
                       style={[
                         styles.notificationCard,
+                        hasImage && styles.notificationCardWithImage,
                         {
                           width: notificationCardWidth,
                           backgroundColor: item.isRead ? colors.background : `${colors.primary}14`,
@@ -201,6 +211,9 @@ export default function HomeDashboard({ navigation, fallbackName }) {
                       activeOpacity={0.82}
                       onPress={() => setSelectedNotification(item)}
                     >
+                      {hasImage && (
+                        <Image source={{ uri: item.imageUrl }} style={[styles.notificationCardImage, { width: notificationCardWidth }]} resizeMode="cover" />
+                      )}
                       <View style={styles.notificationCardHeader}>
                         <View style={[styles.notificationIcon, { backgroundColor: `${icon.color}22` }]}>
                           <Ionicons name={icon.name} size={18} color={icon.color} />
@@ -440,6 +453,16 @@ const styles = StyleSheet.create({
     marginRight: 12,
     padding: 14,
     minHeight: 142,
+    overflow: 'hidden',
+  },
+  notificationCardWithImage: {
+    paddingTop: 0,
+  },
+  notificationCardImage: {
+    width: '100%',
+    height: 88,
+    marginHorizontal: -14,
+    marginBottom: 12,
   },
   notificationCardHeader: {
     flexDirection: 'row',
