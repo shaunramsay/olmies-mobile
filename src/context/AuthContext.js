@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { jwtDecode } from 'jwt-decode';
-import { Platform } from 'react-native';
+import { Alert, AppState, Linking, Platform } from 'react-native';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import API_BASE_URL from '../config/api';
@@ -9,6 +9,8 @@ import { installGoogleDirectionsProxy } from '../config/googleDirectionsProxy';
 
 const isExpoGo = Constants.executionEnvironment === 'storeClient' || Constants.appOwnership === 'expo';
 const CAMPUS_ALERTS_CHANNEL_ID = 'campus-alerts';
+const PUSH_PERMISSION_PROMPTED_AT_KEY = 'olmies_push_permission_prompted_at';
+const PUSH_PERMISSION_PROMPT_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
 const getNotificationsModule = () => {
     if (Platform.OS === 'web' || isExpoGo) return null;
@@ -137,6 +139,58 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const logPushPermissionStatus = (label, permission) => {
+        console.info(`Push notification permission status (${label}):`, {
+            status: permission?.status,
+            granted: permission?.granted,
+            canAskAgain: permission?.canAskAgain,
+        });
+    };
+
+    const showPushPermissionSettingsPrompt = async (currentUser) => {
+        try {
+            const lastPromptedAt = await TokenStorage.getItemAsync(PUSH_PERMISSION_PROMPTED_AT_KEY);
+            const lastPromptedTime = Number(lastPromptedAt);
+            const canShowPrompt = !lastPromptedTime || Date.now() - lastPromptedTime > PUSH_PERMISSION_PROMPT_COOLDOWN_MS;
+
+            if (!canShowPrompt) {
+                console.info('Push notification settings prompt skipped: recently shown.');
+                return;
+            }
+
+            await TokenStorage.setItemAsync(PUSH_PERMISSION_PROMPTED_AT_KEY, String(Date.now()));
+        } catch (error) {
+            console.warn('Unable to save push notification settings prompt state:', error);
+        }
+
+        Alert.alert(
+            'Turn on OLMIES notifications',
+            'OLMIES needs notification permission so you can receive campus alerts and survey updates when they are deployed.',
+            [
+                { text: 'Not Now', style: 'cancel' },
+                {
+                    text: 'Open Settings',
+                    onPress: () => {
+                        let handledSettingsReturn = false;
+                        let settingsSubscription;
+                        settingsSubscription = AppState.addEventListener('change', (nextState) => {
+                            if (nextState === 'active' && !handledSettingsReturn) {
+                                handledSettingsReturn = true;
+                                settingsSubscription?.remove?.();
+                                registerForPushNotificationsAsync(currentUser);
+                            }
+                        });
+
+                        Linking.openSettings().catch((error) => {
+                            settingsSubscription?.remove?.();
+                            console.warn('Unable to open notification settings:', error);
+                        });
+                    },
+                },
+            ]
+        );
+    };
+
     const decodeAndSetUser = (jwt, explicitUserData = null) => {
         try {
             const payload = jwtDecode(jwt);
@@ -186,14 +240,18 @@ export const AuthProvider = ({ children }) => {
             });
         }
 
-        const { status: existingStatus } = await Notifications.getPermissionsAsync();
-        let finalStatus = existingStatus;
-        if (existingStatus !== 'granted') {
-            const { status } = await Notifications.requestPermissionsAsync();
-            finalStatus = status;
+        const existingPermission = await Notifications.getPermissionsAsync();
+        logPushPermissionStatus('before request', existingPermission);
+
+        let finalPermission = existingPermission;
+        if (existingPermission.status === 'undetermined') {
+            finalPermission = await Notifications.requestPermissionsAsync();
+            logPushPermissionStatus('after request', finalPermission);
         }
-        if (finalStatus !== 'granted') {
+
+        if (finalPermission.status !== 'granted') {
             console.warn('Push registration skipped: notification permission was not granted.');
+            await showPushPermissionSettingsPrompt(currentUser);
             return;
         }
 
