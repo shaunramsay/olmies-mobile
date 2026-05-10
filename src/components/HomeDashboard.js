@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { useAppTheme } from '../context/ThemeContext';
 import { getUTechSemester } from '../utils/dateUtils';
+import FullscreenImageViewer from './FullscreenImageViewer';
 import API_BASE_URL from '../config/api';
 
 const formatNotificationDate = (value) => {
@@ -22,7 +23,7 @@ const resolveImageUrl = (imageUrl) => {
   return `${API_BASE_URL}${trimmedUrl}`;
 };
 
-const hasNotificationImage = (imageUrl) => (
+const hasValidImageUrl = (imageUrl) => (
   typeof imageUrl === 'string' &&
   imageUrl.trim().length > 5 &&
   imageUrl.trim() !== 'null'
@@ -51,6 +52,7 @@ export default function HomeDashboard({ navigation, fallbackName }) {
   const [loading, setLoading] = useState(true);
   const [selectedDeal, setSelectedDeal] = useState(null);
   const [selectedNotification, setSelectedNotification] = useState(null);
+  const [fullscreenImage, setFullscreenImage] = useState(null);
   const [activeNotificationIndex, setActiveNotificationIndex] = useState(0);
 
   const semester = getUTechSemester().fullDisplay;
@@ -195,7 +197,7 @@ export default function HomeDashboard({ navigation, fallbackName }) {
                 }}
                 renderItem={({ item }) => {
                   const icon = getNotificationIcon(item.type);
-                  const hasImage = hasNotificationImage(item.imageUrl);
+                  const hasImage = hasValidImageUrl(item.imageUrl);
 
                   return (
                     <TouchableOpacity
@@ -295,10 +297,21 @@ export default function HomeDashboard({ navigation, fallbackName }) {
       <Modal visible={!!selectedDeal} animationType="slide" transparent={true} onRequestClose={() => setSelectedDeal(null)}>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
-            {selectedDeal?.bannerImageUrl ? (
-              <Image source={{ uri: selectedDeal.bannerImageUrl }} style={styles.modalImage} resizeMode="cover" />
+            {hasValidImageUrl(selectedDeal?.bannerImageUrl) ? (
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() => setFullscreenImage({ imageUrl: selectedDeal.bannerImageUrl, title: selectedDeal.vendorName })}
+              >
+                <View style={[styles.modalImageFrame, { backgroundColor: colors.background }]}>
+                  <Image source={{ uri: selectedDeal.bannerImageUrl }} style={styles.modalImage} resizeMode="contain" />
+                </View>
+                <View style={[styles.imageHintRow, { backgroundColor: colors.background }]}>
+                  <Ionicons name="expand-outline" size={14} color={colors.primary} />
+                  <Text style={[styles.imageHintText, { color: colors.textSecondary }]}>Tap image to view full size</Text>
+                </View>
+              </TouchableOpacity>
             ) : (
-              <View style={[styles.modalImage, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
+              <View style={[styles.modalImageFrame, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
                 <Ionicons name={selectedDeal?.id?.toString().startsWith('ad-slot') ? 'megaphone-outline' : 'pricetag-outline'} size={60} color={selectedDeal?.id?.toString().startsWith('ad-slot') ? colors.info : colors.primary} />
               </View>
             )}
@@ -333,8 +346,19 @@ export default function HomeDashboard({ navigation, fallbackName }) {
       <Modal visible={!!selectedNotification} animationType="slide" transparent={true} onRequestClose={() => setSelectedNotification(null)}>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, styles.notificationModalContent, { backgroundColor: colors.surface }]}>
-            {selectedNotification?.imageUrl && (
-              <Image source={{ uri: selectedNotification.imageUrl }} style={styles.notificationModalImage} resizeMode="cover" />
+            {hasValidImageUrl(selectedNotification?.imageUrl) && (
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() => setFullscreenImage({ imageUrl: selectedNotification.imageUrl, title: selectedNotification.title })}
+              >
+                <View style={[styles.notificationModalImageFrame, { backgroundColor: colors.background }]}>
+                  <Image source={{ uri: selectedNotification.imageUrl }} style={styles.notificationModalImage} resizeMode="contain" />
+                </View>
+                <View style={[styles.imageHintRow, { backgroundColor: colors.background }]}>
+                  <Ionicons name="expand-outline" size={14} color={colors.primary} />
+                  <Text style={[styles.imageHintText, { color: colors.textSecondary }]}>Tap image to view full size</Text>
+                </View>
+              </TouchableOpacity>
             )}
             <View style={styles.notificationModalTextContainer}>
               <View style={styles.notificationModalHeader}>
@@ -359,6 +383,13 @@ export default function HomeDashboard({ navigation, fallbackName }) {
           </View>
         </View>
       </Modal>
+
+      <FullscreenImageViewer
+        visible={!!fullscreenImage}
+        imageUrl={fullscreenImage?.imageUrl}
+        title={fullscreenImage?.title}
+        onClose={() => setFullscreenImage(null)}
+      />
     </View>
   );
 }
@@ -527,16 +558,37 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     maxHeight: '85%',
   },
-  modalImage: {
+  modalImageFrame: {
     width: '100%',
     height: 220,
+  },
+  modalImage: {
+    width: '100%',
+    height: '100%',
   },
   notificationModalContent: {
     flexShrink: 1,
   },
+  notificationModalImageFrame: {
+    width: '100%',
+    height: 220,
+  },
   notificationModalImage: {
     width: '100%',
-    height: 170,
+    height: '100%',
+  },
+  imageHintRow: {
+    minHeight: 34,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  imageHintText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   modalTextContainer: {
     padding: 24,
