@@ -87,10 +87,13 @@ export const AuthProvider = ({ children }) => {
                     setHasAcceptedDPA(false);
                 }
 
+                let decodedUser = null;
                 if (storedToken) {
                     setToken(storedToken);
-                    decodeAndSetUser(storedToken);
+                    decodedUser = decodeAndSetUser(storedToken);
                 }
+
+                registerForPushNotificationsAsync(decodedUser);
             } catch (error) {
                 console.error('Error loading config:', error);
                 setHasAcceptedDPA(false);
@@ -265,20 +268,34 @@ export const AuthProvider = ({ children }) => {
             const tokenObj = await Notifications.getExpoPushTokenAsync({ projectId });
             
             // Send to our backend
-            if (tokenObj && tokenObj.data && currentUser?.username) {
+            if (tokenObj && tokenObj.data) {
+                const deviceId = await getDeviceId();
+                const requestBody = {
+                    ExpoToken: tokenObj.data,
+                    DeviceId: deviceId,
+                    Platform: Platform.OS,
+                    AppVersion: Constants?.expoConfig?.version ?? Constants?.manifest?.version ?? null,
+                };
+
+                if (currentUser?.username) {
+                    requestBody.Username = currentUser.username;
+                }
+
                 const response = await fetchWithAuth('/api/v1/mobile/tokens', {
                     method: 'POST',
-                    body: JSON.stringify({
-                        Username: currentUser.username,
-                        ExpoToken: tokenObj.data
-                    })
+                    body: JSON.stringify(requestBody)
                 });
 
                 if (!response.ok) {
                     const body = await response.text().catch(() => '');
                     console.warn('Failed to register Expo push token with API:', response.status, body);
                 } else {
-                    console.info('Registered Expo push token for OS notifications:', tokenObj.data);
+                    console.info('Registered Expo push token for OS notifications:', {
+                        expoToken: tokenObj.data,
+                        username: currentUser?.username ?? null,
+                        deviceId,
+                        platform: Platform.OS,
+                    });
                 }
             }
         } catch (error) {
