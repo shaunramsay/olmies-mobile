@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Pla
 import { useAppTheme } from '../../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
-import PushDiagnosticsPanel from '../../components/PushDiagnosticsPanel';
 
 export default function DataProtectionScreen({ navigation, route }) {
     const { colors } = useAppTheme();
@@ -64,7 +63,6 @@ export default function DataProtectionScreen({ navigation, route }) {
                         All data transmitted between your device and our APIs is heavily encrypted in transit. Because Campus Companion acts as an extension for the university's core ISAS and Moodle data, any requests for complete erasure of your central academic identity records should be directed to the University's official IT or Data Protection Officer.
                     </Text>
                 </View>
-                <PushDiagnosticsPanel />
                 <View style={{height: 40}} />
             </ScrollView>
 
