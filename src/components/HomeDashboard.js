@@ -7,7 +7,6 @@ import { useAppTheme } from '../context/ThemeContext';
 import { getUTechSemester } from '../utils/dateUtils';
 import FullscreenImageViewer from './FullscreenImageViewer';
 import NotificationDetailModal from './NotificationDetailModal';
-import PushDiagnosticsPanel from './PushDiagnosticsPanel';
 import API_BASE_URL from '../config/api';
 
 const formatNotificationDate = (value) => {
@@ -170,8 +169,6 @@ export default function HomeDashboard({ navigation, fallbackName }) {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <PushDiagnosticsPanel />
-
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={[styles.sectionHeader, isCompactPreview && styles.sectionHeaderCompact]}>
             <View style={styles.cardTitleContainer}>
