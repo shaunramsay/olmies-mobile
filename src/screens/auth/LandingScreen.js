@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image } from 'r
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import PushDiagnosticsPanel from '../../components/PushDiagnosticsPanel';
 
 const UTECH_CREST = require('../../../assets/utech-crest.png');
 
@@ -34,6 +35,8 @@ export default function LandingScreen({ navigation }) {
         </View>
 
         <View style={styles.bottomSection}>
+            <PushDiagnosticsPanel />
+
             <TouchableOpacity 
                 style={[styles.primaryButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
                 onPress={() => navigation.replace('Main')}
