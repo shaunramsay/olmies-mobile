@@ -11,7 +11,8 @@
     "ios:checked": "npm run check:env && expo start --ios",
     "ios": "expo start --ios",
     "web:checked": "npm run check:env && expo start --web --port 3000",
-    "web": "expo start --web --port 3000"
+    "web": "expo start --web --port 3000",
+    "test": "node --test \"src/**/*.test.js\""
   },
   "dependencies": {
     "@react-navigation/bottom-tabs": "^7.15.5",
