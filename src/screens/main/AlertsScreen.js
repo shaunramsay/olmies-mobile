@@ -1,10 +1,20 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, ActivityIndicator, Image, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../context/ThemeContext';
 import { useFocusEffect } from '@react-navigation/native';
+import FullscreenImageViewer from '../../components/FullscreenImageViewer';
+import NotificationDetailModal from '../../components/NotificationDetailModal';
 import API_BASE_URL from '../../config/api';
+
+const resolveImageUrl = (imageUrl) => {
+  if (!imageUrl || typeof imageUrl !== 'string') return null;
+  const trimmedUrl = imageUrl.trim();
+  if (!trimmedUrl || trimmedUrl === 'null') return null;
+  if (trimmedUrl.startsWith('http')) return trimmedUrl;
+  return `${API_BASE_URL}${trimmedUrl}`;
+};
 
 export default function AlertsScreen({ navigation }) {
   const { user, fetchWithAuth, logout } = useAuth();
@@ -12,6 +22,7 @@ export default function AlertsScreen({ navigation }) {
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedAlert, setSelectedAlert] = useState(null);
+  const [fullscreenImage, setFullscreenImage] = useState(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -26,9 +37,10 @@ export default function AlertsScreen({ navigation }) {
               id: notification.id,
               title: notification.title,
               message: notification.message,
-              imageUrl: notification.imageUrl ? (notification.imageUrl.startsWith('http') ? notification.imageUrl : `${API_BASE_URL}${notification.imageUrl}`) : null,
+              imageUrl: resolveImageUrl(notification.imageUrl),
               date: new Date(notification.createdAt).toLocaleString(),
-              type: notification.type === 'Academic' ? 'warning' : (notification.type === 'Promo' ? 'survey' : 'info'),
+              fullDate: notification.createdAt ? new Date(notification.createdAt).toLocaleString() : 'Recently',
+              type: notification.type,
               read: notification.isRead
             }));
             setAlerts(mapped);
@@ -99,26 +111,20 @@ export default function AlertsScreen({ navigation }) {
         )}
       </ScrollView>
 
-      {/* Full Notification Modal */}
-      <Modal visible={!!selectedAlert} animationType="slide" transparent={true}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            {selectedAlert?.imageUrl && typeof selectedAlert.imageUrl === 'string' && selectedAlert.imageUrl.trim().length > 5 && selectedAlert.imageUrl !== 'null' && (
-              <Image source={{ uri: selectedAlert.imageUrl }} style={styles.modalImage} resizeMode="cover" />
-            )}
-            <View style={styles.modalTextContainer}>
-              <Text style={styles.modalTitle}>{selectedAlert?.title}</Text>
-              <Text style={styles.modalDate}>{selectedAlert?.date}</Text>
-              <ScrollView style={styles.modalMessageBody}>
-                <Text style={styles.modalMessage}>{selectedAlert?.message}</Text>
-              </ScrollView>
-              <TouchableOpacity style={styles.closeButton} onPress={() => setSelectedAlert(null)}>
-                <Text style={styles.closeButtonText}>Close</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <NotificationDetailModal
+        visible={!!selectedAlert}
+        notification={selectedAlert}
+        colors={colors}
+        onClose={() => setSelectedAlert(null)}
+        onOpenImage={setFullscreenImage}
+      />
+
+      <FullscreenImageViewer
+        visible={!!fullscreenImage}
+        imageUrl={fullscreenImage?.imageUrl}
+        title={fullscreenImage?.title}
+        onClose={() => setFullscreenImage(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -221,56 +227,4 @@ const styles = StyleSheet.create({
     backgroundColor: '#4A90E2',
     marginLeft: 10,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.85)',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    backgroundColor: '#1E1E1E',
-    borderRadius: 16,
-    overflow: 'hidden',
-    maxHeight: '85%',
-    flexShrink: 1,
-  },
-  modalImage: {
-    width: '100%',
-    height: 180,
-  },
-  modalTextContainer: {
-    padding: 24,
-    flexShrink: 1,
-  },
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 8,
-  },
-  modalDate: {
-    fontSize: 14,
-    color: '#888',
-    marginBottom: 20,
-  },
-  modalMessageBody: {
-    flexShrink: 1,
-  },
-  modalMessage: {
-    fontSize: 16,
-    color: '#ccc',
-    lineHeight: 24,
-  },
-  closeButton: {
-    backgroundColor: '#4A90E2',
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  closeButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  }
 });

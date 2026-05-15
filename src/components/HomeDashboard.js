@@ -5,20 +5,34 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { useAppTheme } from '../context/ThemeContext';
 import { getUTechSemester } from '../utils/dateUtils';
+import FullscreenImageViewer from './FullscreenImageViewer';
+import NotificationDetailModal from './NotificationDetailModal';
 import API_BASE_URL from '../config/api';
 
 const formatNotificationDate = (value) => {
   if (!value) return 'Recently';
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return 'Recently';
+  const ageMs = Date.now() - parsed.getTime();
+  if (ageMs >= 0 && ageMs < 24 * 60 * 60 * 1000) {
+    return parsed.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  }
   return parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 };
 
 const resolveImageUrl = (imageUrl) => {
   if (!imageUrl || typeof imageUrl !== 'string') return null;
-  if (imageUrl.startsWith('http')) return imageUrl;
-  return `${API_BASE_URL}${imageUrl}`;
+  const trimmedUrl = imageUrl.trim();
+  if (!trimmedUrl || trimmedUrl === 'null') return null;
+  if (trimmedUrl.startsWith('http')) return trimmedUrl;
+  return `${API_BASE_URL}${trimmedUrl}`;
 };
+
+const hasValidImageUrl = (imageUrl) => (
+  typeof imageUrl === 'string' &&
+  imageUrl.trim().length > 5 &&
+  imageUrl.trim() !== 'null'
+);
 
 const getNotificationIcon = (type) => {
   switch (type) {
@@ -43,9 +57,13 @@ export default function HomeDashboard({ navigation, fallbackName }) {
   const [loading, setLoading] = useState(true);
   const [selectedDeal, setSelectedDeal] = useState(null);
   const [selectedNotification, setSelectedNotification] = useState(null);
+  const [fullscreenImage, setFullscreenImage] = useState(null);
+  const [activeNotificationIndex, setActiveNotificationIndex] = useState(0);
 
   const semester = getUTechSemester().fullDisplay;
   const isCompactPreview = Platform.OS === 'web' && width < 760;
+  const notificationCardWidth = Math.min(Math.max(width - 98, 230), isCompactPreview ? 310 : 320);
+  const notificationSnapInterval = notificationCardWidth + 12;
 
   useEffect(() => {
     let isMounted = true;
@@ -90,6 +108,10 @@ export default function HomeDashboard({ navigation, fallbackName }) {
       isMounted = false;
     };
   }, [fetchWithAuth]);
+
+  useEffect(() => {
+    setActiveNotificationIndex(0);
+  }, [notifications.length]);
 
   const dealData = deals.length >= 3
     ? deals.slice(0, 3)
@@ -164,21 +186,80 @@ export default function HomeDashboard({ navigation, fallbackName }) {
           ) : notifications.length === 0 ? (
             <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>No new notifications right now.</Text>
           ) : (
-            notifications.map((item, index) => {
-              const icon = getNotificationIcon(item.type);
-              return (
-                <TouchableOpacity key={item.id || index} style={styles.notificationRow} onPress={() => setSelectedNotification(item)}>
-                  <View style={[styles.notificationIcon, { backgroundColor: `${icon.color}22` }]}>
-                    <Ionicons name={icon.name} size={18} color={icon.color} />
-                  </View>
-                  <View style={styles.notificationCopy}>
-                    <Text style={[styles.notificationTitle, { color: item.isRead ? colors.text : colors.primary }]} numberOfLines={1}>{item.title}</Text>
-                    <Text style={[styles.notificationMessage, { color: colors.textSecondary }]} numberOfLines={2}>{item.message}</Text>
-                  </View>
-                  <Text style={[styles.notificationDate, { color: colors.textSecondary }]}>{item.date}</Text>
-                </TouchableOpacity>
-              );
-            })
+            <>
+              <FlatList
+                data={notifications}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(item, index) => `${item.id || 'notification'}-${index}`}
+                snapToInterval={notificationSnapInterval}
+                snapToAlignment="start"
+                decelerationRate="fast"
+                contentContainerStyle={styles.notificationCarouselContent}
+                onMomentumScrollEnd={(event) => {
+                  const nextIndex = Math.round(event.nativeEvent.contentOffset.x / notificationSnapInterval);
+                  setActiveNotificationIndex(Math.min(Math.max(nextIndex, 0), notifications.length - 1));
+                }}
+                renderItem={({ item }) => {
+                  const icon = getNotificationIcon(item.type);
+                  const hasImage = hasValidImageUrl(item.imageUrl);
+
+                  return (
+                    <TouchableOpacity
+                      style={[
+                        styles.notificationCard,
+                        hasImage && styles.notificationCardWithImage,
+                        {
+                          width: notificationCardWidth,
+                          backgroundColor: item.isRead ? colors.background : `${colors.primary}14`,
+                          borderColor: item.isRead ? colors.border : colors.primary
+                        }
+                      ]}
+                      activeOpacity={0.82}
+                      onPress={() => setSelectedNotification(item)}
+                    >
+                      {hasImage && (
+                        <View style={[styles.notificationCardImageFrame, { width: notificationCardWidth, backgroundColor: colors.background }]}>
+                          <Image source={{ uri: item.imageUrl }} style={styles.notificationCardImage} resizeMode="contain" />
+                        </View>
+                      )}
+                      <View style={styles.notificationCardHeader}>
+                        <View style={[styles.notificationIcon, { backgroundColor: `${icon.color}22` }]}>
+                          <Ionicons name={icon.name} size={18} color={icon.color} />
+                        </View>
+                        <View style={styles.notificationMeta}>
+                          <Text style={[styles.notificationType, { color: colors.textSecondary }]} numberOfLines={1}>
+                            {item.type || 'Campus Alert'}
+                          </Text>
+                          <Text style={[styles.notificationDate, { color: colors.textSecondary }]}>{item.date}</Text>
+                        </View>
+                        <Ionicons name="chevron-forward-circle" size={20} color={item.isRead ? colors.textSecondary : colors.primary} />
+                      </View>
+
+                      <Text style={[styles.notificationTitle, { color: item.isRead ? colors.text : colors.primary }]} numberOfLines={2}>{item.title}</Text>
+                      <Text style={[styles.notificationMessage, { color: colors.textSecondary }]} numberOfLines={3}>{item.message}</Text>
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+
+              {notifications.length > 1 && (
+                <View style={styles.paginationDots}>
+                  {notifications.map((item, index) => (
+                    <View
+                      key={`${item.id || 'notification-dot'}-${index}`}
+                      style={[
+                        styles.paginationDot,
+                        {
+                          backgroundColor: index === activeNotificationIndex ? colors.primary : colors.border,
+                          opacity: index === activeNotificationIndex ? 1 : 0.75
+                        }
+                      ]}
+                    />
+                  ))}
+                </View>
+              )}
+            </>
           )}
         </View>
 
@@ -221,10 +302,21 @@ export default function HomeDashboard({ navigation, fallbackName }) {
       <Modal visible={!!selectedDeal} animationType="slide" transparent={true} onRequestClose={() => setSelectedDeal(null)}>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
-            {selectedDeal?.bannerImageUrl ? (
-              <Image source={{ uri: selectedDeal.bannerImageUrl }} style={styles.modalImage} resizeMode="cover" />
+            {hasValidImageUrl(selectedDeal?.bannerImageUrl) ? (
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() => setFullscreenImage({ imageUrl: selectedDeal.bannerImageUrl, title: selectedDeal.vendorName })}
+              >
+                <View style={[styles.modalImageFrame, { backgroundColor: colors.background }]}>
+                  <Image source={{ uri: selectedDeal.bannerImageUrl }} style={styles.modalImage} resizeMode="contain" />
+                </View>
+                <View style={[styles.imageHintRow, { backgroundColor: colors.background }]}>
+                  <Ionicons name="expand-outline" size={14} color={colors.primary} />
+                  <Text style={[styles.imageHintText, { color: colors.textSecondary }]}>Tap image to view full size</Text>
+                </View>
+              </TouchableOpacity>
             ) : (
-              <View style={[styles.modalImage, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
+              <View style={[styles.modalImageFrame, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
                 <Ionicons name={selectedDeal?.id?.toString().startsWith('ad-slot') ? 'megaphone-outline' : 'pricetag-outline'} size={60} color={selectedDeal?.id?.toString().startsWith('ad-slot') ? colors.info : colors.primary} />
               </View>
             )}
@@ -256,35 +348,20 @@ export default function HomeDashboard({ navigation, fallbackName }) {
         </View>
       </Modal>
 
-      <Modal visible={!!selectedNotification} animationType="slide" transparent={true} onRequestClose={() => setSelectedNotification(null)}>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, styles.notificationModalContent, { backgroundColor: colors.surface }]}>
-            {selectedNotification?.imageUrl && (
-              <Image source={{ uri: selectedNotification.imageUrl }} style={styles.notificationModalImage} resizeMode="cover" />
-            )}
-            <View style={styles.notificationModalTextContainer}>
-              <View style={styles.notificationModalHeader}>
-                <Text style={[styles.modalTitle, { color: colors.text, flex: 1 }]}>{selectedNotification?.title}</Text>
-                {selectedNotification?.type && (
-                  <View style={[styles.typeBadge, { borderColor: colors.border }]}>
-                    <Text style={[styles.typeBadgeText, { color: colors.textSecondary }]}>{selectedNotification.type}</Text>
-                  </View>
-                )}
-              </View>
-              <Text style={[styles.modalDate, { color: colors.textSecondary }]}>{selectedNotification?.fullDate}</Text>
-              <ScrollView style={styles.notificationModalMessageBody}>
-                <Text style={[styles.modalMessage, { color: colors.textSecondary }]}>{selectedNotification?.message}</Text>
-              </ScrollView>
-              <TouchableOpacity
-                style={[styles.closeButton, { backgroundColor: colors.primary, marginTop: 24 }]}
-                onPress={() => setSelectedNotification(null)}
-              >
-                <Text style={styles.closeButtonText}>Close</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <NotificationDetailModal
+        visible={!!selectedNotification}
+        notification={selectedNotification}
+        colors={colors}
+        onClose={() => setSelectedNotification(null)}
+        onOpenImage={setFullscreenImage}
+      />
+
+      <FullscreenImageViewer
+        visible={!!fullscreenImage}
+        imageUrl={fullscreenImage?.imageUrl}
+        title={fullscreenImage?.title}
+        onClose={() => setFullscreenImage(null)}
+      />
     </View>
   );
 }
@@ -374,10 +451,33 @@ const styles = StyleSheet.create({
   cardDescription: { fontSize: 14, lineHeight: 22 },
   textButton: { flexDirection: 'row', alignItems: 'center', paddingLeft: 10 },
   textButtonLabel: { fontSize: 13, fontWeight: '800' },
-  notificationRow: {
+  notificationCarouselContent: { paddingRight: 6 },
+  notificationCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    marginRight: 12,
+    padding: 14,
+    minHeight: 142,
+    overflow: 'hidden',
+  },
+  notificationCardWithImage: {
+    paddingTop: 0,
+  },
+  notificationCardImageFrame: {
+    height: 116,
+    marginHorizontal: -14,
+    marginBottom: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notificationCardImage: {
+    width: '100%',
+    height: '100%',
+  },
+  notificationCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    marginBottom: 10,
   },
   notificationIcon: {
     width: 34,
@@ -387,10 +487,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 12,
   },
-  notificationCopy: { flex: 1, paddingRight: 8 },
-  notificationTitle: { fontSize: 14, fontWeight: '800', marginBottom: 3 },
-  notificationMessage: { fontSize: 12, lineHeight: 17 },
+  notificationMeta: { flex: 1, paddingRight: 8 },
+  notificationType: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', marginBottom: 2 },
+  notificationTitle: { fontSize: 15, fontWeight: '800', marginBottom: 6, lineHeight: 20 },
+  notificationMessage: { fontSize: 13, lineHeight: 18 },
   notificationDate: { fontSize: 11, fontWeight: '700' },
+  paginationDots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  paginationDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginHorizontal: 3,
+  },
   carouselContainer: { marginBottom: 20 },
   carouselHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, paddingHorizontal: 5 },
   carouselTitle: { fontSize: 18, fontWeight: 'bold', marginLeft: 8 },
@@ -417,16 +530,37 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     maxHeight: '85%',
   },
-  modalImage: {
+  modalImageFrame: {
     width: '100%',
     height: 220,
+  },
+  modalImage: {
+    width: '100%',
+    height: '100%',
   },
   notificationModalContent: {
     flexShrink: 1,
   },
+  notificationModalImageFrame: {
+    width: '100%',
+    height: 220,
+  },
   notificationModalImage: {
     width: '100%',
-    height: 170,
+    height: '100%',
+  },
+  imageHintRow: {
+    minHeight: 34,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  imageHintText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   modalTextContainer: {
     padding: 24,

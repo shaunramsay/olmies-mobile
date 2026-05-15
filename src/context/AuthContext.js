@@ -1,13 +1,16 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { jwtDecode } from 'jwt-decode';
-import { Platform } from 'react-native';
+import { Alert, AppState, Linking, Platform } from 'react-native';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
-import API_BASE_URL from '../config/api';
+import { buildApiUrl } from '../config/api';
+import { installGoogleDirectionsProxy } from '../config/googleDirectionsProxy';
 
 const isExpoGo = Constants.executionEnvironment === 'storeClient' || Constants.appOwnership === 'expo';
 const CAMPUS_ALERTS_CHANNEL_ID = 'campus-alerts';
+const PUSH_PERMISSION_PROMPTED_AT_KEY = 'olmies_push_permission_prompted_at';
+const PUSH_PERMISSION_PROMPT_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
 const getNotificationsModule = () => {
     if (Platform.OS === 'web' || isExpoGo) return null;
@@ -67,6 +70,10 @@ export const AuthProvider = ({ children }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [hasAcceptedDPA, setHasAcceptedDPA] = useState(null);
 
+    useEffect(() => {
+        installGoogleDirectionsProxy(() => token);
+    }, [token]);
+
     // Initial load of the token from SecureStore or Web Storage
     useEffect(() => {
         const loadToken = async () => {
@@ -80,10 +87,13 @@ export const AuthProvider = ({ children }) => {
                     setHasAcceptedDPA(false);
                 }
 
+                let decodedUser = null;
                 if (storedToken) {
                     setToken(storedToken);
-                    decodeAndSetUser(storedToken);
+                    decodedUser = decodeAndSetUser(storedToken);
                 }
+
+                registerForPushNotificationsAsync(decodedUser);
             } catch (error) {
                 console.error('Error loading config:', error);
                 setHasAcceptedDPA(false);
@@ -132,6 +142,58 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const logPushPermissionStatus = (label, permission) => {
+        console.info(`Push notification permission status (${label}):`, {
+            status: permission?.status,
+            granted: permission?.granted,
+            canAskAgain: permission?.canAskAgain,
+        });
+    };
+
+    const showPushPermissionSettingsPrompt = async (currentUser) => {
+        try {
+            const lastPromptedAt = await TokenStorage.getItemAsync(PUSH_PERMISSION_PROMPTED_AT_KEY);
+            const lastPromptedTime = Number(lastPromptedAt);
+            const canShowPrompt = !lastPromptedTime || Date.now() - lastPromptedTime > PUSH_PERMISSION_PROMPT_COOLDOWN_MS;
+
+            if (!canShowPrompt) {
+                console.info('Push notification settings prompt skipped: recently shown.');
+                return;
+            }
+
+            await TokenStorage.setItemAsync(PUSH_PERMISSION_PROMPTED_AT_KEY, String(Date.now()));
+        } catch (error) {
+            console.warn('Unable to save push notification settings prompt state:', error);
+        }
+
+        Alert.alert(
+            'Turn on OLMIES notifications',
+            'OLMIES needs notification permission so you can receive campus alerts and survey updates when they are deployed.',
+            [
+                { text: 'Not Now', style: 'cancel' },
+                {
+                    text: 'Open Settings',
+                    onPress: () => {
+                        let handledSettingsReturn = false;
+                        let settingsSubscription;
+                        settingsSubscription = AppState.addEventListener('change', (nextState) => {
+                            if (nextState === 'active' && !handledSettingsReturn) {
+                                handledSettingsReturn = true;
+                                settingsSubscription?.remove?.();
+                                registerForPushNotificationsAsync(currentUser);
+                            }
+                        });
+
+                        Linking.openSettings().catch((error) => {
+                            settingsSubscription?.remove?.();
+                            console.warn('Unable to open notification settings:', error);
+                        });
+                    },
+                },
+            ]
+        );
+    };
+
     const decodeAndSetUser = (jwt, explicitUserData = null) => {
         try {
             const payload = jwtDecode(jwt);
@@ -154,6 +216,16 @@ export const AuthProvider = ({ children }) => {
                 setUser(fallback);
                 return fallback;
             }
+        }
+    };
+
+    const isTokenExpiredOrInvalid = (jwt) => {
+        try {
+            const payload = jwtDecode(jwt);
+            if (!payload?.exp) return true;
+            return payload.exp <= Math.floor(Date.now() / 1000);
+        } catch {
+            return true;
         }
     };
 
@@ -181,14 +253,18 @@ export const AuthProvider = ({ children }) => {
             });
         }
 
-        const { status: existingStatus } = await Notifications.getPermissionsAsync();
-        let finalStatus = existingStatus;
-        if (existingStatus !== 'granted') {
-            const { status } = await Notifications.requestPermissionsAsync();
-            finalStatus = status;
+        const existingPermission = await Notifications.getPermissionsAsync();
+        logPushPermissionStatus('before request', existingPermission);
+
+        let finalPermission = existingPermission;
+        if (existingPermission.status === 'undetermined') {
+            finalPermission = await Notifications.requestPermissionsAsync();
+            logPushPermissionStatus('after request', finalPermission);
         }
-        if (finalStatus !== 'granted') {
+
+        if (finalPermission.status !== 'granted') {
             console.warn('Push registration skipped: notification permission was not granted.');
+            await showPushPermissionSettingsPrompt(currentUser);
             return;
         }
 
@@ -202,20 +278,34 @@ export const AuthProvider = ({ children }) => {
             const tokenObj = await Notifications.getExpoPushTokenAsync({ projectId });
             
             // Send to our backend
-            if (tokenObj && tokenObj.data && currentUser?.username) {
+            if (tokenObj && tokenObj.data) {
+                const deviceId = await getDeviceId();
+                const requestBody = {
+                    ExpoToken: tokenObj.data,
+                    DeviceId: deviceId,
+                    Platform: Platform.OS,
+                    AppVersion: Constants?.expoConfig?.version ?? Constants?.manifest?.version ?? null,
+                };
+
+                if (currentUser?.username) {
+                    requestBody.Username = currentUser.username;
+                }
+
                 const response = await fetchWithAuth('/api/v1/mobile/tokens', {
                     method: 'POST',
-                    body: JSON.stringify({
-                        Username: currentUser.username,
-                        ExpoToken: tokenObj.data
-                    })
+                    body: JSON.stringify(requestBody)
                 });
 
                 if (!response.ok) {
                     const body = await response.text().catch(() => '');
                     console.warn('Failed to register Expo push token with API:', response.status, body);
                 } else {
-                    console.info('Registered Expo push token for OS notifications.');
+                    console.info('Registered Expo push token for OS notifications:', {
+                        expoTokenRegistered: true,
+                        username: currentUser?.username ?? null,
+                        deviceId,
+                        platform: Platform.OS,
+                    });
                 }
             }
         } catch (error) {
@@ -250,7 +340,7 @@ export const AuthProvider = ({ children }) => {
 
     // Helper method wrapper around fetch to inject bearer token
     const fetchWithAuth = async (url, options = {}) => {
-        const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+        const fullUrl = buildApiUrl(url);
         
         const headers = { ...options.headers };
         if (token) {
@@ -266,7 +356,14 @@ export const AuthProvider = ({ children }) => {
 
         const response = await fetch(fullUrl, { ...options, headers });
         if (response.status === 401 && token) {
-            logout(); // Auto logout on 401 Unauthorized only if we had an expired token
+            if (isTokenExpiredOrInvalid(token)) {
+                await logout();
+            } else {
+                console.warn('Authenticated request returned 401 while the JWT is still valid; preserving auth state.', {
+                    url: fullUrl,
+                    status: response.status,
+                });
+            }
         }
         return response;
     };

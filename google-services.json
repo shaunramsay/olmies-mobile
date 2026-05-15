@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "189552397649",
+    "project_id": "olmies-mobile",
+    "storage_bucket": "olmies-mobile.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:189552397649:android:080a90917c23ba11ec9770",
+        "android_client_info": {
+          "package_name": "com.shaunramsay14.olmiesmobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBfXlDMVp6tKLbiVZF5VVDeksYmHH07ww4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

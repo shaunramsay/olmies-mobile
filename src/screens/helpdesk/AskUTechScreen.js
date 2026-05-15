@@ -17,8 +17,8 @@ try {
 }
 
 export default function AskUTechScreen({ navigation, route }) {
-  const { colors } = useAppTheme();
-  const { user, fetchWithAuth } = useAuth();
+  const { colors, isDarkTheme, toggleTheme } = useAppTheme();
+  const { user, fetchWithAuth, logout } = useAuth();
   const insets = useSafeAreaInsets();
   const isPrimaryTab = route?.name === 'Help Desk';
   const getWelcomeText = (currentUser) => currentUser
@@ -268,15 +268,30 @@ export default function AskUTechScreen({ navigation, route }) {
           {isPrimaryTab ? (
             <View style={styles.headerSide} />
           ) : (
-            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-              <Ionicons name="arrow-back" size={24} color={colors.text} />
-            </TouchableOpacity>
+            <View style={styles.headerSide}>
+              <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                <Ionicons name="arrow-back" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
           )}
           <View style={styles.headerTitleContainer}>
             <Text style={[styles.headerTitle, { color: colors.text }]}>Ask UTech AI</Text>
             <Text style={[styles.headerSubtitle, { color: colors.success }]}>Online</Text>
           </View>
-          <View style={styles.headerSide} />
+          <View style={styles.headerActions}>
+            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={toggleTheme}>
+              <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+            {user ? (
+              <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={logout}>
+                <Ionicons name="log-out-outline" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={() => navigation.navigate('Login')}>
+                <Ionicons name="log-in-outline" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {/* Chat Area */}
@@ -356,10 +371,24 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   headerSide: {
-    width: 40,
+    width: 88,
+    alignItems: 'flex-start',
   },
   headerTitleContainer: {
     flex: 1,
+    alignItems: 'center',
+  },
+  headerActions: {
+    width: 88,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  actionButton: {
+    padding: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
