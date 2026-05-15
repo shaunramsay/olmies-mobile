@@ -183,8 +183,8 @@ export const AuthProvider = ({ children }) => {
         }
 
         Alert.alert(
-            'Turn on OLMIES notifications',
-            'OLMIES needs notification permission so you can receive campus alerts and survey updates when they are deployed.',
+            'Turn on Campus Companion notifications',
+            'Campus Companion needs notification permission so you can receive campus alerts and survey updates when they are deployed.',
             [
                 { text: 'Not Now', style: 'cancel' },
                 {
