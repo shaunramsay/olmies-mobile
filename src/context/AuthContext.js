@@ -4,7 +4,7 @@ import { jwtDecode } from 'jwt-decode';
 import { Alert, AppState, Linking, Platform } from 'react-native';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
-import API_BASE_URL from '../config/api';
+import { buildApiUrl } from '../config/api';
 import { installGoogleDirectionsProxy } from '../config/googleDirectionsProxy';
 
 const isExpoGo = Constants.executionEnvironment === 'storeClient' || Constants.appOwnership === 'expo';
@@ -219,6 +219,16 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const isTokenExpiredOrInvalid = (jwt) => {
+        try {
+            const payload = jwtDecode(jwt);
+            if (!payload?.exp) return true;
+            return payload.exp <= Math.floor(Date.now() / 1000);
+        } catch {
+            return true;
+        }
+    };
+
     const registerForPushNotificationsAsync = async (currentUser) => {
         if (Platform.OS === 'web' || !Device.isDevice) {
             console.info('Push registration skipped: physical mobile device required.');
@@ -330,7 +340,7 @@ export const AuthProvider = ({ children }) => {
 
     // Helper method wrapper around fetch to inject bearer token
     const fetchWithAuth = async (url, options = {}) => {
-        const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+        const fullUrl = buildApiUrl(url);
         
         const headers = { ...options.headers };
         if (token) {
@@ -346,7 +356,14 @@ export const AuthProvider = ({ children }) => {
 
         const response = await fetch(fullUrl, { ...options, headers });
         if (response.status === 401 && token) {
-            logout(); // Auto logout on 401 Unauthorized only if we had an expired token
+            if (isTokenExpiredOrInvalid(token)) {
+                await logout();
+            } else {
+                console.warn('Authenticated request returned 401 while the JWT is still valid; preserving auth state.', {
+                    url: fullUrl,
+                    status: response.status,
+                });
+            }
         }
         return response;
     };
