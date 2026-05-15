@@ -2,7 +2,14 @@
 
 This mobile app should get its API URL from the environment that built it. Do not hard-code Railway, Azure, or future UTech-hosted URLs in `eas.json`.
 
-In this repo, `main` is the release-candidate branch for APKs. The `production` EAS profile means "build the APK we would hand to users from the final development lane"; it does not assume the permanent UTech hosting target already exists. When UTech provides the final API host, update the EAS `production` environment variables and rebuild from `main`.
+In this repo, `main` is the release-candidate branch for APKs. The `production` EAS profile means "build the APK we would hand to users" and should point to Azure production unless and until an official UTech API host replaces it. When UTech provides the final API host, update the EAS `production` environment variables and rebuild from `main`.
+
+Active API lanes:
+
+- Railway test: `https://olmies-ai-test.up.railway.app`
+- Azure production: `https://olmies-api-8294.azurewebsites.net`
+
+Railway production, including `https://olmies-ai-production.up.railway.app`, is legacy/stale and is not an active mobile API target. Do not point preview or production builds at it unless the team explicitly decides to revive that Railway environment.
 
 ## Environments
 
@@ -10,7 +17,7 @@ In this repo, `main` is the release-candidate branch for APKs. The `production` 
 | --- | --- | --- |
 | Local Expo | local `.env.local` | Local API, usually `http://localhost:5000` for web or the LAN host for devices |
 | `preview` | `preview` | Railway test API |
-| `production` | `production` | Current release-candidate API; later, official UTech API |
+| `production` | `production` | Azure production API; later, official UTech API |
 
 ## Required EAS Variables
 
@@ -22,7 +29,8 @@ Set these variables in EAS for both `preview` and `production`:
 The values must differ by environment:
 
 - `preview` points to Railway test.
-- `production` points to the current release-candidate API until UTech provides the final host.
+- `production` points to Azure production until UTech provides the final host.
+- neither environment should point to legacy Railway production.
 
 ## APK Automation
 
