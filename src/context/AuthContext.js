@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { jwtDecode } from 'jwt-decode';
 import { Alert, AppState, Linking, Platform } from 'react-native';
@@ -6,6 +6,9 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { buildApiUrl } from '../config/api';
 import { installGoogleDirectionsProxy } from '../config/googleDirectionsProxy';
+
+const { createMobileAuthSession } = require('./mobileAuthSession');
+const { isTokenExpiredOrInvalid, isTokenExpiringSoon } = require('./authTokenUtils');
 
 const isExpoGo = Constants.executionEnvironment === 'storeClient' || Constants.appOwnership === 'expo';
 const CAMPUS_ALERTS_CHANNEL_ID = 'campus-alerts';
@@ -41,6 +44,7 @@ if (Notifications) {
 
 const AuthContext = createContext(null);
 const TOKEN_KEY = 'olmies_mobile_token';
+const REFRESH_TOKEN_KEY = 'olmies_mobile_refresh_token';
 
 // Polyfill secure storage for Web usage
 const TokenStorage = {
@@ -65,10 +69,17 @@ const TokenStorage = {
 };
 
 export const AuthProvider = ({ children }) => {
-    const [token, setToken] = useState(null);
+    const [token, setTokenState] = useState(null);
+    const tokenRef = useRef(null);
+    const authSessionRef = useRef(null);
     const [user, setUser] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [hasAcceptedDPA, setHasAcceptedDPA] = useState(null);
+
+    const setToken = (nextToken) => {
+        tokenRef.current = nextToken;
+        setTokenState(nextToken);
+    };
 
     useEffect(() => {
         installGoogleDirectionsProxy(() => token);
@@ -90,7 +101,12 @@ export const AuthProvider = ({ children }) => {
                 let decodedUser = null;
                 if (storedToken) {
                     setToken(storedToken);
-                    decodedUser = decodeAndSetUser(storedToken);
+                    if (isTokenExpiredOrInvalid(storedToken) || isTokenExpiringSoon(storedToken)) {
+                        const refreshedSession = await authSession.refreshAccessToken(storedToken);
+                        decodedUser = refreshedSession?.user || null;
+                    } else {
+                        decodedUser = decodeAndSetUser(storedToken);
+                    }
                 }
 
                 registerForPushNotificationsAsync(decodedUser);
@@ -219,15 +235,32 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const isTokenExpiredOrInvalid = (jwt) => {
-        try {
-            const payload = jwtDecode(jwt);
-            if (!payload?.exp) return true;
-            return payload.exp <= Math.floor(Date.now() / 1000);
-        } catch {
-            return true;
+    const getDeviceId = async () => {
+        let storedId = await TokenStorage.getItemAsync('olmies_device_id');
+        if (!storedId) {
+            storedId = Math.random().toString(36).substring(2, 15) + '-' + Date.now().toString(36);
+            await TokenStorage.setItemAsync('olmies_device_id', storedId);
         }
+        return storedId;
     };
+
+    if (!authSessionRef.current) {
+        authSessionRef.current = createMobileAuthSession({
+            tokenStorage: TokenStorage,
+            tokenKey: TOKEN_KEY,
+            refreshTokenKey: REFRESH_TOKEN_KEY,
+            buildApiUrl,
+            fetchImpl: fetch,
+            getAccessToken: () => tokenRef.current,
+            setAccessToken: setToken,
+            setUser,
+            decodeAndSetUser,
+            getDeviceId,
+            logger: console,
+        });
+    }
+
+    const authSession = authSessionRef.current;
 
     const registerForPushNotificationsAsync = async (currentUser) => {
         if (Platform.OS === 'web' || !Device.isDevice) {
@@ -313,11 +346,9 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const login = async (newToken, userData = null) => {
+    const login = async (newToken, userData = null, newRefreshToken = null) => {
         try {
-            await TokenStorage.setItemAsync(TOKEN_KEY, newToken);
-            setToken(newToken);
-            const decodedUser = decodeAndSetUser(newToken, userData);
+            const decodedUser = await authSession.login(newToken, userData, newRefreshToken);
             
             // Fire and forget push token registration on successful login
             if (decodedUser) {
@@ -330,9 +361,7 @@ export const AuthProvider = ({ children }) => {
 
     const logout = async () => {
         try {
-            await TokenStorage.deleteItemAsync(TOKEN_KEY);
-            setToken(null);
-            setUser(null);
+            await authSession.logout({ revoke: true });
         } catch(error) {
             console.error('Failed to delete secure token:', error);
         }
@@ -340,41 +369,7 @@ export const AuthProvider = ({ children }) => {
 
     // Helper method wrapper around fetch to inject bearer token
     const fetchWithAuth = async (url, options = {}) => {
-        const fullUrl = buildApiUrl(url);
-        
-        const headers = { ...options.headers };
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
-        
-        // Prevent manual Content-Type overrides from breaking the auto-generated FormData boundary hashes natively.
-        if (options.body instanceof FormData) {
-            delete headers['Content-Type'];
-        } else if (!headers['Content-Type']) {
-            headers['Content-Type'] = 'application/json';
-        }
-
-        const response = await fetch(fullUrl, { ...options, headers });
-        if (response.status === 401 && token) {
-            if (isTokenExpiredOrInvalid(token)) {
-                await logout();
-            } else {
-                console.warn('Authenticated request returned 401 while the JWT is still valid; preserving auth state.', {
-                    url: fullUrl,
-                    status: response.status,
-                });
-            }
-        }
-        return response;
-    };
-
-    const getDeviceId = async () => {
-        let storedId = await TokenStorage.getItemAsync('olmies_device_id');
-        if (!storedId) {
-            storedId = Math.random().toString(36).substring(2, 15) + '-' + Date.now().toString(36);
-            await TokenStorage.setItemAsync('olmies_device_id', storedId);
-        }
-        return storedId;
+        return authSession.fetchWithAuth(url, options);
     };
 
     return (
