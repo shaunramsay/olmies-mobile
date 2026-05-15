@@ -6,7 +6,7 @@ import API_BASE_URL, { buildApiUrl } from '../../config/api';
 import { useAppTheme } from '../../context/ThemeContext';
 
 export default function LoginScreen({ navigation }) {
-  const { login } = useAuth();
+  const { login, getDeviceId } = useAuth();
   const { colors } = useAppTheme();
   
   const [username, setUsername] = useState('');
@@ -24,12 +24,14 @@ export default function LoginScreen({ navigation }) {
     setIsLoading(true);
 
     try {
+        const deviceId = await getDeviceId();
         const response = await fetch(buildApiUrl('/api/v1/auth/login'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 username: username,
-                password: password
+                password: password,
+                deviceId
             })
         });
 
@@ -44,7 +46,7 @@ export default function LoginScreen({ navigation }) {
 
         if (response.ok && data.token) {
             // Successfully retrieved the JWT token, save it via Context
-            await login(data.token, data.user);
+            await login(data.token, data.user, data.refreshToken);
             
             // Pop the Login modal to return to previous screen
             if (navigation.canGoBack()) {
