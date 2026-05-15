@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, SafeAreaView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
-import API_BASE_URL from '../../config/api';
+import API_BASE_URL, { buildApiUrl } from '../../config/api';
 import { useAppTheme } from '../../context/ThemeContext';
 
 export default function LoginScreen({ navigation }) {
@@ -24,7 +24,7 @@ export default function LoginScreen({ navigation }) {
     setIsLoading(true);
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
+        const response = await fetch(buildApiUrl('/api/v1/auth/login'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

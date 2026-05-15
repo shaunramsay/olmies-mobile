@@ -11,7 +11,31 @@ const localApiUrl = Platform.select({
   ios: lanHost ? `http://${lanHost}:5000` : 'http://localhost:5000',
   default: 'http://localhost:5000',
 });
-const configuredApiUrl = process.env.EXPO_PUBLIC_API_URL || Constants.expoConfig?.extra?.apiBaseUrl || '';
-const API_BASE_URL = configuredApiUrl || (__DEV__ ? localApiUrl : '');
+const normalizeApiBaseUrl = (value) => {
+  const trimmedValue = (value || '').trim();
+
+  if (!trimmedValue || trimmedValue === 'undefined' || trimmedValue === 'null') {
+    return '';
+  }
+
+  return trimmedValue.replace(/\/+$/, '');
+};
+
+const configuredApiUrl = normalizeApiBaseUrl(
+  process.env.EXPO_PUBLIC_API_URL || Constants.expoConfig?.extra?.apiBaseUrl || ''
+);
+const API_BASE_URL = configuredApiUrl || (__DEV__ ? normalizeApiBaseUrl(localApiUrl) : '');
+
+export const buildApiUrl = (path) => {
+  if (path.startsWith('http')) {
+    return path;
+  }
+
+  if (!API_BASE_URL) {
+    throw new Error('EXPO_PUBLIC_API_URL must be set for production mobile builds.');
+  }
+
+  return `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
+};
 
 export default API_BASE_URL;
