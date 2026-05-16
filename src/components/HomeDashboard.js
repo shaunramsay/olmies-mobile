@@ -34,6 +34,11 @@ const hasValidImageUrl = (imageUrl) => (
   imageUrl.trim() !== 'null'
 );
 
+const isVisibleNotification = (notification) => {
+  const status = String(notification?.status || '').toLowerCase();
+  return status === 'sent' || status === 'published';
+};
+
 const getNotificationIcon = (type) => {
   switch (type) {
     case 'Academic':
@@ -84,16 +89,19 @@ export default function HomeDashboard({ navigation, fallbackName }) {
 
         if (notificationsResult.status === 'fulfilled' && notificationsResult.value.ok) {
           const data = await notificationsResult.value.json();
-          setNotifications(data.slice(0, 5).map(item => ({
-            id: item.id,
-            title: item.title,
-            message: item.message,
-            date: formatNotificationDate(item.createdAt),
-            fullDate: item.createdAt ? new Date(item.createdAt).toLocaleString() : 'Recently',
-            type: item.type,
-            isRead: item.isRead,
-            imageUrl: resolveImageUrl(item.imageUrl)
-          })));
+          setNotifications(data
+            .filter(isVisibleNotification)
+            .slice(0, 5)
+            .map(item => ({
+              id: item.id,
+              title: item.title,
+              message: item.message,
+              date: formatNotificationDate(item.createdAt),
+              fullDate: item.createdAt ? new Date(item.createdAt).toLocaleString() : 'Recently',
+              type: item.type,
+              isRead: item.isRead,
+              imageUrl: resolveImageUrl(item.imageUrl)
+            })));
         }
       } catch (err) {
         console.error('Error fetching home data:', err);
