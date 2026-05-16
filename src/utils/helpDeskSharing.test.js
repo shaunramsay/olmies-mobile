@@ -61,6 +61,7 @@ test('only completed paired AI answers are shareable', () => {
   assert.equal(isShareableHelpDeskAnswer({ id: 'answer-2', sender: 'ai', text: 'Answer' }), false);
   assert.equal(isShareableHelpDeskAnswer({ id: 'answer-3', sender: 'ai', questionText: 'Question', text: 'Error', isError: true }), false);
   assert.equal(isShareableHelpDeskAnswer({ id: 'answer-4', sender: 'ai', questionText: 'Question', text: 'Loading', isLoading: true }), false);
+  assert.equal(isShareableHelpDeskAnswer({ id: 'map-1', sender: 'ai', questionText: 'Where is the library?', text: 'I found a map location.', type: 'mapResult' }), false);
   assert.equal(isShareableHelpDeskAnswer({ id: 'user-1', sender: 'user', text: 'Question' }), false);
 });
 
