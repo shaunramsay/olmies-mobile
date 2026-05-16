@@ -15,6 +15,8 @@ const getAppDownloadUrl = (configuredUrl) => normalizeText(configuredUrl) || DEF
 const isShareableHelpDeskAnswer = (message) => {
   return message?.sender === 'ai' &&
     message?.id !== 'welcome_msg' &&
+    message?.type !== 'mapResult' &&
+    !message?.isMapResult &&
     !message?.isError &&
     !message?.isLoading &&
     normalizeText(message?.text).length > 0 &&

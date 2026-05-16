@@ -13,6 +13,10 @@ import {
   getAppDownloadUrl,
   isShareableHelpDeskAnswer,
 } from '../../utils/helpDeskSharing';
+import {
+  findCampusMapMatches,
+  isCampusMapLocationIntent,
+} from '../../utils/campusMapHandoff';
 
 let Audio = null;
 try {
@@ -49,6 +53,8 @@ export default function AskUTechScreen({ navigation, route }) {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [shareTarget, setShareTarget] = useState(null);
   const flatListRef = useRef();
+  const mapPoisRef = useRef([]);
+  const mapPoisRequestRef = useRef(null);
   const audioAvailable = !!Audio;
 
   useEffect(() => {
@@ -90,6 +96,95 @@ export default function AskUTechScreen({ navigation, route }) {
     } catch {
       return fallback;
     }
+  };
+
+  const loadMapPois = async () => {
+    if (mapPoisRef.current.length > 0) {
+      return mapPoisRef.current;
+    }
+
+    if (mapPoisRequestRef.current) {
+      return mapPoisRequestRef.current;
+    }
+
+    mapPoisRequestRef.current = (async () => {
+      try {
+        const res = await fetchWithAuth('/api/v1/mobile/map/pins');
+        if (!res.ok) return [];
+
+        const data = await res.json();
+        const pins = Array.isArray(data) ? data : [];
+        mapPoisRef.current = pins;
+        return pins;
+      } catch (err) {
+        console.warn('Failed to load campus map pins for Help Desk handoff:', err);
+        return [];
+      } finally {
+        mapPoisRequestRef.current = null;
+      }
+    })();
+
+    return mapPoisRequestRef.current;
+  };
+
+  const openCampusMapLocation = (poi) => {
+    if (!poi?.id) return;
+
+    const params = {
+      focusPoiId: poi.id,
+      focusPoiName: poi.name,
+      focusRequestId: Date.now().toString(),
+    };
+
+    const currentRouteNames = navigation.getState?.()?.routeNames || [];
+    if (currentRouteNames.includes('Map')) {
+      navigation.navigate('Map', params);
+      return;
+    }
+
+    const parent = navigation.getParent?.();
+    const parentRouteNames = parent?.getState?.()?.routeNames || [];
+    if (parentRouteNames.includes('Map')) {
+      parent.navigate('Map', params);
+      return;
+    }
+
+    if (currentRouteNames.includes('Main')) {
+      navigation.navigate('Main', { screen: 'Map', params });
+      return;
+    }
+
+    if (parentRouteNames.includes('Main')) {
+      parent.navigate('Main', { screen: 'Map', params });
+      return;
+    }
+
+    navigation.navigate('Map', params);
+  };
+
+  const maybeHandleCampusMapQuestion = async (userMessage) => {
+    if (!isCampusMapLocationIntent(userMessage.text)) {
+      return false;
+    }
+
+    const pins = await loadMapPois();
+    const matches = findCampusMapMatches(userMessage.text, pins, { limit: 3 });
+    if (matches.length === 0) {
+      return false;
+    }
+
+    const mapMessage = {
+      id: `map_${Date.now()}`,
+      type: 'mapResult',
+      isMapResult: true,
+      sender: 'ai',
+      queryText: userMessage.text,
+      matches,
+      timestamp: new Date().toISOString(),
+    };
+
+    setMessages(prev => [...prev, mapMessage]);
+    return true;
   };
 
   const startRecording = async () => {
@@ -163,6 +258,11 @@ export default function AskUTechScreen({ navigation, route }) {
 
     setMessages(prev => [...prev, userMessage]);
     setInputText('');
+
+    if (await maybeHandleCampusMapQuestion(userMessage)) {
+      return;
+    }
+
     setIsTyping(true);
 
     try {
@@ -292,7 +392,67 @@ export default function AskUTechScreen({ navigation, route }) {
     </TouchableOpacity>
   );
 
+  const renderMapResultMessage = (item) => {
+    const hasMultipleMatches = item.matches.length > 1;
+
+    return (
+      <View style={[styles.messageRow, styles.messageRowAi]}>
+        <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+          <Ionicons name="map" size={16} color="#fff" />
+        </View>
+        <View style={[
+          styles.messageBubble,
+          styles.messageBubbleAi,
+          styles.mapResultBubble,
+          { backgroundColor: colors.surface, borderColor: colors.border }
+        ]}>
+          <Text style={[styles.messageText, { color: colors.text }]}>
+            {hasMultipleMatches
+              ? 'I found a few possible matches on the campus map.'
+              : 'I found a possible match on the campus map.'}
+          </Text>
+          <Text style={[styles.mapResultSubtext, { color: colors.textSecondary }]}>
+            Tap below to open {hasMultipleMatches ? 'one' : 'it'} in Campus Map.
+          </Text>
+
+          {item.matches.map((match) => (
+            <View key={match.poi.id} style={[styles.mapResultCard, { borderColor: colors.border, backgroundColor: colors.background }]}>
+              <View style={styles.mapResultHeader}>
+                <Ionicons name="location" size={18} color={colors.primary} />
+                <Text style={[styles.mapResultName, { color: colors.text }]} numberOfLines={2}>
+                  {match.poi.name}
+                </Text>
+              </View>
+              {!!match.poi.description && (
+                <Text style={[styles.mapResultDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                  {match.poi.description}
+                </Text>
+              )}
+              {match.reason === 'room' && !!match.matchedText && (
+                <Text style={[styles.mapResultMatchedText, { color: colors.success || colors.primary }]} numberOfLines={1}>
+                  Contains room: {match.matchedText}
+                </Text>
+              )}
+              <TouchableOpacity
+                style={[styles.mapOpenButton, { backgroundColor: colors.primary }]}
+                onPress={() => openCampusMapLocation(match.poi)}
+                activeOpacity={0.82}
+              >
+                <Ionicons name="map-outline" size={16} color="#fff" />
+                <Text style={styles.mapOpenButtonText}>Open in Campus Map</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
   const renderMessage = ({ item }) => {
+    if (item.type === 'mapResult') {
+      return renderMapResultMessage(item);
+    }
+
     const isUser = item.sender === 'user';
     const canShare = isShareableHelpDeskAnswer(item);
     return (
@@ -537,6 +697,57 @@ const styles = StyleSheet.create({
   messageText: {
     fontSize: 15,
     lineHeight: 22,
+  },
+  mapResultBubble: {
+    width: '80%',
+  },
+  mapResultSubtext: {
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 6,
+    marginBottom: 12,
+  },
+  mapResultCard: {
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 12,
+    marginTop: 10,
+  },
+  mapResultHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  mapResultName: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '800',
+    marginLeft: 8,
+    lineHeight: 20,
+  },
+  mapResultDescription: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 8,
+  },
+  mapResultMatchedText: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  mapOpenButton: {
+    minHeight: 40,
+    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  mapOpenButtonText: {
+    color: '#fff',
+    fontWeight: '800',
+    fontSize: 13,
+    marginLeft: 6,
   },
   sourcesContainer: {
     marginTop: 10,

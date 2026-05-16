@@ -154,7 +154,7 @@ const getCoordinates = (x, y) => {
   return { latitude: NaN, longitude: NaN };
 };
 
-export default function CampusMapScreen({ navigation }) {
+export default function CampusMapScreen({ navigation, route }) {
   const { user, fetchWithAuth, logout } = useAuth();
   const { colors, isDarkTheme, toggleTheme } = useAppTheme();
   const isFocused = useIsFocused();
@@ -180,6 +180,7 @@ export default function CampusMapScreen({ navigation }) {
   const mapRef = useRef(null);
   const selectedMarkerRef = useRef(null);
   const lastSearchSelectionRef = useRef(0);
+  const lastFocusRequestRef = useRef(null);
   const speechAvailable = !!ExpoSpeechRecognitionModule;
   const googleMapsApiKey =
     Constants.expoConfig?.extra?.googleMapsApiKey ||
@@ -654,6 +655,20 @@ export default function CampusMapScreen({ navigation }) {
        isCancelled = true;
     };
   }, [isFocused, user?.username]);
+
+  useEffect(() => {
+    const focusPoiId = route?.params?.focusPoiId;
+    const focusRequestId = route?.params?.focusRequestId || focusPoiId;
+
+    if (!isFocused || loading || !focusPoiId || pois.length === 0) return;
+    if (lastFocusRequestRef.current === focusRequestId) return;
+
+    const matchedPoi = pois.find(poi => String(poi.id) === String(focusPoiId));
+    if (!matchedPoi) return;
+
+    lastFocusRequestRef.current = focusRequestId;
+    handleSelectSearchResult(matchedPoi);
+  }, [isFocused, loading, pois, route?.params?.focusPoiId, route?.params?.focusRequestId]);
 
   useEffect(() => {
     const requestGpsPermissions = async () => {
