@@ -16,6 +16,11 @@ const resolveImageUrl = (imageUrl) => {
   return `${API_BASE_URL}${trimmedUrl}`;
 };
 
+const isVisibleNotification = (notification) => {
+  const status = String(notification?.status || '').toLowerCase();
+  return status === 'sent' || status === 'published';
+};
+
 export default function AlertsScreen({ navigation }) {
   const { user, fetchWithAuth, logout } = useAuth();
   const { colors, isDarkTheme, toggleTheme } = useAppTheme();
@@ -33,7 +38,7 @@ export default function AlertsScreen({ navigation }) {
           if (res.ok) {
             const data = await res.json();
             // Map backend schema to UI format.
-            const mapped = data.map(notification => ({
+            const mapped = data.filter(isVisibleNotification).map(notification => ({
               id: notification.id,
               title: notification.title,
               message: notification.message,
