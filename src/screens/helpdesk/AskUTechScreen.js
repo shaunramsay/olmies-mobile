@@ -1,11 +1,18 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Modal, Share } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../context/ThemeContext';
 import Constants from 'expo-constants';
+import * as Clipboard from 'expo-clipboard';
 import API_BASE_URL from '../../config/api';
+import {
+  formatHelpDeskResponseOnly,
+  formatHelpDeskShareMessage,
+  getAppDownloadUrl,
+  isShareableHelpDeskAnswer,
+} from '../../utils/helpDeskSharing';
 
 let Audio = null;
 try {
@@ -15,6 +22,8 @@ try {
 } catch (e) {
   console.warn('expo-av native module not loaded.');
 }
+
+const APP_DOWNLOAD_URL = getAppDownloadUrl(process.env.EXPO_PUBLIC_APP_DOWNLOAD_URL);
 
 export default function AskUTechScreen({ navigation, route }) {
   const { colors, isDarkTheme, toggleTheme } = useAppTheme();
@@ -38,6 +47,7 @@ export default function AskUTechScreen({ navigation, route }) {
   const [recording, setRecording] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [shareTarget, setShareTarget] = useState(null);
   const flatListRef = useRef();
   const audioAvailable = !!Audio;
 
@@ -197,6 +207,8 @@ export default function AskUTechScreen({ navigation, route }) {
           text: data.answer || "I couldn't find a complete answer just now. Please try again shortly.",
           sources: data.sources || [],
           isCohortSpecific: data.isCohortSpecific,
+          questionText: userMessage.text,
+          isError: !data.answer,
           sender: 'ai',
           timestamp: new Date().toISOString()
         };
@@ -206,6 +218,7 @@ export default function AskUTechScreen({ navigation, route }) {
         const aiError = {
           id: (Date.now() + 1).toString(),
           text: serverMessage,
+          isError: true,
           sender: 'ai',
           timestamp: new Date().toISOString()
         };
@@ -218,6 +231,7 @@ export default function AskUTechScreen({ navigation, route }) {
         text: __DEV__
           ? `I'm having trouble reaching the API at ${API_BASE_URL}. Please make sure the local backend is running and reachable from this device.`
           : "I'm having trouble connecting to the network. Please check your connection.",
+        isError: true,
         sender: 'ai',
         timestamp: new Date().toISOString()
       };
@@ -227,8 +241,60 @@ export default function AskUTechScreen({ navigation, route }) {
     }
   };
 
+  const closeShareMenu = () => setShareTarget(null);
+
+  const handleShareAnswer = async () => {
+    if (!isShareableHelpDeskAnswer(shareTarget)) return;
+    const shareText = formatHelpDeskShareMessage(shareTarget, { appDownloadUrl: APP_DOWNLOAD_URL });
+    closeShareMenu();
+
+    try {
+      await Share.share({ message: shareText });
+    } catch (error) {
+      console.error('Failed to share Help Desk answer:', error);
+      Alert.alert('Share unavailable', 'The native share sheet could not be opened right now.');
+    }
+  };
+
+  const copyToClipboard = async (value, successMessage) => {
+    closeShareMenu();
+
+    try {
+      await Clipboard.setStringAsync(value);
+      Alert.alert('Copied', successMessage);
+    } catch (error) {
+      console.error('Failed to copy Help Desk answer:', error);
+      Alert.alert('Copy unavailable', 'The answer could not be copied right now.');
+    }
+  };
+
+  const handleCopyQuestionAndAnswer = () => {
+    if (!isShareableHelpDeskAnswer(shareTarget)) return;
+    const shareText = formatHelpDeskShareMessage(shareTarget, { appDownloadUrl: APP_DOWNLOAD_URL });
+    copyToClipboard(shareText, 'Question and answer copied.');
+  };
+
+  const handleCopyResponseOnly = () => {
+    if (!isShareableHelpDeskAnswer(shareTarget)) return;
+    copyToClipboard(formatHelpDeskResponseOnly(shareTarget), 'Response copied.');
+  };
+
+  const renderShareAction = (label, iconName, onPress, isCancel = false) => (
+    <TouchableOpacity
+      style={[styles.shareAction, { borderBottomColor: colors.border }]}
+      activeOpacity={0.75}
+      onPress={onPress}
+    >
+      <Ionicons name={iconName} size={20} color={isCancel ? colors.textSecondary : colors.primary} />
+      <Text style={[styles.shareActionText, { color: isCancel ? colors.textSecondary : colors.text }]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+
   const renderMessage = ({ item }) => {
     const isUser = item.sender === 'user';
+    const canShare = isShareableHelpDeskAnswer(item);
     return (
       <View style={[styles.messageRow, isUser ? styles.messageRowUser : styles.messageRowAi]}>
         {!isUser && (
@@ -236,12 +302,17 @@ export default function AskUTechScreen({ navigation, route }) {
             <Ionicons name="sparkles" size={16} color="#fff" />
           </View>
         )}
-        <View style={[
-          styles.messageBubble, 
-          isUser 
-            ? [styles.messageBubbleUser, { backgroundColor: colors.primary }] 
-            : [styles.messageBubbleAi, { backgroundColor: colors.surface, borderColor: colors.border }]
-        ]}>
+        <TouchableOpacity
+          activeOpacity={canShare ? 0.82 : 1}
+          delayLongPress={350}
+          onLongPress={canShare ? () => setShareTarget(item) : undefined}
+          style={[
+            styles.messageBubble,
+            isUser
+              ? [styles.messageBubbleUser, { backgroundColor: colors.primary }]
+              : [styles.messageBubbleAi, { backgroundColor: colors.surface, borderColor: colors.border }]
+          ]}
+        >
           <Text style={[styles.messageText, isUser ? { color: '#fff' } : { color: colors.text }]}>{item.text}</Text>
           
           {!isUser && item.sources && item.sources.length > 0 && (
@@ -252,7 +323,7 @@ export default function AskUTechScreen({ navigation, route }) {
                ))}
             </View>
           )}
-        </View>
+        </TouchableOpacity>
       </View>
     );
   };
@@ -352,6 +423,35 @@ export default function AskUTechScreen({ navigation, route }) {
           )}
         </View>
       </KeyboardAvoidingView>
+
+      <Modal
+        visible={!!shareTarget}
+        transparent
+        animationType="slide"
+        onRequestClose={closeShareMenu}
+      >
+        <View style={styles.shareModalRoot}>
+          <TouchableOpacity style={styles.shareBackdrop} activeOpacity={1} onPress={closeShareMenu} />
+          <View style={[
+            styles.shareSheet,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              paddingBottom: Math.max(insets.bottom, 16)
+            }
+          ]}>
+            <View style={styles.shareHandle} />
+            <Text style={[styles.shareTitle, { color: colors.text }]}>Answer actions</Text>
+            <Text style={[styles.sharePrivacyNote, { color: colors.textSecondary }]}>
+              Only share information you're comfortable sending outside the app.
+            </Text>
+            {renderShareAction('Share Answer', 'share-social-outline', handleShareAnswer)}
+            {renderShareAction('Copy Question & Answer', 'copy-outline', handleCopyQuestionAndAnswer)}
+            {renderShareAction('Copy Response Only', 'document-text-outline', handleCopyResponseOnly)}
+            {renderShareAction('Cancel', 'close-outline', closeShareMenu, true)}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -495,5 +595,55 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,
+  },
+  shareModalRoot: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  shareBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  shareSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    paddingTop: 12,
+    paddingHorizontal: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
+    elevation: 12,
+  },
+  shareHandle: {
+    alignSelf: 'center',
+    width: 42,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(148, 163, 184, 0.7)',
+    marginBottom: 14,
+  },
+  shareTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  sharePrivacyNote: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  shareAction: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+  },
+  shareActionText: {
+    marginLeft: 12,
+    fontSize: 15,
+    fontWeight: '700',
   }
 });
