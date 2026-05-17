@@ -7,6 +7,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import FullscreenImageViewer from '../../components/FullscreenImageViewer';
 import NotificationDetailModal from '../../components/NotificationDetailModal';
 import API_BASE_URL from '../../config/api';
+const { isVisibleNotification } = require('../../utils/notificationVisibility');
 
 const resolveImageUrl = (imageUrl) => {
   if (!imageUrl || typeof imageUrl !== 'string') return null;
@@ -14,11 +15,6 @@ const resolveImageUrl = (imageUrl) => {
   if (!trimmedUrl || trimmedUrl === 'null') return null;
   if (trimmedUrl.startsWith('http')) return trimmedUrl;
   return `${API_BASE_URL}${trimmedUrl}`;
-};
-
-const isVisibleNotification = (notification) => {
-  const status = String(notification?.status || '').toLowerCase();
-  return status === 'sent' || status === 'published';
 };
 
 export default function AlertsScreen({ navigation }) {
