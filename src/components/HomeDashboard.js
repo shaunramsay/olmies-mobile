@@ -8,6 +8,7 @@ import { getUTechSemester } from '../utils/dateUtils';
 import FullscreenImageViewer from './FullscreenImageViewer';
 import NotificationDetailModal from './NotificationDetailModal';
 import API_BASE_URL from '../config/api';
+const { isVisibleNotification } = require('../utils/notificationVisibility');
 
 const formatNotificationDate = (value) => {
   if (!value) return 'Recently';
@@ -33,11 +34,6 @@ const hasValidImageUrl = (imageUrl) => (
   imageUrl.trim().length > 5 &&
   imageUrl.trim() !== 'null'
 );
-
-const isVisibleNotification = (notification) => {
-  const status = String(notification?.status || '').toLowerCase();
-  return status === 'sent' || status === 'published';
-};
 
 const getNotificationIcon = (type) => {
   switch (type) {
