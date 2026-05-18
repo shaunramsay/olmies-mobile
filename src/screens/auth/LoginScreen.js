@@ -10,6 +10,10 @@ const demoAccounts = [
   { label: 'Lecturer', icon: 'briefcase-outline', username: 'test_lecturer', password: 'lecturer123' }
 ];
 
+const INVALID_LOGIN_MESSAGE = 'Invalid username or password. Please try again.';
+const INVALID_DEMO_LOGIN_MESSAGE = 'Invalid demo credentials. Please use the Student or Lecturer demo buttons.';
+const NETWORK_ERROR_MESSAGE = 'Unable to reach the login service. Please check your connection and try again.';
+
 export default function LoginScreen({ navigation }) {
   const { login, getDeviceId } = useAuth();
   const { colors } = useAppTheme();
@@ -44,7 +48,8 @@ export default function LoginScreen({ navigation }) {
                 deviceId: await getDeviceId()
             };
 
-        const response = await fetch(buildApiUrl(isTestAccount ? '/api/v1/auth/testing/login' : '/api/v1/auth/login'), {
+        const endpoint = isTestAccount ? '/api/v1/auth/testing/login' : '/api/v1/auth/login';
+        const response = await fetch(buildApiUrl(endpoint), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(requestBody)
@@ -55,8 +60,15 @@ export default function LoginScreen({ navigation }) {
         let data = {};
         try {
             data = rawText ? JSON.parse(rawText) : {};
-        } catch (e) {
-            throw new Error(`Invalid JSON Response (Status ${response.status}): ${rawText}`);
+        } catch (parseError) {
+            if (__DEV__) {
+                console.warn('Login response was not valid JSON.', {
+                    status: response.status,
+                    endpoint,
+                    rawText,
+                    parseError
+                });
+            }
         }
 
         if (response.ok && data.token) {
@@ -70,11 +82,24 @@ export default function LoginScreen({ navigation }) {
                 navigation.replace('Main');
             }
         } else {
-            setErrorMsg(`HTTP ${response.status} - ${JSON.stringify(data)}`);
+            if (__DEV__) {
+                console.warn('Login failed.', {
+                    status: response.status,
+                    endpoint,
+                    response: data
+                });
+            }
+
+            setErrorMsg(isTestAccount && showDemoAccounts ? INVALID_DEMO_LOGIN_MESSAGE : INVALID_LOGIN_MESSAGE);
         }
     } catch (error) {
-        setErrorMsg(`Network Error: ${error.message} - Using URL: ${API_BASE_URL}`);
-        console.error("Login fetch error:", error);
+        setErrorMsg(NETWORK_ERROR_MESSAGE);
+        if (__DEV__) {
+            console.error("Login fetch error:", {
+                error,
+                apiBaseUrl: API_BASE_URL
+            });
+        }
     } finally {
         setIsLoading(false);
     }
