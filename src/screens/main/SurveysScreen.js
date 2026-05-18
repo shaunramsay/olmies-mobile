@@ -187,11 +187,22 @@ export default function SurveysScreen({ navigation }) {
                     ) : mod.activeSurveyId ? (
                       <TouchableOpacity
                         style={[styles.primaryButton, { backgroundColor: colors.primary }]}
-                        onPress={() => navigation.navigate('Survey', { surveyId: mod.activeSurveyId, moduleCode: mod.moduleCode })}
+                        onPress={() => navigation.navigate('Survey', {
+                          surveyId: mod.activeSurveyId,
+                          moduleCode: mod.moduleCode,
+                          moduleOfferingId: mod.moduleOfferingId,
+                          campaignId: mod.campaignId,
+                          surveyWindowId: mod.surveyWindowId || mod.activeSurveyVersionId
+                        })}
                       >
                         <Ionicons name="checkmark-circle-outline" size={16} color="#fff" style={{marginRight: 6}} />
                         <Text style={styles.primaryButtonText}>Take Survey</Text>
                       </TouchableOpacity>
+                    ) : mod.status === 'Closed' ? (
+                      <View style={[styles.lockedButton, {backgroundColor: colors.border}]}>
+                        <Ionicons name="time-outline" size={14} color={colors.textSecondary} style={{marginRight: 4}} />
+                        <Text style={[styles.lockedButtonText, {color: colors.textSecondary}]}>Closed</Text>
+                      </View>
                     ) : (
                       <View style={[styles.lockedButton, {backgroundColor: colors.border}]}>
                         <Ionicons name="lock-closed-outline" size={14} color={colors.textSecondary} style={{marginRight: 4}} />
