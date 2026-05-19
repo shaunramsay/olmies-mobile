@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 
 export default function SurveyScreen({ route, navigation }) {
-  const { surveyId, moduleCode, moduleOfferingId, campaignId, surveyWindowId } = route.params;
+  const { surveyId, moduleCode, moduleOfferingId, campaignId, surveyWindowId, assignmentId } = route.params;
   const { fetchWithAuth, getDeviceId } = useAuth();
   
   const [survey, setSurvey] = useState(null);
@@ -61,6 +61,10 @@ export default function SurveyScreen({ route, navigation }) {
 
       if (surveyWindowId) {
         payload.surveyWindowId = surveyWindowId;
+      }
+
+      if (assignmentId) {
+        payload.assignmentId = assignmentId;
       }
 
       const response = await fetchWithAuth('/api/v1/execution/responses', {
