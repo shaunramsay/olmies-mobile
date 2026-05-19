@@ -13,6 +13,7 @@ export default function SurveysScreen({ navigation }) {
 
   const [modules, setModules] = useState([]);
   const [openSurveys, setOpenSurveys] = useState([]);
+  const [engagementItems, setEngagementItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const isLecturer = Array.isArray(user?.role)
@@ -22,24 +23,26 @@ export default function SurveysScreen({ navigation }) {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const requests = [
-          fetchWithAuth('/api/v1/mobile/open-surveys')
-        ];
-
         if (user) {
-          requests.unshift(fetchWithAuth('/api/v1/mobile/modules'));
-        }
+          const [modulesRes, engagementsRes, surveysRes] = await Promise.all([
+            fetchWithAuth('/api/v1/mobile/modules'),
+            fetchWithAuth('/api/v1/student/engagements'),
+            fetchWithAuth('/api/v1/mobile/open-surveys')
+          ]);
 
-        const responses = await Promise.all(requests);
-
-        if (user) {
-          const [modulesRes, surveysRes] = responses;
           if (modulesRes.ok) setModules(await modulesRes.json());
+          if (engagementsRes.ok) {
+            const engagementFeed = await engagementsRes.json();
+            setEngagementItems(Array.isArray(engagementFeed?.items) ? engagementFeed.items : []);
+          } else {
+            setEngagementItems([]);
+          }
           if (surveysRes.ok) setOpenSurveys(await surveysRes.json());
         } else {
-          const [surveysRes] = responses;
+          const surveysRes = await fetchWithAuth('/api/v1/mobile/open-surveys');
           if (surveysRes.ok) setOpenSurveys(await surveysRes.json());
           setModules([]);
+          setEngagementItems([]);
         }
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
@@ -50,6 +53,8 @@ export default function SurveysScreen({ navigation }) {
 
     fetchDashboardData();
   }, [fetchWithAuth, user]);
+
+  const pendingEngagementItems = engagementItems.filter(item => item.status === 'Pending');
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: Math.max(insets.top, Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0) }]}>
@@ -137,6 +142,45 @@ export default function SurveysScreen({ navigation }) {
           </View>
         )}
 
+        {user && !isLecturer && pendingEngagementItems.length > 0 && (
+          <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={styles.cardTitleContainer}>
+              <Ionicons name="sparkles-outline" size={20} color={colors.secondary} />
+              <Text style={[styles.cardTitle, { color: colors.text }]}>Pending Engagements</Text>
+            </View>
+
+            <View style={{ marginTop: 15 }}>
+              {pendingEngagementItems.map((item, index) => (
+                <View key={item.assignmentId || `${item.surveyId}-${index}`}>
+                  <View style={styles.moduleRow}>
+                    <View style={{ flex: 1, paddingRight: 10 }}>
+                      <Text style={[styles.moduleLabel, { color: colors.secondary }]}>{item.engagementType}</Text>
+                      <Text style={[styles.moduleCode, { color: colors.text }]}>{item.moduleCode || item.title}</Text>
+                      {!!item.moduleName && <Text style={[styles.cardDescription, { color: colors.textSecondary, marginBottom: 0 }]}>{item.moduleName}</Text>}
+                    </View>
+
+                    <TouchableOpacity
+                      style={[styles.primaryButton, { backgroundColor: colors.secondary }]}
+                      onPress={() => navigation.navigate('Survey', {
+                        surveyId: item.surveyId,
+                        moduleCode: item.moduleCode || item.title,
+                        moduleOfferingId: item.moduleOfferingId,
+                        campaignId: item.campaignId,
+                        surveyWindowId: item.surveyWindowId,
+                        assignmentId: item.assignmentId
+                      })}
+                    >
+                      <Ionicons name="open-outline" size={16} color="#fff" style={{ marginRight: 6 }} />
+                      <Text style={styles.primaryButtonText}>Open</Text>
+                    </TouchableOpacity>
+                  </View>
+                  {index < pendingEngagementItems.length - 1 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
         {/* My Modules Card */}
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>
@@ -192,7 +236,8 @@ export default function SurveysScreen({ navigation }) {
                           moduleCode: mod.moduleCode,
                           moduleOfferingId: mod.moduleOfferingId,
                           campaignId: mod.campaignId,
-                          surveyWindowId: mod.surveyWindowId || mod.activeSurveyVersionId
+                          surveyWindowId: mod.surveyWindowId || mod.activeSurveyVersionId,
+                          assignmentId: mod.assignmentId
                         })}
                       >
                         <Ionicons name="checkmark-circle-outline" size={16} color="#fff" style={{marginRight: 6}} />
