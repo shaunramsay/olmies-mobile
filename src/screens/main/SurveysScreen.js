@@ -14,6 +14,7 @@ export default function SurveysScreen({ navigation }) {
   const [modules, setModules] = useState([]);
   const [openSurveys, setOpenSurveys] = useState([]);
   const [engagementItems, setEngagementItems] = useState([]);
+  const [engagementGroups, setEngagementGroups] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const isLecturer = Array.isArray(user?.role)
@@ -34,8 +35,10 @@ export default function SurveysScreen({ navigation }) {
           if (engagementsRes.ok) {
             const engagementFeed = await engagementsRes.json();
             setEngagementItems(Array.isArray(engagementFeed?.items) ? engagementFeed.items : []);
+            setEngagementGroups(Array.isArray(engagementFeed?.campaignGroups) ? engagementFeed.campaignGroups : []);
           } else {
             setEngagementItems([]);
+            setEngagementGroups([]);
           }
           if (surveysRes.ok) setOpenSurveys(await surveysRes.json());
         } else {
@@ -43,6 +46,7 @@ export default function SurveysScreen({ navigation }) {
           if (surveysRes.ok) setOpenSurveys(await surveysRes.json());
           setModules([]);
           setEngagementItems([]);
+          setEngagementGroups([]);
         }
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
@@ -55,6 +59,33 @@ export default function SurveysScreen({ navigation }) {
   }, [fetchWithAuth, user]);
 
   const pendingEngagementItems = engagementItems.filter(item => item.status === 'Pending');
+  const getEngagementTitle = (source) => {
+    if (source?.surveyTitle) return source.surveyTitle;
+    if (source?.title && !source?.moduleCode) return source.title;
+    if (source?.engagementType === 'ModuleEvaluation') return 'Student Module/Instructor Evaluation';
+    return source?.engagementType || 'Pending Engagement';
+  };
+  const getCampaignTitle = (source) => source?.campaignTitle || source?.campaignName || source?.title || 'Unassigned Campaign';
+  const normalizedEngagementGroups = engagementGroups.length > 0
+    ? engagementGroups.map(group => {
+        const items = Array.isArray(group.items) ? group.items : [];
+        return {
+          ...group,
+          items,
+          pendingItems: items.filter(item => item.status === 'Pending'),
+          submittedItems: items.filter(item => item.status === 'Submitted'),
+          closedItems: items.filter(item => ['Closed', 'Expired', 'Withdrawn'].includes(item.status))
+        };
+      }).filter(group => group.items.length > 0)
+    : [{
+        campaignId: 'standalone',
+        title: 'Pending Engagements',
+        engagementType: 'Assignment',
+        items: engagementItems,
+        pendingItems: pendingEngagementItems,
+        submittedItems: engagementItems.filter(item => item.status === 'Submitted'),
+        closedItems: engagementItems.filter(item => ['Closed', 'Expired', 'Withdrawn'].includes(item.status))
+      }].filter(group => group.items.length > 0);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: Math.max(insets.top, Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0) }]}>
@@ -142,41 +173,112 @@ export default function SurveysScreen({ navigation }) {
           </View>
         )}
 
-        {user && !isLecturer && pendingEngagementItems.length > 0 && (
+        {user && !isLecturer && normalizedEngagementGroups.length > 0 && (
           <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={styles.cardTitleContainer}>
               <Ionicons name="sparkles-outline" size={20} color={colors.secondary} />
               <Text style={[styles.cardTitle, { color: colors.text }]}>Pending Engagements</Text>
             </View>
+            <Text style={[styles.cardDescription, { color: colors.textSecondary, marginTop: 6 }]}>
+              StudentEngagementAssignments feed
+            </Text>
 
             <View style={{ marginTop: 15 }}>
-              {pendingEngagementItems.map((item, index) => (
-                <View key={item.assignmentId || `${item.surveyId}-${index}`}>
-                  <View style={styles.moduleRow}>
-                    <View style={{ flex: 1, paddingRight: 10 }}>
-                      <Text style={[styles.moduleLabel, { color: colors.secondary }]}>{item.engagementType}</Text>
-                      <Text style={[styles.moduleCode, { color: colors.text }]}>{item.moduleCode || item.title}</Text>
-                      {!!item.moduleName && <Text style={[styles.cardDescription, { color: colors.textSecondary, marginBottom: 0 }]}>{item.moduleName}</Text>}
+              {normalizedEngagementGroups.map((group, groupIndex) => {
+                const nextPending = group.pendingItems[0];
+                return (
+                  <View key={group.campaignId || group.title || groupIndex} style={[styles.assignmentGroup, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                    <View style={styles.assignmentHeaderRow}>
+                      <View style={{ flex: 1, paddingRight: 10 }}>
+                        <Text style={[styles.moduleLabel, { color: colors.secondary }]}>Assignment-backed {group.engagementType}</Text>
+                        <Text style={[styles.assignmentTitle, { color: colors.text }]}>{getEngagementTitle(group)}</Text>
+                        <Text style={[styles.cardDescription, { color: colors.textSecondary, marginBottom: 0 }]}>
+                          {getCampaignTitle(group)}
+                        </Text>
+                      </View>
+                      {nextPending && (
+                        <TouchableOpacity
+                          style={[styles.primaryButton, { backgroundColor: colors.secondary }]}
+                          onPress={() => navigation.navigate('Survey', {
+                            surveyId: nextPending.surveyId,
+                            moduleCode: nextPending.moduleCode || nextPending.title,
+                            moduleOfferingId: nextPending.moduleOfferingId,
+                            campaignId: nextPending.campaignId,
+                            surveyWindowId: nextPending.surveyWindowId,
+                            assignmentId: nextPending.assignmentId
+                          })}
+                        >
+                          <Ionicons name="open-outline" size={16} color="#fff" style={{ marginRight: 6 }} />
+                          <Text style={styles.primaryButtonText}>Continue</Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
 
-                    <TouchableOpacity
-                      style={[styles.primaryButton, { backgroundColor: colors.secondary }]}
-                      onPress={() => navigation.navigate('Survey', {
-                        surveyId: item.surveyId,
-                        moduleCode: item.moduleCode || item.title,
-                        moduleOfferingId: item.moduleOfferingId,
-                        campaignId: item.campaignId,
-                        surveyWindowId: item.surveyWindowId,
-                        assignmentId: item.assignmentId
-                      })}
-                    >
-                      <Ionicons name="open-outline" size={16} color="#fff" style={{ marginRight: 6 }} />
-                      <Text style={styles.primaryButtonText}>Open</Text>
-                    </TouchableOpacity>
+                    <View style={styles.assignmentStatusRow}>
+                      <Text style={[styles.statusPill, { color: colors.secondary, borderColor: colors.secondary }]}>
+                        {group.pendingItems.length} pending
+                      </Text>
+                      <Text style={[styles.statusPill, { color: colors.success, borderColor: colors.success }]}>
+                        {group.submittedItems.length} submitted
+                      </Text>
+                      {group.closedItems.length > 0 && (
+                        <Text style={[styles.statusPill, { color: colors.textSecondary, borderColor: colors.border }]}>
+                          {group.closedItems.length} closed
+                        </Text>
+                      )}
+                    </View>
+
+                    {group.pendingItems.length > 0 && (
+                      <View style={{ marginTop: 12 }}>
+                        <Text style={[styles.assignmentSectionTitle, { color: colors.text }]}>Pending Modules</Text>
+                        {group.pendingItems.map((item, index) => (
+                          <View key={item.assignmentId || `${item.surveyId}-${index}`} style={styles.assignmentModuleRow}>
+                            <View style={{ flex: 1, paddingRight: 10 }}>
+                              <Text style={[styles.moduleCode, { color: colors.text }]}>
+                                {item.moduleCode ? `${item.moduleCode} - ${item.moduleName || item.title}` : item.title}
+                              </Text>
+                              {!!(item.instructorName || item.lecturerId) && (
+                                <Text style={[styles.cardDescription, { color: colors.textSecondary, marginBottom: 0 }]}>
+                                  Instructor: {item.instructorName || item.lecturerId}
+                                </Text>
+                              )}
+                            </View>
+                            <TouchableOpacity
+                              style={[styles.primaryButton, { backgroundColor: colors.secondary }]}
+                              onPress={() => navigation.navigate('Survey', {
+                                surveyId: item.surveyId,
+                                moduleCode: item.moduleCode || item.title,
+                                moduleOfferingId: item.moduleOfferingId,
+                                campaignId: item.campaignId,
+                                surveyWindowId: item.surveyWindowId,
+                                assignmentId: item.assignmentId
+                              })}
+                            >
+                              <Text style={styles.primaryButtonText}>Open</Text>
+                            </TouchableOpacity>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+
+                    {group.submittedItems.length > 0 && (
+                      <View style={{ marginTop: 12 }}>
+                        <Text style={[styles.assignmentSectionTitle, { color: colors.text }]}>Submitted</Text>
+                        {group.submittedItems.map((item, index) => (
+                          <View key={item.assignmentId || `${item.surveyId}-submitted-${index}`} style={styles.assignmentModuleRow}>
+                            <View style={{ flex: 1 }}>
+                              <Text style={[styles.moduleCode, { color: colors.text }]}>
+                                {item.moduleCode ? `${item.moduleCode} - ${item.moduleName || item.title}` : item.title}
+                              </Text>
+                            </View>
+                            <Text style={[styles.statusPill, { color: colors.success, borderColor: colors.success }]}>Submitted</Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
                   </View>
-                  {index < pendingEngagementItems.length - 1 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
-                </View>
-              ))}
+                );
+              })}
             </View>
           </View>
         )}
@@ -184,8 +286,11 @@ export default function SurveysScreen({ navigation }) {
         {/* My Modules Card */}
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>
-            {isLecturer ? "My Teaching Modules" : "My Modules"} - {getUTechSemester().fullDisplay}
+            {isLecturer ? "My Teaching Modules" : "Current Module Feed"} - {getUTechSemester().fullDisplay}
           </Text>
+          {!isLecturer && (
+            <Text style={[styles.cardDescription, { color: colors.textSecondary, marginTop: 4 }]}>Legacy/current module feed</Text>
+          )}
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
           {!user ? (
@@ -388,6 +493,48 @@ const styles = StyleSheet.create({
   cardTitleContainer: { flexDirection: 'row', alignItems: 'center' },
   cardTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff', marginLeft: 8 },
   cardDescription: { fontSize: 14, color: '#aaa', lineHeight: 22, marginBottom: 20 },
+  assignmentGroup: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 14,
+  },
+  assignmentHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  assignmentTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  assignmentStatusRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 12,
+  },
+  assignmentSectionTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  assignmentModuleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+  },
+  statusPill: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    fontSize: 12,
+    fontWeight: '800',
+    marginRight: 8,
+    marginBottom: 8,
+  },
   lockedButton: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#333', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
   lockedButtonText: { color: '#aaa', fontSize: 12, fontWeight: '600' },
   progressBarContainer: { marginTop: 10 },
