@@ -290,10 +290,12 @@ export default function SurveysScreen({ navigation }) {
         {/* My Modules Card */}
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>
-            {isLecturer ? "My Teaching Modules" : "Current Module Feed"} - {currentPeriodDisplay}
+            {isLecturer ? "My Teaching Modules" : "Module Enrollment Reference"} - {currentPeriodDisplay}
           </Text>
           {!isLecturer && (
-            <Text style={[styles.cardDescription, { color: colors.textSecondary, marginTop: 4 }]}>Legacy/current module feed</Text>
+            <Text style={[styles.cardDescription, { color: colors.textSecondary, marginTop: 4 }]}>
+              This section displays your module enrollments for reference only. Active evaluation campaigns are processed under Pending Engagements.
+            </Text>
           )}
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
@@ -332,37 +334,10 @@ export default function SurveysScreen({ navigation }) {
                       </View>
                     )
                   ) : (
-                    mod.hasCompleted ? (
-                      <View style={[styles.lockedButton, {backgroundColor: `${colors.success}26`, borderColor: colors.success}]}>
-                        <Ionicons name="checkmark-done" size={16} color={colors.success} style={{marginRight: 4}} />
-                        <Text style={[styles.lockedButtonText, {color: colors.success}]}>Completed</Text>
-                      </View>
-                    ) : mod.activeSurveyId ? (
-                      <TouchableOpacity
-                        style={[styles.primaryButton, { backgroundColor: colors.primary }]}
-                        onPress={() => navigation.navigate('Survey', {
-                          surveyId: mod.activeSurveyId,
-                          moduleCode: mod.moduleCode,
-                          moduleOfferingId: mod.moduleOfferingId,
-                          campaignId: mod.campaignId,
-                          surveyWindowId: mod.surveyWindowId || mod.activeSurveyVersionId,
-                          assignmentId: mod.assignmentId
-                        })}
-                      >
-                        <Ionicons name="checkmark-circle-outline" size={16} color="#fff" style={{marginRight: 6}} />
-                        <Text style={styles.primaryButtonText}>Take Survey</Text>
-                      </TouchableOpacity>
-                    ) : mod.status === 'Closed' ? (
-                      <View style={[styles.lockedButton, {backgroundColor: colors.border}]}>
-                        <Ionicons name="time-outline" size={14} color={colors.textSecondary} style={{marginRight: 4}} />
-                        <Text style={[styles.lockedButtonText, {color: colors.textSecondary}]}>Closed</Text>
-                      </View>
-                    ) : (
-                      <View style={[styles.lockedButton, {backgroundColor: colors.border}]}>
-                        <Ionicons name="lock-closed-outline" size={14} color={colors.textSecondary} style={{marginRight: 4}} />
-                        <Text style={[styles.lockedButtonText, {color: colors.textSecondary}]}>No Survey</Text>
-                      </View>
-                    )
+                    <View style={[styles.lockedButton, {backgroundColor: `${colors.primary}26`, borderColor: colors.primary}]}>
+                      <Ionicons name="book-outline" size={14} color={colors.primary} style={{marginRight: 4}} />
+                      <Text style={[styles.lockedButtonText, {color: colors.primary}]}>Reference Only</Text>
+                    </View>
                   )}
 
                 </View>
@@ -372,42 +347,44 @@ export default function SurveysScreen({ navigation }) {
           )}
         </View>
 
-        {/* Open Campus Surveys Card */}
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.cardTitleContainer}>
-            <Ionicons name="sparkles-outline" size={20} color={colors.secondary} />
-            <Text style={[styles.cardTitle, { color: colors.text }]}>Open Campus Surveys</Text>
-          </View>
+        {/* Open Campus Surveys Card (Lecturer only) */}
+        {isLecturer && (
+          <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={styles.cardTitleContainer}>
+              <Ionicons name="sparkles-outline" size={20} color={colors.secondary} />
+              <Text style={[styles.cardTitle, { color: colors.text }]}>Open Campus Surveys</Text>
+            </View>
 
-          <View style={{marginTop: 15}}>
-          {loading ? (
-             <ActivityIndicator size="small" color={colors.secondary} />
-          ) : openSurveys.length === 0 ? (
-             <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>There are currently no open campus-wide surveys.</Text>
-          ) : (
-            openSurveys.map((survey, index) => (
-              <View key={survey.surveyId}>
-                <View style={styles.moduleRow}>
-                  <View style={{flex: 1, paddingRight: 10}}>
-                    <Text style={[styles.moduleLabel, {color: colors.secondary}]}>{survey.audience} Survey</Text>
-                    <Text style={[styles.moduleCode, { color: colors.text }]}>{survey.name}</Text>
+            <View style={{marginTop: 15}}>
+            {loading ? (
+               <ActivityIndicator size="small" color={colors.secondary} />
+            ) : openSurveys.length === 0 ? (
+               <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>There are currently no open campus-wide surveys.</Text>
+            ) : (
+              openSurveys.map((survey, index) => (
+                <View key={survey.surveyId}>
+                  <View style={styles.moduleRow}>
+                    <View style={{flex: 1, paddingRight: 10}}>
+                      <Text style={[styles.moduleLabel, {color: colors.secondary}]}>{survey.audience} Survey</Text>
+                      <Text style={[styles.moduleCode, { color: colors.text }]}>{survey.name}</Text>
+                    </View>
+
+                    <TouchableOpacity
+                      style={[styles.primaryButton, {backgroundColor: colors.secondary}]}
+                      onPress={() => navigation.navigate('Survey', { surveyId: survey.surveyId, moduleCode: survey.name })}
+                    >
+                      <Ionicons name="sparkles" size={16} color="#fff" style={{marginRight: 6}} />
+                      <Text style={styles.primaryButtonText}>Participate</Text>
+                    </TouchableOpacity>
+
                   </View>
-
-                  <TouchableOpacity
-                    style={[styles.primaryButton, {backgroundColor: colors.secondary}]}
-                    onPress={() => navigation.navigate('Survey', { surveyId: survey.surveyId, moduleCode: survey.name })}
-                  >
-                    <Ionicons name="sparkles" size={16} color="#fff" style={{marginRight: 6}} />
-                    <Text style={styles.primaryButtonText}>Participate</Text>
-                  </TouchableOpacity>
-
+                  {index < openSurveys.length - 1 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
                 </View>
-                {index < openSurveys.length - 1 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
-              </View>
-            ))
-          )}
+              ))
+            )}
+            </View>
           </View>
-        </View>
+        )}
 
       </ScrollView>
     </View>
