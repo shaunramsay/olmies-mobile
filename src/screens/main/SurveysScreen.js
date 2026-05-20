@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
-import { getUTechSemester } from '../../utils/dateUtils';
+import { fetchUTechSemester, getUTechSemester } from '../../utils/dateUtils';
 import { useAppTheme } from '../../context/ThemeContext';
 
 export default function SurveysScreen({ navigation }) {
@@ -15,6 +15,7 @@ export default function SurveysScreen({ navigation }) {
   const [openSurveys, setOpenSurveys] = useState([]);
   const [engagementItems, setEngagementItems] = useState([]);
   const [engagementGroups, setEngagementGroups] = useState([]);
+  const [currentPeriodDisplay, setCurrentPeriodDisplay] = useState(() => getUTechSemester().fullDisplay);
   const [loading, setLoading] = useState(true);
 
   const isLecturer = Array.isArray(user?.role)
@@ -24,6 +25,9 @@ export default function SurveysScreen({ navigation }) {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
+        const period = await fetchUTechSemester(fetchWithAuth);
+        setCurrentPeriodDisplay(period.fullDisplay);
+
         if (user) {
           const [modulesRes, engagementsRes, surveysRes] = await Promise.all([
             fetchWithAuth('/api/v1/mobile/modules'),
@@ -286,7 +290,7 @@ export default function SurveysScreen({ navigation }) {
         {/* My Modules Card */}
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>
-            {isLecturer ? "My Teaching Modules" : "Current Module Feed"} - {getUTechSemester().fullDisplay}
+            {isLecturer ? "My Teaching Modules" : "Current Module Feed"} - {currentPeriodDisplay}
           </Text>
           {!isLecturer && (
             <Text style={[styles.cardDescription, { color: colors.textSecondary, marginTop: 4 }]}>Legacy/current module feed</Text>

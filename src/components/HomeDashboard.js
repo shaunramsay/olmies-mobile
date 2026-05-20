@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { useAppTheme } from '../context/ThemeContext';
-import { getUTechSemester } from '../utils/dateUtils';
+import { fetchUTechSemester, getUTechSemester } from '../utils/dateUtils';
 import FullscreenImageViewer from './FullscreenImageViewer';
 import NotificationDetailModal from './NotificationDetailModal';
 import API_BASE_URL from '../config/api';
@@ -60,8 +60,8 @@ export default function HomeDashboard({ navigation, fallbackName }) {
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [fullscreenImage, setFullscreenImage] = useState(null);
   const [activeNotificationIndex, setActiveNotificationIndex] = useState(0);
+  const [semester, setSemester] = useState(() => getUTechSemester().fullDisplay);
 
-  const semester = getUTechSemester().fullDisplay;
   const isCompactPreview = Platform.OS === 'web' && width < 760;
   const notificationCardWidth = Math.min(Math.max(width - 98, 230), isCompactPreview ? 310 : 320);
   const notificationSnapInterval = notificationCardWidth + 12;
@@ -72,12 +72,17 @@ export default function HomeDashboard({ navigation, fallbackName }) {
     const fetchHomeData = async () => {
       setLoading(true);
       try {
-        const [dealsResult, notificationsResult] = await Promise.allSettled([
+        const [dealsResult, notificationsResult, semesterResult] = await Promise.allSettled([
           fetchWithAuth('/api/v1/mobile/deals'),
-          fetchWithAuth('/api/v1/campushub/notifications')
+          fetchWithAuth('/api/v1/campushub/notifications'),
+          fetchUTechSemester(fetchWithAuth)
         ]);
 
         if (!isMounted) return;
+
+        if (semesterResult.status === 'fulfilled') {
+          setSemester(semesterResult.value.fullDisplay);
+        }
 
         if (dealsResult.status === 'fulfilled' && dealsResult.value.ok) {
           setDeals(await dealsResult.value.json());
