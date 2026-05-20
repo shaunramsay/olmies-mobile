@@ -1,33 +1,74 @@
 /**
  * UTech Jamaica Academic Calendar Logic
- * Semester 1: September to December
- * Semester 2: January to May
- * Semester 3: June to August
+ * Semester 1: September 1 to December 30
+ * Semester 2: January 1 to May 30
+ * Semester 3: June 1 to August 31
  */
 
 export const getUTechSemester = (date = new Date()) => {
-  const month = date.getMonth() + 1; // getMonth() returns 0-11, so add 1
-  let year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const calendarYear = date.getFullYear();
 
   let semester;
+  let semesterNumber;
+  let year = calendarYear;
+  let isTransitionDay = false;
 
-  if (month >= 9 && month <= 12) {
-    semester = "Semester 1";
-    // For UTech, September starts the new academic year, but the calendar year hasn't flipped.
-    // However, usually they just refer to the calendar year or academic year. 
-    // We will stick to the exact calendar year to match the UI spec.
-  } else if (month >= 1 && month <= 5) {
+  if (month >= 1 && (month < 5 || (month === 5 && day <= 30))) {
     semester = "Semester 2";
+    semesterNumber = "2";
+  } else if (month === 5 && day === 31) {
+    semester = "Semester 3";
+    semesterNumber = "3";
+    isTransitionDay = true;
   } else if (month >= 6 && month <= 8) {
     semester = "Semester 3";
+    semesterNumber = "3";
+  } else if (month >= 9 && (month < 12 || day <= 30)) {
+    semester = "Semester 1";
+    semesterNumber = "1";
   } else {
-    // Fallback just in case
-    semester = "Semester";
+    semester = "Semester 2";
+    semesterNumber = "2";
+    year = calendarYear + 1;
+    isTransitionDay = true;
   }
 
   return {
     semesterString: semester,
+    semesterNumber,
     year: year,
-    fullDisplay: `${semester} - ${year}`
+    periodCode: `${year}-S${semesterNumber}`,
+    fullDisplay: `${semester} - ${year}`,
+    isTransitionDay
   };
+};
+
+const normalizePeriod = (period, fallback = getUTechSemester()) => {
+  if (!period) return fallback;
+  const semester = period.semester || period.Semester || fallback.semesterString;
+  const year = Number(period.year || period.Year || fallback.year);
+  const semesterNumber = semester.includes('1') ? '1' : semester.includes('2') ? '2' : semester.includes('3') ? '3' : fallback.semesterNumber;
+
+  return {
+    semesterString: semester,
+    semesterNumber,
+    year,
+    periodCode: period.periodCode || period.PeriodCode || `${year}-S${semesterNumber}`,
+    fullDisplay: period.displayName || period.DisplayName || `${semester} - ${year}`,
+    isTransitionDay: Boolean(period.isTransitionDay || period.IsTransitionDay || fallback.isTransitionDay)
+  };
+};
+
+export const fetchUTechSemester = async (fetchWithAuth) => {
+  const fallback = getUTechSemester();
+
+  try {
+    const response = await fetchWithAuth('/api/v1/academic-period/current', { cache: 'no-store' });
+    if (!response.ok) return fallback;
+    return normalizePeriod(await response.json(), fallback);
+  } catch {
+    return fallback;
+  }
 };
