@@ -1,9 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, SafeAreaView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, SafeAreaView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import API_BASE_URL, { buildApiUrl } from '../../config/api';
 import { useAppTheme } from '../../context/ThemeContext';
+
+const demoAccounts = [
+  { label: 'Student', icon: 'school-outline', username: 'test_student', password: 'student123' },
+  { label: 'Lecturer', icon: 'briefcase-outline', username: 'test_lecturer', password: 'lecturer123' }
+];
+
+const INVALID_LOGIN_MESSAGE = 'Invalid username or password. Please try again.';
+const INVALID_DEMO_LOGIN_MESSAGE = 'Invalid demo credentials. Please use the Student or Lecturer demo buttons.';
+const NETWORK_ERROR_MESSAGE = 'Unable to reach the login service. Please check your connection and try again.';
 
 export default function LoginScreen({ navigation }) {
   const { login, getDeviceId } = useAuth();
@@ -13,9 +22,15 @@ export default function LoginScreen({ navigation }) {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const showDemoAccounts =
+    __DEV__ ||
+    process.env.EXPO_PUBLIC_ENABLE_DEMO_LOGIN === 'true' ||
+    API_BASE_URL.includes('olmies-ai-test');
 
   const handleLogin = async () => {
-    if (!username.trim()) {
+    const normalizedUsername = username.trim();
+
+    if (!normalizedUsername) {
         setErrorMsg('Please enter your Moodle username.');
         return;
     }
@@ -24,15 +39,20 @@ export default function LoginScreen({ navigation }) {
     setIsLoading(true);
 
     try {
-        const deviceId = await getDeviceId();
-        const response = await fetch(buildApiUrl('/api/v1/auth/login'), {
+        const isTestAccount = normalizedUsername === 'test_student' || normalizedUsername === 'test_lecturer';
+        const requestBody = isTestAccount
+            ? { username: normalizedUsername, password }
+            : {
+                username: normalizedUsername,
+                password,
+                deviceId: await getDeviceId()
+            };
+
+        const endpoint = isTestAccount ? '/api/v1/auth/testing/login' : '/api/v1/auth/login';
+        const response = await fetch(buildApiUrl(endpoint), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                username: username,
-                password: password,
-                deviceId
-            })
+            body: JSON.stringify(requestBody)
         });
 
         // Parse safely to prevent "Unexpected end of input" crashes on empty responses
@@ -40,8 +60,15 @@ export default function LoginScreen({ navigation }) {
         let data = {};
         try {
             data = rawText ? JSON.parse(rawText) : {};
-        } catch (e) {
-            throw new Error(`Invalid JSON Response (Status ${response.status}): ${rawText}`);
+        } catch (parseError) {
+            if (__DEV__) {
+                console.warn('Login response was not valid JSON.', {
+                    status: response.status,
+                    endpoint,
+                    rawText,
+                    parseError
+                });
+            }
         }
 
         if (response.ok && data.token) {
@@ -55,14 +82,33 @@ export default function LoginScreen({ navigation }) {
                 navigation.replace('Main');
             }
         } else {
-            setErrorMsg(`HTTP ${response.status} - ${JSON.stringify(data)}`);
+            if (__DEV__) {
+                console.warn('Login failed.', {
+                    status: response.status,
+                    endpoint,
+                    response: data
+                });
+            }
+
+            setErrorMsg(isTestAccount && showDemoAccounts ? INVALID_DEMO_LOGIN_MESSAGE : INVALID_LOGIN_MESSAGE);
         }
     } catch (error) {
-        setErrorMsg(`Network Error: ${error.message} - Using URL: ${API_BASE_URL}`);
-        console.error("Login fetch error:", error);
+        setErrorMsg(NETWORK_ERROR_MESSAGE);
+        if (__DEV__) {
+            console.error("Login fetch error:", {
+                error,
+                apiBaseUrl: API_BASE_URL
+            });
+        }
     } finally {
         setIsLoading(false);
     }
+  };
+
+  const fillDemoAccount = (account) => {
+    setUsername(account.username);
+    setPassword(account.password);
+    setErrorMsg('');
   };
 
   return (
@@ -82,6 +128,24 @@ export default function LoginScreen({ navigation }) {
 
         <View style={styles.form}>
             {errorMsg ? <Text style={{color: '#ff6b6b', backgroundColor: 'rgba(255,107,107,0.1)', padding: 10, borderRadius: 8, marginBottom: 15, fontWeight: 'bold'}}>{errorMsg}</Text> : null}
+            {showDemoAccounts ? (
+              <View style={styles.demoAccountSection}>
+                <Text style={[styles.label, { color: colors.text, marginTop: 0 }]}>Demo Accounts</Text>
+                <View style={styles.demoAccountGrid}>
+                  {demoAccounts.map((account) => (
+                    <TouchableOpacity
+                      key={account.username}
+                      style={[styles.demoAccountButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                      onPress={() => fillDemoAccount(account)}
+                      disabled={isLoading}
+                    >
+                      <Ionicons name={account.icon} size={18} color={colors.primary} />
+                      <Text style={[styles.demoAccountText, { color: colors.text }]}>{account.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            ) : null}
             <Text style={[styles.label, { color: colors.text }]}>Username</Text>
             <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <Ionicons name="person-outline" size={20} color={colors.textSecondary} style={styles.inputIcon} />
@@ -158,6 +222,27 @@ const styles = StyleSheet.create({
   },
   form: {
     width: '100%',
+  },
+  demoAccountSection: {
+    marginBottom: 8,
+  },
+  demoAccountGrid: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  demoAccountButton: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  demoAccountText: {
+    fontSize: 14,
+    fontWeight: '700',
   },
   label: {
     color: '#ddd',
