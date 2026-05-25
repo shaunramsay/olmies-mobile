@@ -20,6 +20,7 @@ export default function LoginScreen({ navigation }) {
   
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const showDemoAccounts =
@@ -169,8 +170,19 @@ export default function LoginScreen({ navigation }) {
                     placeholderTextColor={colors.textSecondary}
                     value={password}
                     onChangeText={setPassword}
-                    secureTextEntry
+                    secureTextEntry={!showPassword}
                 />
+                <TouchableOpacity 
+                    onPress={() => setShowPassword(!showPassword)} 
+                    style={styles.eyeIconContainer}
+                    accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+                >
+                    <Ionicons 
+                        name={showPassword ? "eye-outline" : "eye-off-outline"} 
+                        size={20} 
+                        color={colors.textSecondary} 
+                    />
+                </TouchableOpacity>
             </View>
 
 
@@ -283,5 +295,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: '700',
+  },
+  eyeIconContainer: {
+    padding: 8,
+    marginRight: -4,
+    justifyContent: 'center',
+    alignItems: 'center',
   }
 });
