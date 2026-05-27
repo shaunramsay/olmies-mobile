@@ -336,7 +336,7 @@ export default function SurveysScreen({ navigation }) {
                   ) : (
                     <View style={[styles.lockedButton, {backgroundColor: `${colors.primary}26`, borderColor: colors.primary}]}>
                       <Ionicons name="book-outline" size={14} color={colors.primary} style={{marginRight: 4}} />
-                      <Text style={[styles.lockedButtonText, {color: colors.primary}]}>Reference Only</Text>
+                      <Text style={[styles.lockedButtonText, {color: colors.primary}]}>Enrolled</Text>
                     </View>
                   )}
 
