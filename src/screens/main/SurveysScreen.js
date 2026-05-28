@@ -184,7 +184,7 @@ export default function SurveysScreen({ navigation }) {
               <Text style={[styles.cardTitle, { color: colors.text }]}>Pending Engagements</Text>
             </View>
             <Text style={[styles.cardDescription, { color: colors.textSecondary, marginTop: 6 }]}>
-              StudentEngagementAssignments feed
+              Please complete the evaluations for your registered modules below.
             </Text>
 
             <View style={{ marginTop: 15 }}>
@@ -194,7 +194,9 @@ export default function SurveysScreen({ navigation }) {
                   <View key={group.campaignId || group.title || groupIndex} style={[styles.assignmentGroup, { borderColor: colors.border, backgroundColor: colors.background }]}>
                     <View style={styles.assignmentHeaderRow}>
                       <View style={{ flex: 1, paddingRight: 10 }}>
-                        <Text style={[styles.moduleLabel, { color: colors.secondary }]}>Assignment-backed {group.engagementType}</Text>
+                        <Text style={[styles.moduleLabel, { color: colors.secondary }]}>
+                          {group.engagementType === 'ModuleEvaluation' ? 'Module Evaluation' : group.engagementType}
+                        </Text>
                         <Text style={[styles.assignmentTitle, { color: colors.text }]}>{getEngagementTitle(group)}</Text>
                         <Text style={[styles.cardDescription, { color: colors.textSecondary, marginBottom: 0 }]}>
                           {getCampaignTitle(group)}
