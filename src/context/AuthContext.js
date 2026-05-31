@@ -5,7 +5,6 @@ import { Alert, AppState, Linking, Platform } from 'react-native';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { buildApiUrl } from '../config/api';
-import { installGoogleDirectionsProxy } from '../config/googleDirectionsProxy';
 
 const { createMobileAuthSession } = require('./mobileAuthSession');
 const { isTokenExpiredOrInvalid, isTokenExpiringSoon } = require('./authTokenUtils');
@@ -80,10 +79,6 @@ export const AuthProvider = ({ children }) => {
         tokenRef.current = nextToken;
         setTokenState(nextToken);
     };
-
-    useEffect(() => {
-        installGoogleDirectionsProxy(() => token);
-    }, [token]);
 
     // Initial load of the token from SecureStore or Web Storage
     useEffect(() => {
