@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView, TextInput, ActivityIndicator, Fla
 import Constants from 'expo-constants';
 import * as ImagePicker from 'expo-image-picker';
 import { useIsFocused } from '@react-navigation/native';
-import API_BASE_URL from '../../config/api';
+import API_BASE_URL, { buildApiUrl } from '../../config/api';
 
 let ExpoSpeechRecognitionModule = null;
 let useSpeechRecognitionEvent = (eventName, callback) => {};
@@ -182,10 +182,6 @@ export default function CampusMapScreen({ navigation, route }) {
   const lastSearchSelectionRef = useRef(0);
   const lastFocusRequestRef = useRef(null);
   const speechAvailable = !!ExpoSpeechRecognitionModule;
-  const googleMapsApiKey =
-    Constants.expoConfig?.extra?.googleMapsApiKey ||
-    process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ||
-    '';
 
   // Hook directly into the OS Speech engine thread
   useSpeechRecognitionEvent('result', (event) => {
@@ -308,21 +304,35 @@ export default function CampusMapScreen({ navigation, route }) {
     }
   };
 
-  const fetchGoogleDirections = async (origin, destination, mode) => {
-    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&mode=${mode}&key=${googleMapsApiKey}`;
-    const response = await fetch(url);
-    const data = await response.json();
-    const status = data.status || 'UNKNOWN_STATUS';
-    const errorMessage = data.error_message || null;
+  const fetchCampusDirections = async (origin, destination, mode) => {
+    const endpoint = buildApiUrl('/api/v1/mobile/map/directions');
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ origin, destination, mode }),
+    });
 
-    if (status === 'OK') {
-      console.info('[CampusMap] Google Directions route calculated.', {
+    const rawText = await response.text().catch(() => '');
+    let payload;
+
+    try {
+      payload = rawText ? JSON.parse(rawText) : { status: 'UNKNOWN_STATUS', error_message: 'Empty response from route service.' };
+    } catch (error) {
+      console.warn('[CampusMap] Unable to parse backend route response.', { error, rawText });
+      payload = { status: 'INVALID_RESPONSE', error_message: 'The route service returned invalid JSON.' };
+    }
+
+    const status = payload?.status || 'UNKNOWN_STATUS';
+    const errorMessage = payload?.error_message || null;
+
+    if (response.ok && status === 'OK') {
+      console.info('[CampusMap] Backend directions route calculated.', {
         mode,
         status,
-        routes: data.routes?.length || 0,
+        routes: payload?.routes?.length || 0,
       });
     } else {
-      console.warn('[CampusMap] Google Directions route failed.', {
+      console.warn('[CampusMap] Backend directions route failed.', {
         mode,
         status,
         errorMessage,
@@ -333,7 +343,7 @@ export default function CampusMapScreen({ navigation, route }) {
       });
     }
 
-    return { data, status, errorMessage };
+    return { data: payload, status, errorMessage };
   };
 
   const applyGoogleRoute = (route, mode) => {
@@ -436,20 +446,7 @@ export default function CampusMapScreen({ navigation, route }) {
         return;
       }
       
-      if (!googleMapsApiKey) {
-        focusOnDestination(destination);
-        Alert.alert(
-          "Map Key Missing",
-          "Map routing is not configured in this environment. Showing this location on the campus map instead.",
-          [
-            { text: 'Open Google Maps', onPress: () => openExternalMaps(destination, origin) },
-            { text: 'OK' },
-          ]
-        );
-        return;
-      }
-
-      const walkingResult = await fetchGoogleDirections(origin, destination, 'walking');
+      const walkingResult = await fetchCampusDirections(origin, destination, 'walking');
       
       if (walkingResult.status === 'OK' && walkingResult.data.routes?.length > 0) {
         applyGoogleRoute(walkingResult.data.routes[0], 'walking');
@@ -457,7 +454,7 @@ export default function CampusMapScreen({ navigation, route }) {
       }
 
       if (walkingResult.status === 'OK') {
-        console.warn('[CampusMap] Google Directions returned OK without route data.', {
+        console.warn('[CampusMap] Backend directions returned OK without route data.', {
           mode: 'walking',
           routes: walkingResult.data.routes?.length || 0,
           poiId: selectedPoi.id,
@@ -466,7 +463,7 @@ export default function CampusMapScreen({ navigation, route }) {
       }
 
       if (walkingResult.status === 'ZERO_RESULTS') {
-        const drivingResult = await fetchGoogleDirections(origin, destination, 'driving');
+        const drivingResult = await fetchCampusDirections(origin, destination, 'driving');
 
         if (drivingResult.status === 'OK' && drivingResult.data.routes?.length > 0) {
           applyGoogleRoute(drivingResult.data.routes[0], 'driving');
