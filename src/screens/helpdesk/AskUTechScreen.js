@@ -306,6 +306,8 @@ export default function AskUTechScreen({ navigation, route }) {
           id: (Date.now() + 1).toString(),
           text: data.answer || "I couldn't find a complete answer just now. Please try again shortly.",
           sources: data.sources || [],
+          citations: data.citations || [],
+          status: data.status || 'success',
           isCohortSpecific: data.isCohortSpecific,
           questionText: userMessage.text,
           isError: !data.answer,
@@ -473,6 +475,14 @@ export default function AskUTechScreen({ navigation, route }) {
               : [styles.messageBubbleAi, { backgroundColor: colors.surface, borderColor: colors.border }]
           ]}
         >
+          {!isUser && item.status === 'fallback' && (
+            <View style={[styles.fallbackNotice, { borderColor: colors.info, backgroundColor: `${colors.info}14` }]}>
+              <Ionicons name="information-circle-outline" size={14} color={colors.info} />
+              <Text style={[styles.fallbackNoticeText, { color: colors.text }]}>
+                AI-generated response temporarily unavailable. Showing information found in approved sources.
+              </Text>
+            </View>
+          )}
           <Text style={[styles.messageText, isUser ? { color: '#fff' } : { color: colors.text }]}>{item.text}</Text>
           
           {!isUser && item.sources && item.sources.length > 0 && (
@@ -762,6 +772,22 @@ const styles = StyleSheet.create({
   sourceText: {
     fontSize: 12,
     marginBottom: 2,
+  },
+  fallbackNotice: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginBottom: 10,
+  },
+  fallbackNoticeText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 16,
+    marginLeft: 6,
+    fontWeight: '600',
   },
   typingIndicator: {
     flexDirection: 'row',
