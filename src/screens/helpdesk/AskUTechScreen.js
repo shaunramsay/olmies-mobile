@@ -4,6 +4,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../context/ThemeContext';
+import { fonts, radii, spacing } from '../../utils/theme';
 import Constants from 'expo-constants';
 import * as Clipboard from 'expo-clipboard';
 import API_BASE_URL from '../../config/api';
@@ -29,11 +30,19 @@ try {
 
 const APP_DOWNLOAD_URL = getAppDownloadUrl(process.env.EXPO_PUBLIC_APP_DOWNLOAD_URL);
 
+const SUGGESTED_PROMPTS = [
+  'Exam timetable',
+  'Library hours',
+  'Where is the bursary?',
+  'Shuttle schedule',
+];
+
 export default function AskUTechScreen({ navigation, route }) {
   const { colors, isDarkTheme, toggleTheme } = useAppTheme();
   const { user, fetchWithAuth, logout } = useAuth();
   const insets = useSafeAreaInsets();
   const isPrimaryTab = route?.name === 'Help Desk';
+  const onPrimaryText = isDarkTheme ? '#1A1400' : '#FFFFFF';
   const getWelcomeText = (currentUser) => currentUser
     ? `Hello ${currentUser.username}! I am the UTech AI Help Desk. I can answer questions regarding academic policies based on your cohort.`
     : "Hello! I am the UTech AI Help Desk. Since you are not logged in, I will provide general answers based on the current handbook.";
@@ -400,13 +409,13 @@ export default function AskUTechScreen({ navigation, route }) {
     return (
       <View style={[styles.messageRow, styles.messageRowAi]}>
         <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-          <Ionicons name="map" size={16} color="#fff" />
+          <Ionicons name="map" size={16} color={onPrimaryText} />
         </View>
         <View style={[
           styles.messageBubble,
           styles.messageBubbleAi,
           styles.mapResultBubble,
-          { backgroundColor: colors.surface, borderColor: colors.border }
+          { backgroundColor: colors.cardBackground, borderColor: colors.border }
         ]}>
           <Text style={[styles.messageText, { color: colors.text }]}>
             {hasMultipleMatches
@@ -440,8 +449,8 @@ export default function AskUTechScreen({ navigation, route }) {
                 onPress={() => openCampusMapLocation(match.poi)}
                 activeOpacity={0.82}
               >
-                <Ionicons name="map-outline" size={16} color="#fff" />
-                <Text style={styles.mapOpenButtonText}>Open in Campus Map</Text>
+                <Ionicons name="map-outline" size={16} color={onPrimaryText} />
+                <Text style={[styles.mapOpenButtonText, { color: onPrimaryText }]}>Open in Campus Map</Text>
               </TouchableOpacity>
             </View>
           ))}
@@ -461,7 +470,7 @@ export default function AskUTechScreen({ navigation, route }) {
       <View style={[styles.messageRow, isUser ? styles.messageRowUser : styles.messageRowAi]}>
         {!isUser && (
           <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-            <Ionicons name="sparkles" size={16} color="#fff" />
+            <Ionicons name="sparkles" size={16} color={onPrimaryText} />
           </View>
         )}
         <TouchableOpacity
@@ -472,24 +481,24 @@ export default function AskUTechScreen({ navigation, route }) {
             styles.messageBubble,
             isUser
               ? [styles.messageBubbleUser, { backgroundColor: colors.primary }]
-              : [styles.messageBubbleAi, { backgroundColor: colors.surface, borderColor: colors.border }]
+              : [styles.messageBubbleAi, { backgroundColor: colors.cardBackground, borderColor: colors.border }]
           ]}
         >
           {!isUser && item.status === 'fallback' && (
-            <View style={[styles.fallbackNotice, { borderColor: colors.info, backgroundColor: `${colors.info}14` }]}>
+            <View style={[styles.fallbackNotice, { borderColor: colors.info, backgroundColor: colors.infoTint }]}>
               <Ionicons name="information-circle-outline" size={14} color={colors.info} />
               <Text style={[styles.fallbackNoticeText, { color: colors.text }]}>
                 AI-generated response temporarily unavailable. Showing information found in approved sources.
               </Text>
             </View>
           )}
-          <Text style={[styles.messageText, isUser ? { color: '#fff' } : { color: colors.text }]}>{item.text}</Text>
-          
+          <Text style={[styles.messageText, isUser ? { color: onPrimaryText } : { color: colors.text }]}>{item.text}</Text>
+
           {!isUser && item.sources && item.sources.length > 0 && (
             <View style={[styles.sourcesContainer, { borderTopColor: colors.border }]}>
                <Text style={[styles.sourcesTitle, { color: colors.textSecondary }]}>Sources ({item.isCohortSpecific ? "Cohort Policy" : "General"}):</Text>
                {item.sources.map((src, i) => (
-                  <Text key={i} style={[styles.sourceText, { color: colors.primary }]}>• {src}</Text>
+                  <Text key={i} style={[styles.sourceText, { color: colors.secondary }]}>• {src}</Text>
                ))}
             </View>
           )}
@@ -505,31 +514,39 @@ export default function AskUTechScreen({ navigation, route }) {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {/* Header */}
-        <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <View style={[styles.header, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border }]}>
           {isPrimaryTab ? (
             <View style={styles.headerSide} />
           ) : (
             <View style={styles.headerSide}>
               <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                <Ionicons name="arrow-back" size={24} color={colors.text} />
+                <Ionicons name="arrow-back" size={22} color={colors.text} />
               </TouchableOpacity>
             </View>
           )}
           <View style={styles.headerTitleContainer}>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>Ask UTech AI</Text>
-            <Text style={[styles.headerSubtitle, { color: colors.success }]}>Online</Text>
+            <View style={[styles.headerAvatar, { backgroundColor: colors.primary }]}>
+              <Ionicons name="sparkles" size={14} color={onPrimaryText} />
+            </View>
+            <View>
+              <Text style={[styles.headerTitle, { color: colors.text }]}>Ask UTech AI</Text>
+              <View style={styles.onlineRow}>
+                <View style={[styles.onlineDot, { backgroundColor: colors.success }]} />
+                <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>Online</Text>
+              </View>
+            </View>
           </View>
           <View style={styles.headerActions}>
             <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={toggleTheme}>
-              <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={18} color={colors.textSecondary} />
+              <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={17} color={colors.textSecondary} />
             </TouchableOpacity>
             {user ? (
               <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={logout}>
-                <Ionicons name="log-out-outline" size={18} color={colors.textSecondary} />
+                <Ionicons name="log-out-outline" size={17} color={colors.textSecondary} />
               </TouchableOpacity>
             ) : (
               <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={() => navigation.navigate('Login')}>
-                <Ionicons name="log-in-outline" size={18} color={colors.textSecondary} />
+                <Ionicons name="log-in-outline" size={17} color={colors.textSecondary} />
               </TouchableOpacity>
             )}
           </View>
@@ -556,11 +573,26 @@ export default function AskUTechScreen({ navigation, route }) {
         {/* Input Area */}
         {isRecording && (
           <View style={{ paddingHorizontal: 16, paddingBottom: 8, flexDirection: 'row', alignItems: 'center' }}>
-            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: 'red', marginRight: 8 }} />
-            <Text style={{ color: 'red', fontWeight: 'bold', fontSize: 12 }}>Recording Audio...</Text>
+            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.danger, marginRight: 8 }} />
+            <Text style={{ color: colors.danger, fontFamily: fonts.bold, fontSize: 12 }}>Recording Audio...</Text>
           </View>
         )}
-        <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 15) }]}>
+
+        {messages.length <= 1 && !isRecording && (
+          <View style={styles.suggestionsRow}>
+            {SUGGESTED_PROMPTS.map(prompt => (
+              <TouchableOpacity
+                key={prompt}
+                style={[styles.suggestionChip, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
+                onPress={() => setInputText(prompt)}
+              >
+                <Text style={[styles.suggestionChipText, { color: colors.textSecondary }]}>{prompt}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        <View style={[styles.inputContainer, { backgroundColor: colors.cardBackground, borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 15) }]}>
           <TextInput
             style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
             placeholder="Ask about academic policies..."
@@ -570,12 +602,12 @@ export default function AskUTechScreen({ navigation, route }) {
             multiline
             maxLength={300}
           />
-          <TouchableOpacity 
-            style={[styles.sendButton, { backgroundColor: inputText.trim() ? colors.primary : colors.border }]} 
+          <TouchableOpacity
+            style={[styles.sendButton, { backgroundColor: inputText.trim() ? colors.accent : colors.border }]}
             onPress={handleSend}
             disabled={!inputText.trim()}
           >
-            <Ionicons name="send" size={20} color={inputText.trim() ? "#fff" : colors.textSecondary} />
+            <Ionicons name="send" size={19} color={inputText.trim() ? '#1A1400' : colors.textSecondary} />
           </TouchableOpacity>
           {user && (
             <TouchableOpacity 
@@ -646,7 +678,17 @@ const styles = StyleSheet.create({
   },
   headerTitleContainer: {
     flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  headerAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: radii.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerActions: {
     width: 88,
@@ -656,22 +698,55 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     padding: 8,
-    borderRadius: 8,
+    borderRadius: radii.sm,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontFamily: fonts.extraBold,
+  },
+  onlineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 2,
+  },
+  onlineDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   headerSubtitle: {
-    fontSize: 12,
-    fontWeight: '500',
-    marginTop: 2,
+    fontSize: 11.5,
+    fontFamily: fonts.semiBold,
   },
   chatContent: {
     padding: 16,
+    maxWidth: 780,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  suggestionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    maxWidth: 780,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  suggestionChip: {
+    borderWidth: 1,
+    borderRadius: radii.pill,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+  },
+  suggestionChipText: {
+    fontSize: 12.5,
+    fontFamily: fonts.semiBold,
   },
   messageRow: {
     flexDirection: 'row',

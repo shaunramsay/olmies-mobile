@@ -1,11 +1,14 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Image, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAppTheme } from '../context/ThemeContext';
+import { brand, fonts, radii, spacing } from '../utils/theme';
 
 const Tab = createBottomTabNavigator();
 const UTECH_CREST = require('../../assets/utech-crest.png');
+const SIDEBAR_WIDE = 212;
+const SIDEBAR_RAIL = 68;
 
 // Import our original screens
 import StudentHubScreen from '../screens/main/StudentHubScreen';
@@ -20,32 +23,42 @@ import { useAuth } from '../context/AuthContext';
 
 function CustomSidebar({ state, descriptors, navigation }) {
   const { user, logout } = useAuth();
-  const { colors, toggleTheme, isDarkTheme } = useAppTheme();
-  
+  const { toggleTheme, isDarkTheme } = useAppTheme();
+  const { width } = useWindowDimensions();
+  const isRail = width < 720;
+
   const navItems = [
     { id: 'Home', icon: 'home-outline', activeIcon: 'home' },
     { id: 'Help Desk', icon: 'chatbubbles-outline', activeIcon: 'chatbubbles' },
     { id: 'Alerts', icon: 'notifications-outline', activeIcon: 'notifications' },
     { id: 'Map', icon: 'map-outline', activeIcon: 'map' },
     { id: 'Surveys', icon: 'clipboard-outline', activeIcon: 'clipboard' },
+    { id: 'History', icon: 'time-outline', activeIcon: 'time' },
+    { id: 'Insights', icon: 'stats-chart-outline', activeIcon: 'stats-chart' },
   ];
 
   return (
-    <View style={[styles.sidebar, { backgroundColor: colors.surface, borderRightColor: colors.border }]}>
-      <View style={styles.branding}>
-        <View style={[styles.brandBadge, { borderColor: colors.border }]}>
+    <View style={[styles.sidebar, { width: isRail ? SIDEBAR_RAIL : SIDEBAR_WIDE }]}>
+      <View style={[styles.branding, isRail && styles.brandingRail]}>
+        <View style={styles.brandBadge}>
           <Image source={UTECH_CREST} style={styles.brandLogo} resizeMode="contain" />
         </View>
+        {!isRail && (
+          <>
+            <Text style={styles.brandName}>UTech · Olmies</Text>
+            <Text style={styles.brandSub}>Campus Companion</Text>
+          </>
+        )}
       </View>
 
-      <ScrollView style={styles.navContainer}>
+      <ScrollView style={styles.navContainer} showsVerticalScrollIndicator={false}>
         {navItems.map(itemConfig => {
           const index = state.routes.findIndex(route => route.name === itemConfig.id);
           if (index === -1) return null;
 
           const route = state.routes[index];
           const isFocused = state.index === index;
-          
+
           const onPress = () => {
             const event = navigation.emit({
               type: 'tabPress',
@@ -59,53 +72,46 @@ function CustomSidebar({ state, descriptors, navigation }) {
           };
 
           return (
-            <TouchableOpacity 
-              key={route.key} 
-              style={[
-                  styles.navItem, 
-                  isFocused && { backgroundColor: `${colors.primary}1A`, borderRightWidth: 3, borderRightColor: colors.primary }
-              ]}
+            <TouchableOpacity
+              key={route.key}
+              style={[styles.navItem, isRail && styles.navItemRail, isFocused && styles.navItemActive]}
               onPress={onPress}
+              accessibilityLabel={route.name}
             >
-              <Ionicons 
-                name={isFocused ? itemConfig.activeIcon : itemConfig.icon} 
-                size={24} 
-                color={isFocused ? colors.primary : colors.textSecondary} 
-                style={{ marginRight: 15 }}
+              <Ionicons
+                name={isFocused ? itemConfig.activeIcon : itemConfig.icon}
+                size={19}
+                color={isFocused ? brand.gold : brand.onNavySecondary}
+                style={!isRail && { marginRight: 12 }}
               />
-              <Text style={[styles.navText, { color: isFocused ? colors.text : colors.textSecondary }]}>
-                {route.name}
-              </Text>
+              {!isRail && (
+                <Text style={[styles.navText, isFocused && styles.navTextActive]}>
+                  {route.name}
+                </Text>
+              )}
             </TouchableOpacity>
           );
         })}
       </ScrollView>
 
-      <TouchableOpacity 
-        style={[styles.logoutButton, { borderTopColor: colors.border }]} 
-        onPress={toggleTheme}
-      >
-         <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={24} color={colors.textSecondary} style={{ marginRight: 15 }} />
-         <Text style={[styles.navText, { color: colors.textSecondary }]}>Toggle Theme</Text>
-      </TouchableOpacity>
+      <View style={styles.sfoot}>
+        <TouchableOpacity style={[styles.footItem, isRail && styles.navItemRail]} onPress={toggleTheme} accessibilityLabel="Toggle theme">
+          <Ionicons name={isDarkTheme ? 'sunny-outline' : 'moon-outline'} size={18} color={brand.onNavySecondary} style={!isRail && { marginRight: 12 }} />
+          {!isRail && <Text style={styles.footText}>{isDarkTheme ? 'Light theme' : 'Dark theme'}</Text>}
+        </TouchableOpacity>
 
-      {user ? (
-        <TouchableOpacity 
-            style={[styles.logoutButton, { borderTopColor: colors.border, marginTop: 0 }]} 
-            onPress={logout}
-        >
-           <Ionicons name="log-out-outline" size={24} color={colors.textSecondary} style={{ marginRight: 15 }} />
-           <Text style={[styles.navText, { color: colors.textSecondary }]}>Logout</Text>
-        </TouchableOpacity>
-      ) : (
-        <TouchableOpacity 
-            style={[styles.logoutButton, { borderTopColor: colors.border, marginTop: 0 }]} 
-            onPress={() => navigation.navigate('Login')}
-        >
-           <Ionicons name="log-in-outline" size={24} color={colors.textSecondary} style={{ marginRight: 15 }} />
-           <Text style={[styles.navText, { color: colors.textSecondary }]}>Login</Text>
-        </TouchableOpacity>
-      )}
+        {user ? (
+          <TouchableOpacity style={[styles.footItem, isRail && styles.navItemRail]} onPress={logout} accessibilityLabel="Logout">
+            <Ionicons name="log-out-outline" size={18} color={brand.onNavySecondary} style={!isRail && { marginRight: 12 }} />
+            {!isRail && <Text style={styles.footText}>Logout</Text>}
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={[styles.footItem, isRail && styles.navItemRail]} onPress={() => navigation.navigate('Login')} accessibilityLabel="Login">
+            <Ionicons name="log-in-outline" size={18} color={brand.onNavySecondary} style={!isRail && { marginRight: 12 }} />
+            {!isRail && <Text style={styles.footText}>Login</Text>}
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 }
@@ -113,7 +119,9 @@ function CustomSidebar({ state, descriptors, navigation }) {
 export default function WebNavigationShell() {
   const { user } = useAuth();
   const { colors } = useAppTheme();
-  const isLecturer = Array.isArray(user?.role) 
+  const { width } = useWindowDimensions();
+  const sidebarWidth = width < 720 ? SIDEBAR_RAIL : SIDEBAR_WIDE;
+  const isLecturer = Array.isArray(user?.role)
     ? user.role.some(r => r.toLowerCase() === 'lecturer')
     : user?.role?.toLowerCase() === 'lecturer';
 
@@ -121,9 +129,9 @@ export default function WebNavigationShell() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <Tab.Navigator
         tabBar={props => <CustomSidebar {...props} />}
-        screenOptions={{ 
+        screenOptions={{
           headerShown: false,
-          sceneStyle: { backgroundColor: colors.background, marginLeft: 190 }
+          sceneStyle: { backgroundColor: colors.background, marginLeft: sidebarWidth }
         }}
       >
         <Tab.Screen name="Home">
@@ -161,9 +169,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sidebar: {
-    width: 190,
-    borderRightWidth: 1,
-    paddingVertical: 30,
+    width: 212,
+    backgroundColor: brand.navy,
+    paddingVertical: spacing.lg,
     display: 'flex',
     flexDirection: 'column',
     position: 'fixed',
@@ -173,22 +181,41 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   branding: {
-    paddingHorizontal: 22,
-    marginBottom: 34,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  brandingRail: {
+    paddingHorizontal: 0,
+    alignItems: 'center',
   },
   brandBadge: {
-    width: 76,
-    height: 86,
-    borderRadius: 16,
-    backgroundColor: '#fff',
-    borderWidth: 1,
+    width: 40,
+    height: 40,
+    borderRadius: radii.pill,
+    backgroundColor: brand.gold,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 8,
+    padding: 6,
+    marginBottom: 10,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.28)',
   },
   brandLogo: {
     width: '100%',
     height: '100%',
+  },
+  brandName: {
+    color: '#FFFFFF',
+    fontFamily: fonts.bold,
+    fontSize: 14,
+  },
+  brandSub: {
+    color: brand.onNavySecondary,
+    fontFamily: fonts.semiBold,
+    fontSize: 10.5,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    marginTop: 1,
   },
   navContainer: {
     flex: 1,
@@ -196,24 +223,42 @@ const styles = StyleSheet.create({
   navItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 15,
-    paddingHorizontal: 22,
-    marginBottom: 5,
+    paddingVertical: 11,
+    paddingHorizontal: spacing.lg,
+    marginHorizontal: spacing.sm,
+    marginBottom: 2,
+    borderRadius: radii.md,
+  },
+  navItemRail: {
+    justifyContent: 'center',
+    paddingHorizontal: 0,
+  },
+  navItemActive: {
+    backgroundColor: brand.goldTint,
   },
   navText: {
-    fontSize: 16,
-    fontWeight: '600'
+    fontSize: 13,
+    fontFamily: fonts.semiBold,
+    color: brand.onNavySecondary,
   },
-  logoutButton: {
+  navTextActive: {
+    color: brand.gold,
+  },
+  sfoot: {
+    borderTopWidth: 1,
+    borderTopColor: brand.onNavyBorder,
+    paddingTop: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  footItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 15,
-    paddingHorizontal: 22,
-    marginTop: 20,
-    borderTopWidth: 1,
+    paddingVertical: 10,
+    paddingHorizontal: spacing.lg,
   },
-  contentArea: {
-    flex: 1,
-    overflow: 'hidden'
-  }
+  footText: {
+    fontSize: 12.5,
+    fontFamily: fonts.semiBold,
+    color: brand.onNavySecondary,
+  },
 });

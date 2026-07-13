@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { useAppTheme } from '../../context/ThemeContext';
+import { Badge, Button, IconChip } from '../../components/ui';
+import { fonts, radii, shadow, spacing } from '../../utils/theme';
 
 export default function InsightsScreen() {
   const { user, logout } = useAuth();
@@ -20,34 +22,36 @@ export default function InsightsScreen() {
     navigation.navigate('Main', { screen: 'Surveys' });
   };
 
+  const header = (
+    <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.cardBackground }]}>
+      <TouchableOpacity style={styles.backButton} onPress={returnToSurveys}>
+        <Ionicons name="arrow-back" size={22} color={colors.text} />
+      </TouchableOpacity>
+      <Text style={[styles.headerTitle, { color: colors.text }]}>Survey Insights</Text>
+      <View style={styles.topRightActions}>
+        <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={toggleTheme}>
+          <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={17} color={colors.textSecondary} />
+        </TouchableOpacity>
+        {user && (
+          <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={logout}>
+            <Ionicons name="log-out-outline" size={17} color={colors.textSecondary} />
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+
   if (!user) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <TouchableOpacity style={styles.backButton} onPress={returnToSurveys}>
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
-          </TouchableOpacity>
-          <Ionicons name="stats-chart" size={28} color={colors.primary} />
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Survey Insights</Text>
-          <View style={styles.topRightActions}>
-            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={toggleTheme}>
-              <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={18} color={colors.textSecondary} />
-            </TouchableOpacity>
-          </View>
-        </View>
+        {header}
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 30 }}>
-            <Ionicons name="lock-closed" size={80} color="#222" style={{ marginBottom: 20 }} />
-            <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#fff', marginBottom: 10 }}>Insights Locked</Text>
-            <Text style={{ fontSize: 16, color: '#aaa', textAlign: 'center', marginBottom: 30, lineHeight: 24 }}>
+            <IconChip name="lock-closed" tone="navy" size={72} iconSize={30} />
+            <Text style={{ fontSize: 21, fontFamily: fonts.extraBold, color: colors.text, marginTop: 20, marginBottom: 10 }}>Insights Locked</Text>
+            <Text style={{ fontSize: 14, fontFamily: fonts.regular, color: colors.textSecondary, textAlign: 'center', marginBottom: 26, lineHeight: 21, maxWidth: 340 }}>
                 Sign in with your University credentials to unlock your academic performance insights and sentiment data.
             </Text>
-            <TouchableOpacity 
-                style={{ backgroundColor: '#4A90E2', paddingVertical: 15, paddingHorizontal: 30, borderRadius: 12, flexDirection: 'row', alignItems: 'center' }}
-                onPress={() => navigation.navigate('Login')}
-            >
-                <Ionicons name="log-in-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
-                <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold' }}>Sign In</Text>
-            </TouchableOpacity>
+            <Button label="Sign In" icon="log-in-outline" onPress={() => navigation.navigate('Login')} />
         </View>
       </SafeAreaView>
     );
@@ -55,82 +59,56 @@ export default function InsightsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity style={styles.backButton} onPress={returnToSurveys}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Ionicons name="stats-chart" size={28} color={colors.primary} />
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Survey Insights</Text>
-        <View style={styles.topRightActions}>
-          <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={toggleTheme}>
-            <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={18} color={colors.textSecondary} />
-          </TouchableOpacity>
-          {user ? (
-            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={logout}>
-              <Ionicons name="log-out-outline" size={18} color={colors.textSecondary} />
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={() => navigation.navigate('Login')}>
-              <Ionicons name="log-in-outline" size={18} color={colors.textSecondary} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-      
+      {header}
+
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        
+
         {/* Campus Pulse Overview */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Campus Pulse</Text>
-          <Text style={styles.cardSubtitle}>General satisfaction based on latest campus surveys.</Text>
-          
+        <View style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }, !isDarkTheme && shadow.card]}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Campus Pulse</Text>
+          <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>General satisfaction based on latest campus surveys.</Text>
+
           <View style={styles.metricRow}>
-            <View style={styles.metricBox}>
-              <Text style={styles.metricValue}>4.2</Text>
-              <Text style={styles.metricLabel}>/ 5.0</Text>
-              <Text style={styles.metricTitle}>Overall Satisfaction</Text>
+            <View style={[styles.metricBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <Text style={[styles.metricValue, { color: colors.secondary }]}>4.2<Text style={[styles.metricLabelInline, { color: colors.textSecondary }]}> / 5.0</Text></Text>
+              <Text style={[styles.metricTitle, { color: colors.text }]}>Overall Satisfaction</Text>
             </View>
-            <View style={styles.metricBox}>
-              <Text style={styles.metricValue}>85%</Text>
-              <Text style={styles.metricLabel}>Participation</Text>
-              <Text style={styles.metricTitle}>Student Engagement</Text>
+            <View style={[styles.metricBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <Text style={[styles.metricValue, { color: colors.secondary }]}>85%</Text>
+              <Text style={[styles.metricTitle, { color: colors.text }]}>Student Engagement</Text>
             </View>
           </View>
         </View>
 
         {/* Module Ratings */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Your Module Ratings</Text>
-          <Text style={styles.cardSubtitle}>Aggregated sentiment from modules you are participating in.</Text>
-          
+        <View style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }, !isDarkTheme && shadow.card]}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Your Module Ratings</Text>
+          <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>Aggregated sentiment from modules you are participating in.</Text>
+
           <View style={styles.moduleMetric}>
             <View style={styles.moduleHeaderRow}>
-              <Text style={styles.moduleCode}>INT4020</Text>
-              <View style={styles.badgePositive}>
-                <Text style={styles.badgeText}>Positive (4.5)</Text>
-              </View>
+              <Text style={[styles.moduleCode, { color: colors.text }]}>INT4020</Text>
+              <Badge label="Positive (4.5)" tone="success" />
             </View>
-            <Text style={styles.moduleSnippet}>"Students appreciate the practical lab sessions..."</Text>
+            <Text style={[styles.moduleSnippet, { color: colors.textSecondary }]}>"Students appreciate the practical lab sessions..."</Text>
           </View>
 
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
           <View style={styles.moduleMetric}>
             <View style={styles.moduleHeaderRow}>
-              <Text style={styles.moduleCode}>CMP3011</Text>
-              <View style={styles.badgeNeutral}>
-                <Text style={styles.badgeText}>Neutral (3.8)</Text>
-              </View>
+              <Text style={[styles.moduleCode, { color: colors.text }]}>CMP3011</Text>
+              <Badge label="Neutral (3.8)" tone="warning" />
             </View>
-            <Text style={styles.moduleSnippet}>"Pacing could be improved during the mid-term topics..."</Text>
+            <Text style={[styles.moduleSnippet, { color: colors.textSecondary }]}>"Pacing could be improved during the mid-term topics..."</Text>
           </View>
         </View>
 
         {/* Action Call */}
-        <View style={styles.actionCard}>
-          <Ionicons name="chatbubbles-outline" size={32} color="#4A90E2" style={{marginBottom: 10}} />
-          <Text style={styles.actionTitle}>Your voice matters</Text>
-          <Text style={styles.actionDesc}>
+        <View style={[styles.actionCard, { backgroundColor: colors.accentTint, borderColor: colors.accent }]}>
+          <IconChip name="chatbubbles-outline" tone="accent" size={44} iconSize={20} />
+          <Text style={[styles.actionTitle, { color: colors.text, marginTop: 12 }]}>Your voice matters</Text>
+          <Text style={[styles.actionDesc, { color: colors.textSecondary }]}>
             The insights here are generated from reviews submitted by students like you. Continue to provide honest feedback to improve the campus experience!
           </Text>
         </View>
@@ -143,23 +121,21 @@ export default function InsightsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0A0A',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 30,
-    paddingBottom: 20,
+    paddingHorizontal: spacing.xl,
+    paddingTop: 24,
+    paddingBottom: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: '#1E1E1E',
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginLeft: 10,
+    fontSize: 20,
+    fontFamily: fonts.extraBold,
+    marginLeft: 2,
     flex: 1,
+    letterSpacing: -0.3,
   },
   backButton: {
     marginRight: 12,
@@ -171,66 +147,63 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     padding: 8,
-    borderRadius: 8,
+    borderRadius: radii.sm,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   scrollContent: {
-    padding: 20,
+    padding: spacing.lg,
+    maxWidth: 760,
+    width: '100%',
+    alignSelf: 'center',
   },
   card: {
-    backgroundColor: '#161616',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
+    borderRadius: radii.lg,
+    padding: spacing.xl,
+    marginBottom: spacing.xl,
     borderWidth: 1,
-    borderColor: '#222',
   },
   cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 6,
+    fontSize: 16,
+    fontFamily: fonts.extraBold,
+    marginBottom: 5,
   },
   cardSubtitle: {
-    fontSize: 14,
-    color: '#888',
-    marginBottom: 20,
-    lineHeight: 20,
+    fontSize: 12.5,
+    fontFamily: fonts.regular,
+    marginBottom: spacing.lg,
+    lineHeight: 19,
   },
   metricRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 15,
+    gap: spacing.md,
   },
   metricBox: {
     flex: 1,
-    backgroundColor: '#1E1E1E',
-    padding: 15,
-    borderRadius: 8,
+    padding: spacing.md,
+    borderRadius: radii.sm,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#333',
   },
   metricValue: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#f06292',
+    fontSize: 26,
+    fontFamily: fonts.extraBold,
+    marginBottom: 8,
+    fontVariant: ['tabular-nums'],
   },
-  metricLabel: {
-    fontSize: 12,
-    color: '#888',
-    marginBottom: 10,
+  metricLabelInline: {
+    fontSize: 13,
+    fontFamily: fonts.semiBold,
   },
   metricTitle: {
-    fontSize: 12,
-    color: '#ddd',
+    fontSize: 11.5,
     textAlign: 'center',
-    fontWeight: '600',
+    fontFamily: fonts.bold,
   },
   moduleMetric: {
-    marginVertical: 5,
+    marginVertical: 4,
   },
   moduleHeaderRow: {
     flexDirection: 'row',
@@ -239,61 +212,35 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   moduleCode: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  badgePositive: {
-    backgroundColor: 'rgba(76, 175, 80, 0.2)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(76, 175, 80, 0.5)',
-  },
-  badgeNeutral: {
-    backgroundColor: 'rgba(255, 152, 0, 0.2)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 152, 0, 0.5)',
-  },
-  badgeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 14.5,
+    fontFamily: fonts.extraBold,
   },
   moduleSnippet: {
-    fontSize: 14,
-    color: '#aaa',
+    fontSize: 12.5,
+    fontFamily: fonts.regular,
     fontStyle: 'italic',
-    lineHeight: 20,
+    lineHeight: 19,
   },
   divider: {
     height: 1,
-    backgroundColor: '#2A2A2A',
-    marginVertical: 15,
+    marginVertical: spacing.md,
   },
   actionCard: {
-    backgroundColor: 'rgba(138, 43, 226, 0.1)',
-    borderRadius: 12,
-    padding: 24,
+    borderRadius: radii.lg,
+    padding: spacing.xl,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(138, 43, 226, 0.3)',
-    marginBottom: 20,
+    marginBottom: spacing.lg,
   },
   actionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontSize: 16,
+    fontFamily: fonts.extraBold,
     marginBottom: 8,
   },
   actionDesc: {
-    fontSize: 14,
-    color: '#aaa',
+    fontSize: 12.5,
+    fontFamily: fonts.regular,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 20,
   }
 });

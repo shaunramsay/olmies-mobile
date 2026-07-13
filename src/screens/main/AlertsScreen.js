@@ -6,6 +6,8 @@ import { useAppTheme } from '../../context/ThemeContext';
 import { useFocusEffect } from '@react-navigation/native';
 import FullscreenImageViewer from '../../components/FullscreenImageViewer';
 import NotificationDetailModal from '../../components/NotificationDetailModal';
+import { EmptyState, ScreenHeader } from '../../components/ui';
+import { fonts, radii, shadow, spacing } from '../../utils/theme';
 import API_BASE_URL from '../../config/api';
 const { isVisibleNotification } = require('../../utils/notificationVisibility');
 
@@ -58,36 +60,40 @@ export default function AlertsScreen({ navigation }) {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Ionicons name="notifications-outline" size={28} color={colors.primary} />
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Notifications</Text>
+      <View style={styles.headerRow}>
+        <ScreenHeader title="Notifications" subtitle="Campus alerts, events and service updates." />
         <View style={styles.topRightActions}>
-          <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={toggleTheme}>
-            <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={18} color={colors.textSecondary} />
+          <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.cardBackground, borderColor: colors.border }]} onPress={toggleTheme}>
+            <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={17} color={colors.textSecondary} />
           </TouchableOpacity>
           {user ? (
-            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={logout}>
-              <Ionicons name="log-out-outline" size={18} color={colors.textSecondary} />
+            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.cardBackground, borderColor: colors.border, marginLeft: 8 }]} onPress={logout}>
+              <Ionicons name="log-out-outline" size={17} color={colors.textSecondary} />
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={() => navigation.navigate('Login')}>
-              <Ionicons name="log-in-outline" size={18} color={colors.textSecondary} />
+            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.cardBackground, borderColor: colors.border, marginLeft: 8 }]} onPress={() => navigation.navigate('Login')}>
+              <Ionicons name="log-in-outline" size={17} color={colors.textSecondary} />
              </TouchableOpacity>
           )}
         </View>
       </View>
-      
+
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {loading ? (
-          <ActivityIndicator size="large" color="#4A90E2" style={{ marginTop: 40 }} />
+          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
         ) : alerts.length === 0 ? (
-          <Text style={{ color: '#888', textAlign: 'center', marginTop: 40 }}>You have no new notifications.</Text>
+          <EmptyState icon="notifications-outline" title="You're all caught up" message="You have no new notifications." />
         ) : (
           alerts.map(alert => {
             return (
-              <TouchableOpacity 
-                key={alert.id} 
-                style={[styles.alertCard, { backgroundColor: colors.surface, borderColor: colors.border }, !alert.read && { backgroundColor: `${colors.primary}1A`, borderColor: colors.primary }]}
+              <TouchableOpacity
+                key={alert.id}
+                style={[
+                  styles.alertCard,
+                  { backgroundColor: colors.cardBackground, borderColor: colors.border },
+                  !isDarkTheme && shadow.card,
+                  !alert.read && { backgroundColor: colors.accentTint, borderColor: colors.accent },
+                ]}
                 activeOpacity={0.7}
                 onPress={() => setSelectedAlert(alert)}
               >
@@ -95,17 +101,19 @@ export default function AlertsScreen({ navigation }) {
                   {alert.imageUrl ? (
                     <Image source={{ uri: alert.imageUrl }} style={styles.thumbnailImage} />
                   ) : (
-                    <View style={[styles.notificationPlaceholder, { backgroundColor: `${colors.primary}24`, borderColor: `${colors.primary}66` }]}>
-                      <Ionicons name="notifications-outline" size={22} color={colors.primary} />
+                    <View style={[styles.notificationPlaceholder, { backgroundColor: colors.primaryTint, borderColor: colors.border }]}>
+                      <Ionicons name="notifications-outline" size={20} color={colors.secondary} />
                     </View>
                   )}
                 </View>
                 <View style={styles.alertContent}>
-                  <Text style={[styles.alertTitle, { color: colors.text }, !alert.read && { color: colors.primary, fontWeight: 'bold' }]}>{alert.title}</Text>
+                  <View style={styles.titleRow}>
+                    <Text style={[styles.alertTitle, { color: colors.text }]} numberOfLines={1}>{alert.title}</Text>
+                    {!alert.read && <View style={[styles.unreadDot, { backgroundColor: colors.accent }]} />}
+                  </View>
                   <Text style={[styles.alertDate, { color: colors.textSecondary }]}>{alert.date}</Text>
-                  <Text style={[styles.alertMessage, { marginTop: 8, color: colors.textSecondary }]} numberOfLines={2}>{alert.message}</Text>
+                  <Text style={[styles.alertMessage, { color: colors.textSecondary }]} numberOfLines={2}>{alert.message}</Text>
                 </View>
-                {!alert.read && <View style={styles.unreadDot} />}
               </TouchableOpacity>
             );
           })
@@ -116,6 +124,7 @@ export default function AlertsScreen({ navigation }) {
         visible={!!selectedAlert}
         notification={selectedAlert}
         colors={colors}
+        isDarkTheme={isDarkTheme}
         onClose={() => setSelectedAlert(null)}
         onOpenImage={setFullscreenImage}
       />
@@ -133,23 +142,13 @@ export default function AlertsScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0A0A',
   },
-  header: {
+  headerRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 30,
-    paddingBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#1E1E1E',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginLeft: 10,
-    flex: 1,
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.xl,
+    paddingTop: 24,
   },
   topRightActions: {
     flexDirection: 'row',
@@ -157,44 +156,39 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     padding: 8,
-    borderRadius: 8,
+    borderRadius: radii.sm,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   scrollContent: {
-    padding: 15,
+    padding: spacing.lg,
+    paddingTop: spacing.sm,
   },
   alertCard: {
     flexDirection: 'row',
-    backgroundColor: '#161616',
-    borderRadius: 12,
-    marginBottom: 12,
+    borderRadius: radii.lg,
+    marginBottom: spacing.md,
     borderWidth: 1,
-    borderColor: '#222',
-    padding: 16,
+    padding: spacing.lg,
     alignItems: 'center',
   },
   thumbnailImage: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-  },
-  unreadCard: {
-    backgroundColor: '#1d1a24',
-    borderColor: '#372054',
+    width: 42,
+    height: 42,
+    borderRadius: radii.sm,
   },
   iconContainer: {
-    width: 44,
-    height: 44,
-    marginRight: 15,
+    width: 42,
+    height: 42,
+    marginRight: spacing.md,
     justifyContent: 'center',
     alignItems: 'center',
   },
   notificationPlaceholder: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 42,
+    height: 42,
+    borderRadius: radii.sm,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
@@ -202,30 +196,27 @@ const styles = StyleSheet.create({
   alertContent: {
     flex: 1,
   },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   alertTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#ddd',
-    marginBottom: 4,
-  },
-  unreadText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    fontSize: 14.5,
+    fontFamily: fonts.bold,
+    flexShrink: 1,
   },
   alertDate: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: 11,
+    fontFamily: fonts.semiBold,
+    marginTop: 2,
   },
   alertMessage: {
-    fontSize: 14,
-    color: '#aaa',
-    lineHeight: 20,
+    fontSize: 12.5,
+    fontFamily: fonts.regular,
+    lineHeight: 18,
+    marginTop: 6,
   },
   unreadDot: {
-    width: 8,
-    height: 8,
+    width: 7,
+    height: 7,
     borderRadius: 4,
-    backgroundColor: '#4A90E2',
-    marginLeft: 10,
+    flexShrink: 0,
   },
 });

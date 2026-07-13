@@ -38,6 +38,8 @@ if (Platform.OS !== 'web') {
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../context/ThemeContext';
+import { Badge } from '../../components/ui';
+import { fonts, radii, spacing } from '../../utils/theme';
 import * as Location from 'expo-location';
 
 const decodePolyline = (t, e) => {
@@ -694,38 +696,37 @@ export default function CampusMapScreen({ navigation, route }) {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
-        <Ionicons name="map-outline" size={28} color={colors.primary} />
-        <Text style={[styles.headerTitle, { color: colors.text, flex: 1, marginLeft: 10 }]}>Campus Map</Text>
-        
+        <Text style={[styles.headerTitle, { color: colors.text, flex: 1 }]}>Campus Map</Text>
+
         <View style={styles.topRightActions}>
-          <TouchableOpacity 
-            style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginRight: 8 }]} 
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: colors.cardBackground, borderColor: colors.border, marginRight: 8 }]}
             onPress={() => setMapType(prev => prev === 'standard' ? 'hybrid' : 'standard')}
           >
-            <Ionicons name={mapType === 'standard' ? "earth" : "map-outline"} size={18} color={colors.textSecondary} />
+            <Ionicons name={mapType === 'standard' ? "earth" : "map-outline"} size={17} color={colors.textSecondary} />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={toggleTheme}>
-            <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={18} color={colors.textSecondary} />
+          <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.cardBackground, borderColor: colors.border }]} onPress={toggleTheme}>
+            <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={17} color={colors.textSecondary} />
           </TouchableOpacity>
           {user ? (
-             <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={logout}>
-               <Ionicons name="log-out-outline" size={18} color={colors.textSecondary} />
+             <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.cardBackground, borderColor: colors.border, marginLeft: 8 }]} onPress={logout}>
+               <Ionicons name="log-out-outline" size={17} color={colors.textSecondary} />
              </TouchableOpacity>
           ) : (
-             <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={() => navigation.navigate('Login')}>
-               <Ionicons name="log-in-outline" size={18} color={colors.textSecondary} />
+             <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.cardBackground, borderColor: colors.border, marginLeft: 8 }]} onPress={() => navigation.navigate('Login')}>
+               <Ionicons name="log-in-outline" size={17} color={colors.textSecondary} />
              </TouchableOpacity>
           )}
         </View>
       </View>
-      
+
       <View style={{ zIndex: 100, position: 'relative' }}>
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
-          <TextInput 
-            style={styles.searchInput}
+        <View style={[styles.searchContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+          <Ionicons name="search" size={18} color={colors.textSecondary} style={styles.searchIcon} />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
             placeholder={isListening ? "Listening natively..." : "Search locations, buildings, rooms..."}
-            placeholderTextColor={isListening ? "#66FCF1" : "#888"}
+            placeholderTextColor={isListening ? colors.info : colors.textSecondary}
             value={searchQuery}
             onChangeText={setSearchQuery}
             returnKeyType="search"
@@ -742,23 +743,23 @@ export default function CampusMapScreen({ navigation, route }) {
           >
             <Ionicons
               name={isListening ? "mic" : "mic-outline"}
-              size={22}
-              color={isListening ? "#66FCF1" : speechAvailable ? "#888" : "#666"}
+              size={20}
+              color={isListening ? colors.info : colors.textSecondary}
             />
           </TouchableOpacity>
         </View>
       </View>
 
       {loading ? (
-        <View style={styles.mapPlaceholder}>
-          <ActivityIndicator size="large" color="#4A90E2" />
-          <Text style={styles.mapTitle}>Loading Map Data...</Text>
+        <View style={[styles.mapPlaceholder, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.mapTitle, { color: colors.text }]}>Loading Map Data...</Text>
         </View>
       ) : Platform.OS === 'web' || !MapView ? (
-        <View style={styles.mapPlaceholder}>
-          <Ionicons name="map" size={48} color="#4A90E2" />
-          <Text style={styles.mapTitle}>{Platform.OS === 'web' ? 'Map Optimization' : 'Map Unavailable'}</Text>
-          <Text style={styles.mapSubtitle}>
+        <View style={[styles.mapPlaceholder, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+          <Ionicons name="map" size={44} color={colors.secondary} />
+          <Text style={[styles.mapTitle, { color: colors.text }]}>{Platform.OS === 'web' ? 'Map Optimization' : 'Map Unavailable'}</Text>
+          <Text style={[styles.mapSubtitle, { color: colors.textSecondary }]}>
             {Platform.OS === 'web'
               ? 'The interactive campus map leverages native hardware rendering and is only available on iOS and Android. Please open Campus Companion on your mobile device.'
               : 'This app build could not load the native map module. Please reinstall the latest mobile build.'}
@@ -893,53 +894,47 @@ export default function CampusMapScreen({ navigation, route }) {
           </MapView>
           
           {selectedPoi && (
-            <TouchableOpacity activeOpacity={1} style={styles.poiCardFloating}>
-              
+            <TouchableOpacity activeOpacity={1} style={[styles.poiCardFloating, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+
               {/* Dynamic Image Loader explicitly checking for Absolute vs Relative paths */}
               {selectedPoi.imageUrl && (
-                <Image 
-                  source={{ uri: selectedPoi.imageUrl.startsWith('http') ? selectedPoi.imageUrl : `${API_BASE_URL}${selectedPoi.imageUrl}` }} 
-                  style={{ width: '100%', height: 140, borderRadius: 8, marginBottom: 12, backgroundColor: 'rgba(255,255,255,0.05)' }} 
-                  resizeMode="cover" 
+                <Image
+                  source={{ uri: selectedPoi.imageUrl.startsWith('http') ? selectedPoi.imageUrl : `${API_BASE_URL}${selectedPoi.imageUrl}` }}
+                  style={{ width: '100%', height: 140, borderRadius: radii.sm, marginBottom: 12, backgroundColor: colors.surfaceAlt }}
+                  resizeMode="cover"
                 />
               )}
 
               <View style={styles.poiHeader}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                  <Ionicons 
-                    name={getCategoryIcon(selectedPoi.category)} 
-                    size={24} 
-                    color={getCategoryColor(selectedPoi.category)} 
+                  <Ionicons
+                    name={getCategoryIcon(selectedPoi.category)}
+                    size={22}
+                    color={colors.secondary}
                   />
-                  <Text style={styles.poiName} numberOfLines={1}>{selectedPoi.name}</Text>
+                  <Text style={[styles.poiName, { color: colors.text }]} numberOfLines={1}>{selectedPoi.name}</Text>
                 </View>
-                
+
                 {/* Dynamically Render Community/Moderation Badges */}
                 {selectedPoi.type === 'Community' && (
-                  <View style={[styles.badge, { backgroundColor: selectedPoi.approvalStatus === 'Pending' ? 'rgba(255,165,0,0.2)' : 'rgba(138,43,226,0.2)', borderColor: selectedPoi.approvalStatus === 'Pending' ? 'orange' : 'violet' }]}>
-                     <Text style={{ color: selectedPoi.approvalStatus === 'Pending' ? 'orange' : 'violet', fontSize: 10, fontWeight: 'bold' }}>
-                       {selectedPoi.approvalStatus === 'Pending' ? 'PENDING' : 'COMMUNITY'}
-                     </Text>
-                  </View>
+                  <Badge label={selectedPoi.approvalStatus === 'Pending' ? 'PENDING' : 'COMMUNITY'} tone={selectedPoi.approvalStatus === 'Pending' ? 'warning' : 'neutral'} />
                 )}
                 {selectedPoi.type === 'Official' && (
-                   <View style={[styles.badge, { backgroundColor: 'rgba(74,144,226,0.2)', borderColor: '#4A90E2' }]}>
-                     <Text style={{ color: '#4A90E2', fontSize: 10, fontWeight: 'bold' }}>OFFICIAL</Text>
-                  </View>
+                  <Badge label="OFFICIAL" tone="accent" />
                 )}
               </View>
 
-              {selectedPoi.description && <Text style={styles.poiDesc}>{selectedPoi.description}</Text>}
-              
+              {selectedPoi.description && <Text style={[styles.poiDesc, { color: colors.textSecondary }]}>{selectedPoi.description}</Text>}
+
               {routeInfo ? (
-                <View style={{ marginTop: 12, backgroundColor: 'rgba(102, 252, 241, 0.1)', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(102, 252, 241, 0.3)', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View style={{ marginTop: 12, backgroundColor: colors.infoTint, padding: 12, borderRadius: radii.sm, borderWidth: 1, borderColor: colors.info, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                    <View style={{ flex: 1 }}>
-                     <Text style={{ color: '#66FCF1', fontWeight: 'bold', marginBottom: 4 }}><Ionicons name={routeInfo.icon || "walk"} size={14} /> {routeInfo.label || 'Walking Route Active'}</Text>
-                     <Text style={{ color: '#ddd', fontSize: 13 }}>Distance: {routeInfo.distance} • Est: {routeInfo.duration}</Text>
-                     {routeInfo.note && <Text style={{ color: '#aaa', fontSize: 12, marginTop: 4 }}>{routeInfo.note}</Text>}
+                     <Text style={{ color: colors.info, fontFamily: fonts.bold, marginBottom: 4 }}><Ionicons name={routeInfo.icon || "walk"} size={14} /> {routeInfo.label || 'Walking Route Active'}</Text>
+                     <Text style={{ color: colors.text, fontSize: 13, fontFamily: fonts.regular }}>Distance: {routeInfo.distance} • Est: {routeInfo.duration}</Text>
+                     {routeInfo.note && <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 4, fontFamily: fonts.regular }}>{routeInfo.note}</Text>}
                    </View>
-                   <TouchableOpacity 
-                     style={{ padding: 6, backgroundColor: 'rgba(102, 252, 241, 0.2)', borderRadius: 20, marginLeft: 10 }}
+                   <TouchableOpacity
+                     style={{ padding: 6, backgroundColor: colors.cardBackground, borderRadius: 20, marginLeft: 10 }}
                      onPress={() => {
                        setCurrentRoute(null);
                        setRouteInfo(null);
@@ -948,21 +943,21 @@ export default function CampusMapScreen({ navigation, route }) {
                        }
                      }}
                    >
-                     <Ionicons name="close" size={22} color="#66FCF1" />
+                     <Ionicons name="close" size={22} color={colors.info} />
                    </TouchableOpacity>
                 </View>
               ) : (
-                <TouchableOpacity 
-                   style={[styles.directionsButton, calculatingRoute && { opacity: 0.7 }]} 
+                <TouchableOpacity
+                   style={[styles.directionsButton, { backgroundColor: colors.primary }, calculatingRoute && { opacity: 0.7 }]}
                    onPress={handleGetDirections}
                    disabled={calculatingRoute}
                 >
                   {calculatingRoute ? (
-                    <ActivityIndicator size="small" color="#fff" />
+                    <ActivityIndicator size="small" color={isDarkTheme ? '#1A1400' : '#FFFFFF'} />
                   ) : (
                     <>
-                      <Ionicons name="navigate" size={18} color="#fff" />
-                      <Text style={styles.directionsButtonText}>Get Directions</Text>
+                      <Ionicons name="navigate" size={17} color={isDarkTheme ? '#1A1400' : '#FFFFFF'} />
+                      <Text style={[styles.directionsButtonText, { color: isDarkTheme ? '#1A1400' : '#FFFFFF' }]}>Get Directions</Text>
                     </>
                   )}
                 </TouchableOpacity>
@@ -971,17 +966,17 @@ export default function CampusMapScreen({ navigation, route }) {
           )}
 
           {searchQuery.length > 0 && (
-            <View style={[styles.searchDropdown, { top: 0, zIndex: 900 }]}>
+            <View style={[styles.searchDropdown, { top: 0, zIndex: 900, backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
               <FlatList
                 data={filteredPois}
                 keyExtractor={item => item.id.toString()}
                 keyboardShouldPersistTaps="always"
                 style={{ maxHeight: 250 }}
                 renderItem={({ item }) => (
-                  <TouchableOpacity style={styles.searchResultItem} onPress={() => handleSelectSearchResult(item)}>
-                    <Ionicons name={getCategoryIcon(item.category)} size={18} color={getCategoryColor(item.category)} />
+                  <TouchableOpacity style={[styles.searchResultItem, { borderBottomColor: colors.border }]} onPress={() => handleSelectSearchResult(item)}>
+                    <Ionicons name={getCategoryIcon(item.category)} size={17} color={colors.secondary} />
                     <View style={styles.searchResultTextContainer}>
-                      <Text style={styles.searchResultName}>{item.name}</Text>
+                      <Text style={[styles.searchResultName, { color: colors.text }]}>{item.name}</Text>
                       {item.associatedRooms && safeSearch.length > 0 && isMatch(item.associatedRooms) ? (() => {
                         const matchedRooms = item.associatedRooms
                           .split(',')
@@ -989,18 +984,18 @@ export default function CampusMapScreen({ navigation, route }) {
                           .filter(r => r.toLowerCase().replace(/[\s-]/g, '').includes(safeSearch))
                           .join(', ');
                         return (
-                          <Text numberOfLines={1} style={[styles.searchResultDesc, { color: '#4CAF50', fontWeight: '500' }]}>
+                          <Text numberOfLines={1} style={[styles.searchResultDesc, { color: colors.success, fontFamily: fonts.semiBold }]}>
                             Contains Room: {matchedRooms || searchQuery.toUpperCase()}
                           </Text>
                         );
                       })() : (
-                        item.description && <Text numberOfLines={1} style={styles.searchResultDesc}>{item.description}</Text>
+                        item.description && <Text numberOfLines={1} style={[styles.searchResultDesc, { color: colors.textSecondary }]}>{item.description}</Text>
                       )}
                     </View>
                   </TouchableOpacity>
                 )}
                 ListEmptyComponent={
-                  <Text style={styles.noResultsText}>No locations found matching "{searchQuery}"</Text>
+                  <Text style={[styles.noResultsText, { color: colors.textSecondary }]}>No locations found matching "{searchQuery}"</Text>
                 }
               />
             </View>
@@ -1017,22 +1012,22 @@ export default function CampusMapScreen({ navigation, route }) {
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+          <View style={[styles.modalContent, { backgroundColor: colors.cardBackground }]}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>Contribute Location</Text>
-            
+
             <ScrollView style={{ width: '100%', maxHeight: '80%' }}>
-              <Text style={styles.inputLabel}>Name / Title</Text>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Name / Title</Text>
               <TextInput
-                style={[styles.modalInput, { color: colors.text, borderColor: colors.border }]}
+                style={[styles.modalInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
                 placeholder="e.g. Science Lab 3"
                 placeholderTextColor={colors.textSecondary}
                 value={pinName}
                 onChangeText={setPinName}
               />
 
-              <Text style={styles.inputLabel}>Description (Optional)</Text>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Description (Optional)</Text>
               <TextInput
-                style={[styles.modalInput, { color: colors.text, borderColor: colors.border, height: 60 }]}
+                style={[styles.modalInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background, height: 60 }]}
                 placeholder="Details about this place..."
                 placeholderTextColor={colors.textSecondary}
                 multiline
@@ -1040,30 +1035,31 @@ export default function CampusMapScreen({ navigation, route }) {
                 onChangeText={setPinDesc}
               />
 
-              <Text style={styles.inputLabel}>Category</Text>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Category</Text>
               <View style={styles.categoryContainer}>
                 {['Building', 'Restroom', 'FoodZone', 'StudyZone', 'Parking', 'Recreation', 'Vendor', 'Landmark', 'Office', 'Clinic', 'Security'].map(cat => (
                   <TouchableOpacity
                     key={cat}
                     style={[
-                      styles.catChip, 
-                      pinCategory === cat && { backgroundColor: getCategoryColor(cat), borderColor: getCategoryColor(cat) }
+                      styles.catChip,
+                      { borderColor: colors.border },
+                      pinCategory === cat && { backgroundColor: colors.primary, borderColor: colors.primary }
                     ]}
                     onPress={() => setPinCategory(cat)}
                   >
-                    <Text style={{ color: pinCategory === cat ? '#fff' : colors.text }}>{cat}</Text>
+                    <Text style={{ color: pinCategory === cat ? (isDarkTheme ? '#1A1400' : '#FFFFFF') : colors.text, fontFamily: fonts.semiBold, fontSize: 12.5 }}>{cat}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text style={styles.inputLabel}>Photo (Optional)</Text>
-              <TouchableOpacity style={styles.imagePickerBtn} onPress={pickImage}>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Photo (Optional)</Text>
+              <TouchableOpacity style={[styles.imagePickerBtn, { borderColor: colors.border, backgroundColor: colors.background }]} onPress={pickImage}>
                 {pinImage ? (
-                  <Image source={{ uri: pinImage.uri }} style={{ width: '100%', height: 150, borderRadius: 8 }} />
+                  <Image source={{ uri: pinImage.uri }} style={{ width: '100%', height: 150, borderRadius: radii.sm }} />
                 ) : (
                    <View style={styles.imagePlaceholder}>
-                     <Ionicons name="camera-outline" size={32} color={colors.textSecondary} />
-                     <Text style={{ color: colors.textSecondary, marginTop: 8 }}>Tap to add photo</Text>
+                     <Ionicons name="camera-outline" size={30} color={colors.textSecondary} />
+                     <Text style={{ color: colors.textSecondary, marginTop: 8, fontFamily: fonts.regular }}>Tap to add photo</Text>
                    </View>
                 )}
               </TouchableOpacity>
@@ -1074,14 +1070,14 @@ export default function CampusMapScreen({ navigation, route }) {
                 setModalVisible(false);
                 setDraftPin(null);
               }}>
-                <Text style={styles.cancelBtnText}>Cancel</Text>
+                <Text style={[styles.cancelBtnText, { color: colors.textSecondary }]}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.submitBtn, (!pinName.trim() || submittingPin) && { opacity: 0.5 }]} 
+              <TouchableOpacity
+                style={[styles.submitBtn, { backgroundColor: colors.primary }, (!pinName.trim() || submittingPin) && { opacity: 0.5 }]}
                 onPress={submitDraftPin}
                 disabled={!pinName.trim() || submittingPin}
               >
-                {submittingPin ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.submitBtnText}>Submit Pin</Text>}
+                {submittingPin ? <ActivityIndicator size="small" color={isDarkTheme ? '#1A1400' : '#FFFFFF'} /> : <Text style={[styles.submitBtnText, { color: isDarkTheme ? '#1A1400' : '#FFFFFF' }]}>Submit Pin</Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -1098,17 +1094,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#0A0A0A',
   },
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 30,
+    paddingHorizontal: spacing.xl,
+    paddingTop: 24,
     paddingBottom: 15,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontSize: 21,
+    fontFamily: fonts.extraBold,
+    letterSpacing: -0.3,
   },
   topRightActions: {
     flexDirection: 'row',
@@ -1116,7 +1112,7 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     padding: 8,
-    borderRadius: 8,
+    borderRadius: radii.sm,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1124,22 +1120,20 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1E1E1E',
-    marginHorizontal: 20,
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    height: 46,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#333',
+    marginHorizontal: spacing.xl,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    height: 44,
+    marginBottom: spacing.lg,
+    borderWidth: 1.5,
   },
   searchIcon: {
     marginRight: 10,
   },
   searchInput: {
     flex: 1,
-    color: '#fff',
-    fontSize: 16,
+    fontSize: 14,
+    fontFamily: fonts.regular,
     height: '100%',
   },
   searchDropdown: {
@@ -1147,74 +1141,65 @@ const styles = StyleSheet.create({
     top: 50,
     left: 20,
     right: 20,
-    backgroundColor: '#1E1E1E',
-    borderRadius: 8,
+    borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: '#333',
     elevation: 10,
-    shadowColor: '#000',
+    shadowColor: '#0E004E',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 5,
+    shadowOpacity: 0.14,
+    shadowRadius: 12,
   },
   searchResultItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2A2A2A',
   },
   searchResultTextContainer: {
     marginLeft: 10,
     flex: 1,
   },
   searchResultName: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 14,
+    fontFamily: fonts.bold,
   },
   searchResultDesc: {
-    color: '#888',
     fontSize: 12,
+    fontFamily: fonts.regular,
     marginTop: 2,
   },
   noResultsText: {
-    color: '#888',
     textAlign: 'center',
     padding: 15,
+    fontFamily: fonts.regular,
     fontStyle: 'italic',
   },
   mapPlaceholder: {
     flex: 1,
-    marginHorizontal: 20,
-    marginBottom: 20,
-    backgroundColor: '#111',
-    borderRadius: 16,
+    marginHorizontal: spacing.xl,
+    marginBottom: spacing.xl,
+    borderRadius: radii.xl,
     borderWidth: 1,
-    borderColor: '#222',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 30,
   },
   mapTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontSize: 18,
+    fontFamily: fonts.extraBold,
     marginTop: 20,
     marginBottom: 10,
   },
   mapSubtitle: {
-    fontSize: 14,
-    color: '#888',
+    fontSize: 13.5,
+    fontFamily: fonts.regular,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 21,
     marginBottom: 30,
   },
   mapContainer: {
     flex: 1,
     position: 'relative',
-    borderWidth: 1,
-    borderColor: '#333',
   },
   map: {
     ...StyleSheet.absoluteFillObject,
@@ -1224,34 +1209,32 @@ const styles = StyleSheet.create({
     bottom: 20,
     left: 20,
     right: 20,
-    backgroundColor: '#1E1E1E',
-    padding: 15,
-    borderRadius: 12,
+    padding: spacing.lg,
+    borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: '#333',
     elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
+    shadowColor: '#0E004E',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
   },
   poiHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 6
   },
   poiName: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 15,
+    fontFamily: fonts.bold,
     marginLeft: 10,
     flexShrink: 1
   },
   poiDesc: {
-    color: '#aaa',
-    fontSize: 14,
+    fontSize: 13.5,
+    fontFamily: fonts.regular,
     lineHeight: 20,
-    paddingLeft: 34,
+    paddingLeft: 32,
     marginBottom: 4
   },
   badge: {
@@ -1281,60 +1264,58 @@ const styles = StyleSheet.create({
   },
   directionsButton: {
     marginTop: 12,
-    backgroundColor: '#4A90E2',
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 15,
-    borderRadius: 8,
+    borderRadius: radii.sm,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
   directionsButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 15,
+    fontFamily: fonts.bold,
+    fontSize: 14.5,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(14,0,78,0.55)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20
   },
   modalContent: {
     width: '100%',
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: radii.xl,
+    padding: spacing.xl,
     alignItems: 'center',
     elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
+    shadowColor: '#0E004E',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
   },
   modalTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 20,
+    fontSize: 20,
+    fontFamily: fonts.extraBold,
+    marginBottom: 18,
     alignSelf: 'flex-start'
   },
   inputLabel: {
     alignSelf: 'flex-start',
-    color: '#888',
-    fontSize: 13,
+    fontSize: 11,
     marginBottom: 6,
-    marginTop: 15,
-    fontWeight: '600',
+    marginTop: 14,
+    fontFamily: fonts.bold,
+    letterSpacing: 0.5,
     textTransform: 'uppercase'
   },
   modalInput: {
     width: '100%',
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 14,
-    fontSize: 16,
-    backgroundColor: 'transparent'
+    borderWidth: 1.5,
+    borderRadius: radii.sm,
+    padding: 13,
+    fontSize: 14,
+    fontFamily: fonts.regular,
   },
   categoryContainer: {
     flexDirection: 'row',
@@ -1343,23 +1324,19 @@ const styles = StyleSheet.create({
     width: '100%'
   },
   catChip: {
-    borderWidth: 1,
-    borderColor: '#444',
-    borderRadius: 20,
+    borderWidth: 1.5,
+    borderRadius: radii.pill,
     paddingVertical: 8,
-    paddingHorizontal: 16,
-    backgroundColor: 'transparent'
+    paddingHorizontal: 15,
   },
   imagePickerBtn: {
     width: '100%',
-    minHeight: 150,
-    borderWidth: 1,
-    borderColor: '#444',
+    minHeight: 140,
+    borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderRadius: 12,
+    borderRadius: radii.md,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.02)',
     overflow: 'hidden'
   },
   imagePlaceholder: {
@@ -1371,31 +1348,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     width: '100%',
-    marginTop: 25,
-    gap: 15
+    marginTop: 22,
+    gap: 12
   },
   cancelBtn: {
     paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
+    paddingHorizontal: 18,
+    borderRadius: radii.sm,
   },
   submitBtn: {
-    backgroundColor: '#4A90E2',
     paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
+    paddingHorizontal: 22,
+    borderRadius: radii.sm,
     justifyContent: 'center',
     alignItems: 'center',
     minWidth: 120
   },
   cancelBtnText: {
-    color: '#aaa',
-    fontSize: 16,
-    fontWeight: 'bold'
+    fontSize: 14.5,
+    fontFamily: fonts.bold,
   },
   submitBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold'
+    fontSize: 14.5,
+    fontFamily: fonts.bold,
   }
 });

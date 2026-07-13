@@ -8,7 +8,7 @@ const hasValidImageUrl = (imageUrl) => (
   imageUrl.trim() !== 'null'
 );
 
-export default function NotificationDetailModal({ visible, notification, colors, onClose, onOpenImage }) {
+export default function NotificationDetailModal({ visible, notification, colors, isDarkTheme, onClose, onOpenImage }) {
   const imageUrl = notification?.imageUrl;
   const hasImage = hasValidImageUrl(imageUrl);
 
@@ -48,7 +48,7 @@ export default function NotificationDetailModal({ visible, notification, colors,
               style={[styles.closeButton, { backgroundColor: colors.primary }]}
               onPress={onClose}
             >
-              <Text style={styles.closeButtonText}>Close</Text>
+              <Text style={[styles.closeButtonText, { color: isDarkTheme ? '#1A1400' : '#FFFFFF' }]}>Close</Text>
             </TouchableOpacity>
           </View>
         </View>
