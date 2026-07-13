@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { fetchUTechSemester, getUTechSemester } from '../../utils/dateUtils';
@@ -25,45 +26,50 @@ export default function SurveysScreen({ navigation }) {
     ? user.role.some(r => r.toLowerCase() === 'lecturer')
     : user?.role?.toLowerCase() === 'lecturer';
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const period = await fetchUTechSemester(fetchWithAuth);
-        setCurrentPeriodDisplay(period.fullDisplay);
+  // Refetch on focus (not just mount) so returning from a submitted survey shows the
+  // updated Pending -> Submitted status and counts instead of the stale pre-submission state.
+  useFocusEffect(
+    useCallback(() => {
+      const fetchDashboardData = async () => {
+        setLoading(true);
+        try {
+          const period = await fetchUTechSemester(fetchWithAuth);
+          setCurrentPeriodDisplay(period.fullDisplay);
 
-        if (user) {
-          const [modulesRes, engagementsRes, surveysRes] = await Promise.all([
-            fetchWithAuth('/api/v1/mobile/modules'),
-            fetchWithAuth('/api/v1/student/engagements'),
-            fetchWithAuth('/api/v1/mobile/open-surveys')
-          ]);
+          if (user) {
+            const [modulesRes, engagementsRes, surveysRes] = await Promise.all([
+              fetchWithAuth('/api/v1/mobile/modules'),
+              fetchWithAuth('/api/v1/student/engagements'),
+              fetchWithAuth('/api/v1/mobile/open-surveys')
+            ]);
 
-          if (modulesRes.ok) setModules(await modulesRes.json());
-          if (engagementsRes.ok) {
-            const engagementFeed = await engagementsRes.json();
-            setEngagementItems(Array.isArray(engagementFeed?.items) ? engagementFeed.items : []);
-            setEngagementGroups(Array.isArray(engagementFeed?.campaignGroups) ? engagementFeed.campaignGroups : []);
+            if (modulesRes.ok) setModules(await modulesRes.json());
+            if (engagementsRes.ok) {
+              const engagementFeed = await engagementsRes.json();
+              setEngagementItems(Array.isArray(engagementFeed?.items) ? engagementFeed.items : []);
+              setEngagementGroups(Array.isArray(engagementFeed?.campaignGroups) ? engagementFeed.campaignGroups : []);
+            } else {
+              setEngagementItems([]);
+              setEngagementGroups([]);
+            }
+            if (surveysRes.ok) setOpenSurveys(await surveysRes.json());
           } else {
+            const surveysRes = await fetchWithAuth('/api/v1/mobile/open-surveys');
+            if (surveysRes.ok) setOpenSurveys(await surveysRes.json());
+            setModules([]);
             setEngagementItems([]);
             setEngagementGroups([]);
           }
-          if (surveysRes.ok) setOpenSurveys(await surveysRes.json());
-        } else {
-          const surveysRes = await fetchWithAuth('/api/v1/mobile/open-surveys');
-          if (surveysRes.ok) setOpenSurveys(await surveysRes.json());
-          setModules([]);
-          setEngagementItems([]);
-          setEngagementGroups([]);
+        } catch (err) {
+          console.error('Error fetching dashboard data:', err);
+        } finally {
+          setLoading(false);
         }
-      } catch (err) {
-        console.error('Error fetching dashboard data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+      };
 
-    fetchDashboardData();
-  }, [fetchWithAuth, user]);
+      fetchDashboardData();
+    }, [fetchWithAuth, user])
+  );
 
   const pendingEngagementItems = engagementItems.filter(item => item.status === 'Pending');
   const getEngagementTitle = (source) => {
