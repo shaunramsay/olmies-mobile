@@ -27,14 +27,16 @@ function CustomSidebar({ state, descriptors, navigation }) {
   const { width } = useWindowDimensions();
   const isRail = width < 720;
 
+  // History and Insights are reached from inside Surveys (quick-action cards), not
+  // as their own sidebar entries - keeping them as top-level tabs here was a stale
+  // leftover from an earlier redesign pass. Their Tab.Screen registrations stay below
+  // so navigation.navigate('History'/'Insights') from SurveysScreen still works.
   const navItems = [
     { id: 'Home', icon: 'home-outline', activeIcon: 'home' },
-    { id: 'Help Desk', icon: 'chatbubbles-outline', activeIcon: 'chatbubbles' },
-    { id: 'Alerts', icon: 'notifications-outline', activeIcon: 'notifications' },
-    { id: 'Map', icon: 'map-outline', activeIcon: 'map' },
     { id: 'Surveys', icon: 'clipboard-outline', activeIcon: 'clipboard' },
-    { id: 'History', icon: 'time-outline', activeIcon: 'time' },
-    { id: 'Insights', icon: 'stats-chart-outline', activeIcon: 'stats-chart' },
+    { id: 'Help Desk', label: 'AI Help Desk', icon: 'chatbubbles-outline', activeIcon: 'chatbubbles' },
+    { id: 'Map', icon: 'map-outline', activeIcon: 'map' },
+    { id: 'Alerts', label: 'Notifications', icon: 'notifications-outline', activeIcon: 'notifications' },
   ];
 
   return (
@@ -76,7 +78,7 @@ function CustomSidebar({ state, descriptors, navigation }) {
               key={route.key}
               style={[styles.navItem, isRail && styles.navItemRail, isFocused && styles.navItemActive]}
               onPress={onPress}
-              accessibilityLabel={route.name}
+              accessibilityLabel={itemConfig.label || route.name}
             >
               <Ionicons
                 name={isFocused ? itemConfig.activeIcon : itemConfig.icon}
@@ -86,7 +88,7 @@ function CustomSidebar({ state, descriptors, navigation }) {
               />
               {!isRail && (
                 <Text style={[styles.navText, isFocused && styles.navTextActive]}>
-                  {route.name}
+                  {itemConfig.label || route.name}
                 </Text>
               )}
             </TouchableOpacity>
