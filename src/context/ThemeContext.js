@@ -6,7 +6,7 @@ const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
   const systemColorScheme = useColorScheme();
-  const [isDarkTheme, setIsDarkTheme] = useState(true); // Default to true based on old app setting
+  const [isDarkTheme, setIsDarkTheme] = useState(false); // Light is the default; dark stays opt-in via the toggle
 
   // Optionally, you can sync with system settings later:
   // useEffect(() => { setIsDarkTheme(systemColorScheme === 'dark'); }, [systemColorScheme]);

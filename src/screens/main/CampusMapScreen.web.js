@@ -1,32 +1,36 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppTheme } from '../../context/ThemeContext';
+import { IconChip, ScreenHeader } from '../../components/ui';
+import { fonts, radii, spacing } from '../../utils/theme';
 
 export default function CampusMapScreen() {
+  const { colors } = useAppTheme();
   const [searchQuery, setSearchQuery] = useState('');
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Campus Map</Text>
+        <ScreenHeader title="Campus Map" subtitle="Find any building, service or vendor on the Papine campus." />
       </View>
-      
-      <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
-        <TextInput 
-          style={styles.searchInput}
+
+      <View style={[styles.searchContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+        <Ionicons name="search" size={18} color={colors.textSecondary} style={styles.searchIcon} />
+        <TextInput
+          style={[styles.searchInput, { color: colors.text }]}
           placeholder="Search locations, buildings, rooms..."
-          placeholderTextColor="#888"
+          placeholderTextColor={colors.textSecondary}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
       </View>
 
-      <View style={styles.mapPlaceholder}>
-        <Ionicons name="map" size={48} color="#4A90E2" />
-        <Text style={styles.mapTitle}>Map Optimization</Text>
-        <Text style={styles.mapSubtitle}>
-          The interactive campus map leverages native hardware rendering and is only available on iOS and Android. Please open Campus Companion on your mobile device.
+      <View style={[styles.mapPlaceholder, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+        <IconChip name="phone-portrait-outline" tone="navy" size={64} iconSize={28} />
+        <Text style={[styles.mapTitle, { color: colors.text }]}>Best viewed on the mobile app</Text>
+        <Text style={[styles.mapSubtitle, { color: colors.textSecondary }]}>
+          The interactive campus map uses native hardware rendering for smooth, accurate directions and is only available on iOS and Android. Open Campus Companion on your phone to explore the map, get walking directions, and contribute new pins.
         </Text>
       </View>
     </SafeAreaView>
@@ -36,126 +40,53 @@ export default function CampusMapScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0A0A',
   },
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 30,
-    paddingBottom: 15,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
+    paddingHorizontal: spacing.xl,
+    paddingTop: 24,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1E1E1E',
-    marginHorizontal: 20,
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    height: 46,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#333',
+    marginHorizontal: spacing.xl,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    height: 44,
+    marginBottom: spacing.lg,
+    borderWidth: 1.5,
   },
   searchIcon: {
     marginRight: 10,
   },
   searchInput: {
     flex: 1,
-    color: '#fff',
-    fontSize: 16,
+    fontSize: 14,
+    fontFamily: fonts.regular,
     height: '100%',
+    outlineStyle: 'none',
   },
   mapPlaceholder: {
     flex: 1,
-    marginHorizontal: 20,
-    marginBottom: 20,
-    backgroundColor: '#111',
-    borderRadius: 16,
+    marginHorizontal: spacing.xl,
+    marginBottom: spacing.xl,
+    borderRadius: radii.xl,
     borderWidth: 1,
-    borderColor: '#222',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 30,
+    padding: 40,
   },
   mapTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginTop: 20,
-    marginBottom: 10,
+    fontSize: 17,
+    fontFamily: fonts.extraBold,
+    marginTop: 18,
+    marginBottom: 8,
+    textAlign: 'center',
   },
   mapSubtitle: {
-    fontSize: 14,
-    color: '#888',
+    fontSize: 13.5,
+    fontFamily: fonts.regular,
     textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 30,
+    lineHeight: 21,
+    maxWidth: 420,
   },
-  mapContainer: {
-    flex: 1,
-    position: 'relative',
-    borderRadius: 16,
-    overflow: 'hidden',
-    marginHorizontal: 15,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: '#333',
-  },
-  map: {
-    width: '100%',
-    height: '100%',
-  },
-  poiCardFloating: {
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
-    backgroundColor: '#1E1E1E',
-    padding: 15,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#333',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
-  },
-  poiHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6
-  },
-  poiName: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 10
-  },
-  poiDesc: {
-    color: '#aaa',
-    fontSize: 14,
-    lineHeight: 20,
-    paddingLeft: 34
-  },
-  calloutContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 10,
-    width: 200,
-  },
-  calloutTitle: {
-    fontWeight: 'bold',
-    fontSize: 14,
-    color: '#000',
-    marginBottom: 4,
-  },
-  calloutDesc: {
-    fontSize: 12,
-    color: '#444',
-  }
 });

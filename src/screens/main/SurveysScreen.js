@@ -1,15 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { fetchUTechSemester, getUTechSemester } from '../../utils/dateUtils';
 import { useAppTheme } from '../../context/ThemeContext';
+import { Badge, ProgressBar } from '../../components/ui';
+import { fonts, radii, shadow, spacing } from '../../utils/theme';
 
 export default function SurveysScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const { user, fetchWithAuth, logout } = useAuth();
   const { colors, isDarkTheme, toggleTheme } = useAppTheme();
+  const onPrimaryText = isDarkTheme ? '#1A1400' : '#FFFFFF';
 
   const [modules, setModules] = useState([]);
   const [openSurveys, setOpenSurveys] = useState([]);
@@ -22,45 +26,50 @@ export default function SurveysScreen({ navigation }) {
     ? user.role.some(r => r.toLowerCase() === 'lecturer')
     : user?.role?.toLowerCase() === 'lecturer';
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const period = await fetchUTechSemester(fetchWithAuth);
-        setCurrentPeriodDisplay(period.fullDisplay);
+  // Refetch on focus (not just mount) so returning from a submitted survey shows the
+  // updated Pending -> Submitted status and counts instead of the stale pre-submission state.
+  useFocusEffect(
+    useCallback(() => {
+      const fetchDashboardData = async () => {
+        setLoading(true);
+        try {
+          const period = await fetchUTechSemester(fetchWithAuth);
+          setCurrentPeriodDisplay(period.fullDisplay);
 
-        if (user) {
-          const [modulesRes, engagementsRes, surveysRes] = await Promise.all([
-            fetchWithAuth('/api/v1/mobile/modules'),
-            fetchWithAuth('/api/v1/student/engagements'),
-            fetchWithAuth('/api/v1/mobile/open-surveys')
-          ]);
+          if (user) {
+            const [modulesRes, engagementsRes, surveysRes] = await Promise.all([
+              fetchWithAuth('/api/v1/mobile/modules'),
+              fetchWithAuth('/api/v1/student/engagements'),
+              fetchWithAuth('/api/v1/mobile/open-surveys')
+            ]);
 
-          if (modulesRes.ok) setModules(await modulesRes.json());
-          if (engagementsRes.ok) {
-            const engagementFeed = await engagementsRes.json();
-            setEngagementItems(Array.isArray(engagementFeed?.items) ? engagementFeed.items : []);
-            setEngagementGroups(Array.isArray(engagementFeed?.campaignGroups) ? engagementFeed.campaignGroups : []);
+            if (modulesRes.ok) setModules(await modulesRes.json());
+            if (engagementsRes.ok) {
+              const engagementFeed = await engagementsRes.json();
+              setEngagementItems(Array.isArray(engagementFeed?.items) ? engagementFeed.items : []);
+              setEngagementGroups(Array.isArray(engagementFeed?.campaignGroups) ? engagementFeed.campaignGroups : []);
+            } else {
+              setEngagementItems([]);
+              setEngagementGroups([]);
+            }
+            if (surveysRes.ok) setOpenSurveys(await surveysRes.json());
           } else {
+            const surveysRes = await fetchWithAuth('/api/v1/mobile/open-surveys');
+            if (surveysRes.ok) setOpenSurveys(await surveysRes.json());
+            setModules([]);
             setEngagementItems([]);
             setEngagementGroups([]);
           }
-          if (surveysRes.ok) setOpenSurveys(await surveysRes.json());
-        } else {
-          const surveysRes = await fetchWithAuth('/api/v1/mobile/open-surveys');
-          if (surveysRes.ok) setOpenSurveys(await surveysRes.json());
-          setModules([]);
-          setEngagementItems([]);
-          setEngagementGroups([]);
+        } catch (err) {
+          console.error('Error fetching dashboard data:', err);
+        } finally {
+          setLoading(false);
         }
-      } catch (err) {
-        console.error('Error fetching dashboard data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+      };
 
-    fetchDashboardData();
-  }, [fetchWithAuth, user]);
+      fetchDashboardData();
+    }, [fetchWithAuth, user])
+  );
 
   const pendingEngagementItems = engagementItems.filter(item => item.status === 'Pending');
   const getEngagementTitle = (source) => {
@@ -95,29 +104,28 @@ export default function SurveysScreen({ navigation }) {
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: Math.max(insets.top, Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0) }]}>
 
       {/* Sticky Header Section */}
-      <View style={[styles.stickyHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      <View style={[styles.stickyHeader, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border }]}>
         <View style={styles.headerTopRow}>
           <View style={styles.titleRow}>
-            <Ionicons name="clipboard-outline" size={28} color={colors.secondary} />
-            <Text style={[styles.titleText, { color: colors.secondary }]} numberOfLines={1}>Surveys</Text>
+            <Text style={[styles.titleText, { color: colors.text }]} numberOfLines={1}>Surveys</Text>
           </View>
           <View style={styles.topRightActions}>
             <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={toggleTheme}>
-              <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={18} color={colors.textSecondary} />
+              <Ionicons name={isDarkTheme ? "sunny-outline" : "moon-outline"} size={17} color={colors.textSecondary} />
             </TouchableOpacity>
             {user ? (
               <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={logout}>
-                <Ionicons name="log-out-outline" size={18} color={colors.textSecondary} />
+                <Ionicons name="log-out-outline" size={17} color={colors.textSecondary} />
               </TouchableOpacity>
             ) : (
               <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={() => navigation.navigate('Login')}>
-                <Ionicons name="log-in-outline" size={18} color={colors.textSecondary} />
+                <Ionicons name="log-in-outline" size={17} color={colors.textSecondary} />
               </TouchableOpacity>
             )}
           </View>
         </View>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Manage module evaluations and campus surveys.
+          Module evaluations and campus-wide surveys.
         </Text>
       </View>
 
@@ -126,21 +134,21 @@ export default function SurveysScreen({ navigation }) {
         {/* Quick Actions (History & Insights) */}
         <View style={styles.quickActionsContainer}>
           <TouchableOpacity
-            style={[styles.quickActionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            style={[styles.quickActionCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }, !isDarkTheme && shadow.card]}
             onPress={() => navigation.navigate('History')}
           >
-            <View style={[styles.iconCircle, { backgroundColor: `${colors.primary}26` }]}>
-              <Ionicons name="time-outline" size={24} color={colors.primary} />
+            <View style={[styles.iconCircle, { backgroundColor: colors.primaryTint }]}>
+              <Ionicons name="time-outline" size={22} color={colors.secondary} />
             </View>
             <Text style={[styles.quickActionTitle, { color: colors.text }]}>History</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.quickActionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            style={[styles.quickActionCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }, !isDarkTheme && shadow.card]}
             onPress={() => navigation.navigate('Insights')}
           >
-            <View style={[styles.iconCircle, { backgroundColor: `${colors.info}26` }]}>
-              <Ionicons name="pie-chart-outline" size={24} color={colors.info} />
+            <View style={[styles.iconCircle, { backgroundColor: colors.infoTint }]}>
+              <Ionicons name="pie-chart-outline" size={22} color={colors.info} />
             </View>
             <Text style={[styles.quickActionTitle, { color: colors.text }]}>Insights</Text>
           </TouchableOpacity>
@@ -148,12 +156,16 @@ export default function SurveysScreen({ navigation }) {
 
         {/* Early Grade Access Card (Students Only) */}
         {!isLecturer && (
-          <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }, !isDarkTheme && shadow.card]}>
             <View style={styles.cardHeaderRow}>
               <View style={styles.cardTitleContainer}>
-                <Ionicons name="stats-chart-outline" size={20} color={colors.text} />
                 <Text style={[styles.cardTitle, { color: colors.text }]}>My Evaluation Progress</Text>
               </View>
+              {user && modules.length > 0 && (
+                <Text style={[styles.progressCount, { color: colors.text }]}>
+                  {modules.filter(m => m.hasCompleted).length} of {modules.length}
+                </Text>
+              )}
             </View>
 
             <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>
@@ -165,9 +177,7 @@ export default function SurveysScreen({ navigation }) {
             {/* Progress Bar */}
             {user && (
               <View style={styles.progressBarContainer}>
-                <View style={[styles.progressBarBackground, { backgroundColor: colors.border }]}>
-                  <View style={[styles.progressBarFill, { backgroundColor: colors.primary, width: `${modules.length > 0 ? (Math.round((modules.filter(m => m.hasCompleted).length / modules.length) * 100)) : 0}%` }]} />
-                </View>
+                <ProgressBar progress={modules.length > 0 ? modules.filter(m => m.hasCompleted).length / modules.length : 0} />
                 <View style={styles.progressTextRow}>
                   <Text style={[styles.progressTextLeft, { color: colors.textSecondary }]}>{modules.filter(m => m.hasCompleted).length} Evaluated</Text>
                   <Text style={[styles.progressTextRight, { color: colors.textSecondary }]}>{modules.length} Total</Text>
@@ -178,9 +188,8 @@ export default function SurveysScreen({ navigation }) {
         )}
 
         {user && !isLecturer && normalizedEngagementGroups.length > 0 && (
-          <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }, !isDarkTheme && shadow.card]}>
             <View style={styles.cardTitleContainer}>
-              <Ionicons name="sparkles-outline" size={20} color={colors.secondary} />
               <Text style={[styles.cardTitle, { color: colors.text }]}>Pending Engagements</Text>
             </View>
             <Text style={[styles.cardDescription, { color: colors.textSecondary, marginTop: 6 }]}>
@@ -190,8 +199,17 @@ export default function SurveysScreen({ navigation }) {
             <View style={{ marginTop: 15 }}>
               {normalizedEngagementGroups.map((group, groupIndex) => {
                 const nextPending = group.pendingItems[0];
+                const isHighlighted = !!nextPending;
                 return (
-                  <View key={group.campaignId || group.title || groupIndex} style={[styles.assignmentGroup, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                  <View
+                    key={group.campaignId || group.title || groupIndex}
+                    style={[
+                      styles.assignmentGroup,
+                      isHighlighted
+                        ? { borderColor: colors.accent, backgroundColor: colors.accentTint }
+                        : { borderColor: colors.border, backgroundColor: colors.background },
+                    ]}
+                  >
                     <View style={styles.assignmentHeaderRow}>
                       <View style={{ flex: 1, paddingRight: 10 }}>
                         <Text style={[styles.moduleLabel, { color: colors.secondary }]}>
@@ -204,7 +222,7 @@ export default function SurveysScreen({ navigation }) {
                       </View>
                       {nextPending && (
                         <TouchableOpacity
-                          style={[styles.primaryButton, { backgroundColor: colors.secondary }]}
+                          style={[styles.primaryButton, { backgroundColor: colors.accent }]}
                           onPress={() => navigation.navigate('Survey', {
                             surveyId: nextPending.surveyId,
                             moduleCode: nextPending.moduleCode || nextPending.title,
@@ -214,23 +232,17 @@ export default function SurveysScreen({ navigation }) {
                             assignmentId: nextPending.assignmentId
                           })}
                         >
-                          <Ionicons name="open-outline" size={16} color="#fff" style={{ marginRight: 6 }} />
-                          <Text style={styles.primaryButtonText}>Continue</Text>
+                          <Ionicons name="open-outline" size={15} color="#1A1400" style={{ marginRight: 6 }} />
+                          <Text style={[styles.primaryButtonText, { color: '#1A1400' }]}>Continue</Text>
                         </TouchableOpacity>
                       )}
                     </View>
 
                     <View style={styles.assignmentStatusRow}>
-                      <Text style={[styles.statusPill, { color: colors.secondary, borderColor: colors.secondary }]}>
-                        {group.pendingItems.length} pending
-                      </Text>
-                      <Text style={[styles.statusPill, { color: colors.success, borderColor: colors.success }]}>
-                        {group.submittedItems.length} submitted
-                      </Text>
+                      <Badge label={`${group.pendingItems.length} pending`} tone="warning" style={{ marginRight: 8, marginBottom: 8 }} />
+                      <Badge label={`${group.submittedItems.length} submitted`} tone="success" style={{ marginRight: 8, marginBottom: 8 }} />
                       {group.closedItems.length > 0 && (
-                        <Text style={[styles.statusPill, { color: colors.textSecondary, borderColor: colors.border }]}>
-                          {group.closedItems.length} closed
-                        </Text>
+                        <Badge label={`${group.closedItems.length} closed`} tone="neutral" style={{ marginBottom: 8 }} />
                       )}
                     </View>
 
@@ -250,7 +262,7 @@ export default function SurveysScreen({ navigation }) {
                               )}
                             </View>
                             <TouchableOpacity
-                              style={[styles.primaryButton, { backgroundColor: colors.secondary }]}
+                              style={[styles.primaryButton, { backgroundColor: colors.primary }]}
                               onPress={() => navigation.navigate('Survey', {
                                 surveyId: item.surveyId,
                                 moduleCode: item.moduleCode || item.title,
@@ -260,7 +272,7 @@ export default function SurveysScreen({ navigation }) {
                                 assignmentId: item.assignmentId
                               })}
                             >
-                              <Text style={styles.primaryButtonText}>Open</Text>
+                              <Text style={[styles.primaryButtonText, { color: onPrimaryText }]}>Open</Text>
                             </TouchableOpacity>
                           </View>
                         ))}
@@ -277,7 +289,7 @@ export default function SurveysScreen({ navigation }) {
                                 {item.moduleCode ? `${item.moduleCode} - ${item.moduleName || item.title}` : item.title}
                               </Text>
                             </View>
-                            <Text style={[styles.statusPill, { color: colors.success, borderColor: colors.success }]}>Submitted</Text>
+                            <Badge label="Submitted" tone="success" />
                           </View>
                         ))}
                       </View>
@@ -290,7 +302,7 @@ export default function SurveysScreen({ navigation }) {
         )}
 
         {/* My Modules Card */}
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <View style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }, !isDarkTheme && shadow.card]}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>
             {isLecturer ? "My Teaching Modules" : "Module Enrollment Reference"} - {currentPeriodDisplay}
           </Text>
@@ -303,11 +315,11 @@ export default function SurveysScreen({ navigation }) {
 
           {!user ? (
             <TouchableOpacity onPress={() => navigation.navigate('Login')} style={{ alignItems: 'center', marginVertical: 10 }}>
-              <Ionicons name="lock-closed-outline" size={40} color={colors.textSecondary} style={{ marginBottom: 10 }} />
+              <Ionicons name="lock-closed-outline" size={38} color={colors.textSecondary} style={{ marginBottom: 10 }} />
               <Text style={[styles.cardDescription, { textAlign: 'center', color: colors.textSecondary }]}>Sign in to view your modules and pending evaluations.</Text>
               <View style={[styles.primaryButton, { backgroundColor: colors.primary, marginTop: 10 }]}>
-                <Ionicons name="log-in-outline" size={18} color="#fff" style={{marginRight: 6}} />
-                <Text style={styles.primaryButtonText}>Sign In</Text>
+                <Ionicons name="log-in-outline" size={17} color={onPrimaryText} style={{marginRight: 6}} />
+                <Text style={[styles.primaryButtonText, { color: onPrimaryText }]}>Sign In</Text>
               </View>
             </TouchableOpacity>
           ) : loading ? (
@@ -319,27 +331,18 @@ export default function SurveysScreen({ navigation }) {
               <View key={mod.moduleOfferingId}>
                 <View style={styles.moduleRow}>
                   <View style={{flex: 1, paddingRight: 10}}>
-                    <Text style={[styles.moduleLabel, { color: colors.primary }]}>{mod.moduleCode}</Text>
+                    <Text style={[styles.moduleLabel, { color: colors.secondary }]}>{mod.moduleCode}</Text>
                     <Text style={[styles.moduleCode, { color: colors.text }]}>{mod.moduleName || mod.moduleCode}</Text>
                   </View>
 
                   {isLecturer ? (
                     mod.activeSurveyId ? (
-                      <View style={[styles.lockedButton, {backgroundColor: `${colors.primary}26`, borderColor: colors.primary}]}>
-                        <Ionicons name="pulse-outline" size={16} color={colors.primary} style={{marginRight: 4}} />
-                        <Text style={[styles.lockedButtonText, {color: colors.primary}]}>Survey Active</Text>
-                      </View>
+                      <Badge label="Survey Active" tone="warning" />
                     ) : (
-                      <View style={[styles.lockedButton, {backgroundColor: colors.border}]}>
-                        <Ionicons name="time-outline" size={14} color={colors.textSecondary} style={{marginRight: 4}} />
-                        <Text style={[styles.lockedButtonText, {color: colors.textSecondary}]}>No Survey</Text>
-                      </View>
+                      <Badge label="No Survey" tone="neutral" />
                     )
                   ) : (
-                    <View style={[styles.lockedButton, {backgroundColor: `${colors.primary}26`, borderColor: colors.primary}]}>
-                      <Ionicons name="book-outline" size={14} color={colors.primary} style={{marginRight: 4}} />
-                      <Text style={[styles.lockedButtonText, {color: colors.primary}]}>Enrolled</Text>
-                    </View>
+                    <Badge label="Enrolled" tone="info" />
                   )}
 
                 </View>
@@ -351,9 +354,8 @@ export default function SurveysScreen({ navigation }) {
 
         {/* Open Campus Surveys Card (Lecturer only) */}
         {isLecturer && (
-          <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }, !isDarkTheme && shadow.card]}>
             <View style={styles.cardTitleContainer}>
-              <Ionicons name="sparkles-outline" size={20} color={colors.secondary} />
               <Text style={[styles.cardTitle, { color: colors.text }]}>Open Campus Surveys</Text>
             </View>
 
@@ -372,11 +374,11 @@ export default function SurveysScreen({ navigation }) {
                     </View>
 
                     <TouchableOpacity
-                      style={[styles.primaryButton, {backgroundColor: colors.secondary}]}
+                      style={[styles.primaryButton, {backgroundColor: colors.primary}]}
                       onPress={() => navigation.navigate('Survey', { surveyId: survey.surveyId, moduleCode: survey.name })}
                     >
-                      <Ionicons name="sparkles" size={16} color="#fff" style={{marginRight: 6}} />
-                      <Text style={styles.primaryButtonText}>Participate</Text>
+                      <Ionicons name="sparkles" size={15} color={onPrimaryText} style={{marginRight: 6}} />
+                      <Text style={[styles.primaryButtonText, { color: onPrimaryText }]}>Participate</Text>
                     </TouchableOpacity>
 
                   </View>
@@ -402,11 +404,6 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'flex-start',
     zIndex: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 3,
   },
   headerTopRow: {
     width: '100%',
@@ -416,71 +413,62 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   titleRow: { flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 12 },
-  titleText: { fontSize: 24, fontWeight: 'bold', marginLeft: 10, flexShrink: 1 },
+  titleText: { fontSize: 22, fontFamily: fonts.extraBold, letterSpacing: -0.3, flexShrink: 1 },
   topRightActions: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   actionButton: {
     padding: 8,
-    borderRadius: 8,
+    borderRadius: radii.sm,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  subtitle: { fontSize: 13, paddingHorizontal: 0 },
-  scrollContent: { padding: 20, paddingBottom: 40 },
+  subtitle: { fontSize: 13, fontFamily: fonts.regular, paddingHorizontal: 0 },
+  scrollContent: { padding: spacing.lg, paddingBottom: 40 },
   quickActionsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 24,
+    marginBottom: spacing.xl,
+    gap: spacing.sm,
   },
   quickActionCard: {
     flex: 1,
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    marginHorizontal: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
   },
   iconCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
   },
   quickActionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontFamily: fonts.bold,
   },
   card: {
-    borderRadius: 16,
-    padding: 24,
-    marginBottom: 24,
+    borderRadius: radii.lg,
+    padding: spacing.xl,
+    marginBottom: spacing.xl,
     borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
   },
-  cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+  cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   cardTitleContainer: { flexDirection: 'row', alignItems: 'center' },
-  cardTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff', marginLeft: 8 },
-  cardDescription: { fontSize: 14, color: '#aaa', lineHeight: 22, marginBottom: 20 },
+  cardTitle: { fontSize: 15.5, fontFamily: fonts.bold, marginLeft: 4 },
+  progressCount: { fontSize: 14, fontFamily: fonts.extraBold, fontVariant: ['tabular-nums'] },
+  cardDescription: { fontSize: 13, fontFamily: fonts.regular, lineHeight: 20, marginBottom: 16 },
   assignmentGroup: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 14,
+    borderWidth: 1.5,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
   },
   assignmentHeaderRow: {
     flexDirection: 'row',
@@ -488,48 +476,34 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   assignmentTitle: {
-    fontSize: 17,
-    fontWeight: '800',
+    fontSize: 15.5,
+    fontFamily: fonts.extraBold,
     marginBottom: 4,
   },
   assignmentStatusRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: 12,
+    marginTop: 10,
   },
   assignmentSectionTitle: {
-    fontSize: 13,
-    fontWeight: '800',
+    fontSize: 12,
+    fontFamily: fonts.extraBold,
     marginBottom: 4,
   },
   assignmentModuleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 10,
+    paddingVertical: 9,
   },
-  statusPill: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    fontSize: 12,
-    fontWeight: '800',
-    marginRight: 8,
-    marginBottom: 8,
-  },
-  lockedButton: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#333', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
-  lockedButtonText: { color: '#aaa', fontSize: 12, fontWeight: '600' },
-  progressBarContainer: { marginTop: 10 },
-  progressBarBackground: { height: 6, backgroundColor: '#333', borderRadius: 4, width: '100%', overflow: 'hidden' },
-  progressBarFill: { height: '100%', backgroundColor: '#4A90E2' },
+  progressBarContainer: { marginTop: 8 },
   progressTextRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
-  progressTextLeft: { color: '#888', fontSize: 12 },
-  progressTextRight: { color: '#888', fontSize: 12 },
-  divider: { height: 1, backgroundColor: '#2A2A2A', marginVertical: 15 },
+  progressTextLeft: { fontSize: 11.5, fontFamily: fonts.semiBold },
+  progressTextRight: { fontSize: 11.5, fontFamily: fonts.semiBold },
+  divider: { height: 1, marginVertical: 14 },
   moduleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  moduleLabel: { color: '#4A90E2', fontSize: 12, fontWeight: 'bold', marginBottom: 4 },
-  moduleCode: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  primaryButton: { flexDirection: 'row', backgroundColor: '#5C6BC0', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8, alignItems: 'center' },
-  primaryButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  moduleLabel: { fontSize: 11, fontFamily: fonts.bold, marginBottom: 3, letterSpacing: 0.3, textTransform: 'uppercase' },
+  moduleCode: { fontSize: 14.5, fontFamily: fonts.semiBold },
+  primaryButton: { flexDirection: 'row', paddingVertical: 9, paddingHorizontal: 15, borderRadius: radii.sm, alignItems: 'center' },
+  primaryButtonText: { fontSize: 12.5, fontFamily: fonts.bold },
 });

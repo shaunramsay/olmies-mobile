@@ -8,6 +8,7 @@ import { fetchUTechSemester, getUTechSemester } from '../utils/dateUtils';
 import FullscreenImageViewer from './FullscreenImageViewer';
 import NotificationDetailModal from './NotificationDetailModal';
 import API_BASE_URL from '../config/api';
+import { brand, fonts, radii, shadow, spacing } from '../utils/theme';
 const { isVisibleNotification } = require('../utils/notificationVisibility');
 
 const formatNotificationDate = (value) => {
@@ -35,16 +36,16 @@ const hasValidImageUrl = (imageUrl) => (
   imageUrl.trim() !== 'null'
 );
 
-const getNotificationIcon = (type) => {
+const getNotificationIcon = (type, colors) => {
   switch (type) {
     case 'Academic':
-      return { name: 'alert-circle-outline', color: '#ffb74d' };
+      return { name: 'alert-circle-outline', color: colors.warning };
     case 'Promo':
-      return { name: 'pricetag-outline', color: '#f06292' };
+      return { name: 'pricetag-outline', color: colors.accentInk };
     case 'Survey':
-      return { name: 'clipboard-outline', color: '#4A90E2' };
+      return { name: 'clipboard-outline', color: colors.secondary };
     default:
-      return { name: 'information-circle-outline', color: '#64b5f6' };
+      return { name: 'information-circle-outline', color: colors.info };
   }
 };
 
@@ -136,40 +137,41 @@ export default function HomeDashboard({ navigation, fallbackName }) {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: Math.max(insets.top, Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0) }]}>
-      <View style={[styles.utilityHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      <View style={[styles.utilityHeader, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border }]}>
         <View style={styles.headerActions}>
           <TouchableOpacity
             style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border }]}
             onPress={() => navigation.navigate('DataProtection', { isReviewMode: true })}
           >
-            <Ionicons name="shield-checkmark-outline" size={18} color={colors.textSecondary} />
+            <Ionicons name="shield-checkmark-outline" size={17} color={colors.textSecondary} />
           </TouchableOpacity>
           <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={toggleTheme}>
-            <Ionicons name={isDarkTheme ? 'sunny-outline' : 'moon-outline'} size={18} color={colors.textSecondary} />
+            <Ionicons name={isDarkTheme ? 'sunny-outline' : 'moon-outline'} size={17} color={colors.textSecondary} />
           </TouchableOpacity>
           {user ? (
             <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={logout}>
-              <Ionicons name="log-out-outline" size={18} color={colors.textSecondary} />
+              <Ionicons name="log-out-outline" size={17} color={colors.textSecondary} />
             </TouchableOpacity>
           ) : (
             <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.border, marginLeft: 8 }]} onPress={() => navigation.navigate('Login')}>
-              <Ionicons name="log-in-outline" size={18} color={colors.textSecondary} />
+              <Ionicons name="log-in-outline" size={17} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
       </View>
 
-      <View style={[styles.bannerDock, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      <View style={[styles.bannerDock, { backgroundColor: colors.background }]}>
         <View style={[styles.heroCard, isCompactPreview && styles.heroCardCompact]}>
+          <View style={styles.heroRing} />
           <View style={[styles.heroCopy, isCompactPreview && styles.heroCopyCompact]}>
             <Text style={styles.heroEyebrow}>University of Technology, Jamaica</Text>
-            <Text style={[styles.heroTitle, isCompactPreview && styles.heroTitleCompact, { color: colors.text }]}>UTech Campus Companion</Text>
-            <Text style={[styles.heroGreeting, { color: colors.textSecondary }]}>
+            <Text style={[styles.heroTitle, isCompactPreview && styles.heroTitleCompact]}>UTech Campus Companion</Text>
+            <Text style={styles.heroGreeting}>
               Welcome back, {user?.username || fallbackName}.
             </Text>
             <View style={styles.heroPills}>
               <View style={styles.semesterPill}>
-                <Ionicons name="calendar-outline" size={13} color="#f6c943" />
+                <Ionicons name="calendar-outline" size={13} color={brand.gold} />
                 <Text style={styles.semesterPillText}>{semester}</Text>
               </View>
             </View>
@@ -178,10 +180,10 @@ export default function HomeDashboard({ navigation, fallbackName }) {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <View style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }, !isDarkTheme && shadow.card]}>
           <View style={[styles.sectionHeader, isCompactPreview && styles.sectionHeaderCompact]}>
             <View style={styles.cardTitleContainer}>
-              <Ionicons name="notifications-outline" size={20} color={colors.primary} />
+              <Ionicons name="notifications-outline" size={19} color={colors.primary} />
               <Text style={[styles.cardTitle, { color: colors.text }]}>Latest Notifications</Text>
             </View>
             <TouchableOpacity onPress={() => navigation.navigate('Alerts')} style={styles.textButton}>
@@ -210,7 +212,7 @@ export default function HomeDashboard({ navigation, fallbackName }) {
                   setActiveNotificationIndex(Math.min(Math.max(nextIndex, 0), notifications.length - 1));
                 }}
                 renderItem={({ item }) => {
-                  const icon = getNotificationIcon(item.type);
+                  const icon = getNotificationIcon(item.type, colors);
                   const hasImage = hasValidImageUrl(item.imageUrl);
 
                   return (
@@ -220,8 +222,8 @@ export default function HomeDashboard({ navigation, fallbackName }) {
                         hasImage && styles.notificationCardWithImage,
                         {
                           width: notificationCardWidth,
-                          backgroundColor: item.isRead ? colors.background : `${colors.primary}14`,
-                          borderColor: item.isRead ? colors.border : colors.primary
+                          backgroundColor: item.isRead ? colors.background : colors.accentTint,
+                          borderColor: item.isRead ? colors.border : colors.accent
                         }
                       ]}
                       activeOpacity={0.82}
@@ -274,7 +276,7 @@ export default function HomeDashboard({ navigation, fallbackName }) {
 
         <View style={styles.carouselContainer}>
           <View style={styles.carouselHeader}>
-            <Ionicons name="pricetag-outline" size={20} color={colors.primary} />
+            <Ionicons name="pricetag-outline" size={19} color={colors.accentInk} />
             <Text style={[styles.carouselTitle, { color: colors.text }]}>Campus Deals</Text>
           </View>
           <FlatList
@@ -288,7 +290,7 @@ export default function HomeDashboard({ navigation, fallbackName }) {
 
               return (
                 <TouchableOpacity onPress={() => setSelectedDeal(item)} activeOpacity={0.8}>
-                  <View style={[styles.dealCard, { width: isCompactPreview ? 214 : 260, backgroundColor: colors.surface, borderColor: isAdSlot ? colors.info : colors.border }, isAdSlot && styles.adSlotCard]}>
+                  <View style={[styles.dealCard, { width: isCompactPreview ? 214 : 260, backgroundColor: colors.cardBackground, borderColor: isAdSlot ? colors.border : colors.border }, !isDarkTheme && shadow.card, isAdSlot && styles.adSlotCard]}>
                     {item.bannerImageUrl ? (
                       <Image source={{ uri: item.bannerImageUrl }} style={styles.dealImage} resizeMode="cover" />
                     ) : (
@@ -310,7 +312,7 @@ export default function HomeDashboard({ navigation, fallbackName }) {
 
       <Modal visible={!!selectedDeal} animationType="slide" transparent={true} onRequestClose={() => setSelectedDeal(null)}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+          <View style={[styles.modalContent, { backgroundColor: colors.cardBackground }]}>
             {hasValidImageUrl(selectedDeal?.bannerImageUrl) ? (
               <TouchableOpacity
                 activeOpacity={0.9}
@@ -342,12 +344,12 @@ export default function HomeDashboard({ navigation, fallbackName }) {
                     Linking.openURL(selectedDeal.websiteUrl).catch(() => Alert.alert('Error', 'Could not open link'));
                   }}
                 >
-                  <Text style={styles.closeButtonText}>Visit Website</Text>
+                  <Text style={[styles.closeButtonText, { color: isDarkTheme ? '#1A1400' : '#FFFFFF' }]}>Visit Website</Text>
                 </TouchableOpacity>
               )}
 
               <TouchableOpacity
-                style={[styles.closeButton, { backgroundColor: colors.border, marginTop: selectedDeal?.websiteUrl ? 12 : 24 }]}
+                style={[styles.closeButton, { backgroundColor: colors.surfaceAlt, marginTop: selectedDeal?.websiteUrl ? 12 : 24 }]}
                 onPress={() => setSelectedDeal(null)}
               >
                 <Text style={[styles.closeButtonText, { color: colors.text }]}>Close</Text>
@@ -361,6 +363,7 @@ export default function HomeDashboard({ navigation, fallbackName }) {
         visible={!!selectedNotification}
         notification={selectedNotification}
         colors={colors}
+        isDarkTheme={isDarkTheme}
         onClose={() => setSelectedNotification(null)}
         onOpenImage={setFullscreenImage}
       />
@@ -378,7 +381,7 @@ export default function HomeDashboard({ navigation, fallbackName }) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   utilityHeader: {
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.xl,
     paddingVertical: 10,
     borderBottomWidth: 1,
     flexDirection: 'row',
@@ -386,11 +389,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minHeight: 56,
     zIndex: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 3,
   },
   headerActions: {
     flexDirection: 'row',
@@ -398,68 +396,78 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     padding: 8,
-    borderRadius: 8,
+    borderRadius: radii.sm,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   bannerDock: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
     zIndex: 5,
   },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40 },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 40 },
   heroCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    backgroundColor: brand.navy,
+    borderRadius: radii.xl,
+    padding: spacing.xl,
+    overflow: 'hidden',
+    position: 'relative',
   },
   heroCardCompact: {
     flexDirection: 'column',
     alignItems: 'flex-start',
   },
+  heroRing: {
+    position: 'absolute',
+    right: -40,
+    top: -56,
+    width: 190,
+    height: 190,
+    borderRadius: 95,
+    borderWidth: 24,
+    borderColor: 'rgba(255,210,1,0.13)',
+  },
   heroCopy: { flex: 1, paddingRight: 0 },
   heroCopyCompact: { paddingRight: 0, width: '100%' },
   heroEyebrow: {
-    color: '#f6c943',
-    fontSize: 11,
-    fontWeight: '800',
+    color: brand.gold,
+    fontSize: 10.5,
+    fontFamily: fonts.bold,
+    letterSpacing: 1.2,
     textTransform: 'uppercase',
     marginBottom: 4,
   },
-  heroTitle: { fontSize: 20, fontWeight: '800', lineHeight: 24, marginBottom: 4 },
+  heroTitle: { fontSize: 21, fontFamily: fonts.extraBold, lineHeight: 25, marginBottom: 4, color: '#FFFFFF', letterSpacing: -0.2 },
   heroTitleCompact: { fontSize: 19, lineHeight: 23 },
-  heroGreeting: { fontSize: 13, lineHeight: 18, marginBottom: 10 },
+  heroGreeting: { fontSize: 13, fontFamily: fonts.regular, lineHeight: 18, marginBottom: 12, color: brand.onNavySecondary },
   heroPills: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   semesterPill: {
-    backgroundColor: '#111046',
-    borderRadius: 999,
-    paddingHorizontal: 10,
+    backgroundColor: brand.goldTint,
+    borderRadius: radii.pill,
+    paddingHorizontal: 11,
     paddingVertical: 6,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
   },
-  semesterPillText: { color: '#f6c943', fontSize: 11, fontWeight: '800' },
+  semesterPillText: { color: brand.gold, fontSize: 11, fontFamily: fonts.bold },
   card: {
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 24,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.xl,
     borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
   },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   sectionHeaderCompact: { alignItems: 'flex-start', flexDirection: 'column', gap: 8 },
   cardTitleContainer: { flexDirection: 'row', alignItems: 'center' },
-  cardTitle: { fontSize: 18, fontWeight: 'bold', marginLeft: 8 },
-  cardDescription: { fontSize: 14, lineHeight: 22 },
+  cardTitle: { fontSize: 16, fontFamily: fonts.bold, marginLeft: 8 },
+  cardDescription: { fontSize: 13.5, fontFamily: fonts.regular, lineHeight: 21 },
   textButton: { flexDirection: 'row', alignItems: 'center', paddingLeft: 10 },
-  textButtonLabel: { fontSize: 13, fontWeight: '800' },
+  textButtonLabel: { fontSize: 12.5, fontFamily: fonts.bold },
   notificationCarouselContent: { paddingRight: 6 },
   notificationCard: {
     borderRadius: 12,
@@ -497,10 +505,10 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   notificationMeta: { flex: 1, paddingRight: 8 },
-  notificationType: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', marginBottom: 2 },
-  notificationTitle: { fontSize: 15, fontWeight: '800', marginBottom: 6, lineHeight: 20 },
-  notificationMessage: { fontSize: 13, lineHeight: 18 },
-  notificationDate: { fontSize: 11, fontWeight: '700' },
+  notificationType: { fontSize: 10.5, fontFamily: fonts.bold, letterSpacing: 0.4, textTransform: 'uppercase', marginBottom: 2 },
+  notificationTitle: { fontSize: 14.5, fontFamily: fonts.bold, marginBottom: 6, lineHeight: 20 },
+  notificationMessage: { fontSize: 12.5, fontFamily: fonts.regular, lineHeight: 18 },
+  notificationDate: { fontSize: 11, fontFamily: fonts.semiBold },
   paginationDots: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -515,19 +523,19 @@ const styles = StyleSheet.create({
   },
   carouselContainer: { marginBottom: 20 },
   carouselHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, paddingHorizontal: 5 },
-  carouselTitle: { fontSize: 18, fontWeight: 'bold', marginLeft: 8 },
+  carouselTitle: { fontSize: 16, fontFamily: fonts.bold, marginLeft: 8 },
   dealCard: {
-    borderRadius: 12,
+    borderRadius: radii.lg,
     marginRight: 15,
     width: 260,
     borderWidth: 1,
     overflow: 'hidden',
   },
   adSlotCard: { borderStyle: 'dashed' },
-  dealImage: { width: '100%', height: 120 },
+  dealImage: { width: '100%', height: 110 },
   dealTextContainer: { padding: 12 },
-  dealVendorName: { fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
-  dealOfferText: { fontSize: 14, lineHeight: 20 },
+  dealVendorName: { fontSize: 14.5, fontFamily: fonts.bold, marginBottom: 4 },
+  dealOfferText: { fontSize: 12.5, fontFamily: fonts.regular, lineHeight: 18 },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.85)',

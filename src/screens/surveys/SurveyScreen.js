@@ -1,12 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, TextInput, Modal, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { useAppTheme } from '../../context/ThemeContext';
+import { Button, ProgressBar } from '../../components/ui';
+import { fonts, radii, spacing } from '../../utils/theme';
 
 export default function SurveyScreen({ route, navigation }) {
   const { surveyId, moduleCode, moduleOfferingId, campaignId, surveyWindowId, assignmentId } = route.params;
   const { fetchWithAuth, getDeviceId } = useAuth();
-  
+  const { colors, isDarkTheme } = useAppTheme();
+  const onPrimaryText = isDarkTheme ? '#1A1400' : '#FFFFFF';
+
   const [survey, setSurvey] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -40,6 +45,15 @@ export default function SurveyScreen({ route, navigation }) {
   const handleAnswerChange = (questionId, value) => {
     setAnswers(prev => ({ ...prev, [questionId]: value }));
   };
+
+  const totalQuestions = useMemo(
+    () => (survey?.sections || []).reduce((sum, s) => sum + (s.questions?.length || 0), 0),
+    [survey]
+  );
+  const answeredCount = useMemo(
+    () => Object.values(answers).filter(v => v !== '' && v != null).length,
+    [answers]
+  );
 
   const handleSubmit = async () => {
     setSubmitting(true);
@@ -100,7 +114,7 @@ export default function SurveyScreen({ route, navigation }) {
   const renderQuestionInput = (question) => {
     // Determine the type from Question
     // In our backend it might be "Likert", "FreeText", "MultipleChoice"
-    const type = question.type || question.Type || ''; 
+    const type = question.type || question.Type || '';
     const currentAnswer = answers[question.id] || '';
 
     switch (type.toLowerCase()) {
@@ -108,42 +122,55 @@ export default function SurveyScreen({ route, navigation }) {
         // For Likert scale, typically 1 to 5
         return (
           <View style={styles.likertContainer}>
-            {[1, 2, 3, 4, 5].map(score => (
-              <TouchableOpacity
-                key={score}
-                style={[
-                  styles.likertOption, 
-                  currentAnswer === score.toString() && styles.likertOptionSelected
-                ]}
-                onPress={() => handleAnswerChange(question.id, score.toString())}
-              >
-                <Text style={[
-                  styles.likertText,
-                  currentAnswer === score.toString() && styles.likertTextSelected
-                ]}>{score}</Text>
-              </TouchableOpacity>
-            ))}
+            {[1, 2, 3, 4, 5].map(score => {
+              const selected = currentAnswer === score.toString();
+              return (
+                <TouchableOpacity
+                  key={score}
+                  style={[
+                    styles.likertOption,
+                    { borderColor: colors.border, backgroundColor: colors.background },
+                    selected && { borderColor: colors.primary, backgroundColor: colors.primaryTint }
+                  ]}
+                  onPress={() => handleAnswerChange(question.id, score.toString())}
+                >
+                  <Text style={[
+                    styles.likertText,
+                    { color: colors.textSecondary },
+                    selected && { color: colors.secondary }
+                  ]}>{score}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         );
-      
+
       case 'multiplechoice':
         return (
           <View style={styles.choicesContainer}>
-            {(question.choices || []).map(choice => (
-              <TouchableOpacity
-                key={choice}
-                style={[
-                  styles.choiceButton,
-                  currentAnswer === choice && styles.choiceButtonSelected
-                ]}
-                onPress={() => handleAnswerChange(question.id, choice)}
-              >
-                <Text style={[
-                  styles.choiceText,
-                  currentAnswer === choice && styles.choiceTextSelected
-                ]}>{choice}</Text>
-              </TouchableOpacity>
-            ))}
+            {(question.choices || []).map(choice => {
+              const selected = currentAnswer === choice;
+              return (
+                <TouchableOpacity
+                  key={choice}
+                  style={[
+                    styles.choiceButton,
+                    { borderColor: colors.border, backgroundColor: colors.background },
+                    selected && { borderColor: colors.primary, backgroundColor: colors.primaryTint }
+                  ]}
+                  onPress={() => handleAnswerChange(question.id, choice)}
+                >
+                  <View style={[styles.radioDot, { borderColor: selected ? colors.primary : colors.border }]}>
+                    {selected && <View style={[styles.radioDotFill, { backgroundColor: colors.primary }]} />}
+                  </View>
+                  <Text style={[
+                    styles.choiceText,
+                    { color: colors.text },
+                    selected && { fontFamily: fonts.bold }
+                  ]}>{choice}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         );
 
@@ -151,11 +178,11 @@ export default function SurveyScreen({ route, navigation }) {
       default:
         return (
           <TextInput
-            style={styles.textInput}
+            style={[styles.textInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
             multiline
             numberOfLines={4}
             placeholder="Type your answer here..."
-            placeholderTextColor="#666"
+            placeholderTextColor={colors.textSecondary}
             value={currentAnswer}
             onChangeText={(text) => handleAnswerChange(question.id, text)}
           />
@@ -165,42 +192,51 @@ export default function SurveyScreen({ route, navigation }) {
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color="#f06292" />
-        <Text style={{color: '#888', marginTop: 15}}>Loading your survey...</Text>
+      <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ color: colors.textSecondary, marginTop: 15, fontFamily: fonts.regular }}>Loading your survey...</Text>
       </View>
     );
   }
 
   if (error || !survey) {
     return (
-      <View style={[styles.container, styles.centerContent]}>
-        <Ionicons name="warning-outline" size={48} color="#f06292" style={{marginBottom: 10}}/>
-        <Text style={styles.errorText}>{error || 'Survey content is unavailable.'}</Text>
-        <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.secondaryButtonText}>Go Back</Text>
+      <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
+        <Ionicons name="warning-outline" size={44} color={colors.danger} style={{ marginBottom: 10 }} />
+        <Text style={[styles.errorText, { color: colors.text }]}>{error || 'Survey content is unavailable.'}</Text>
+        <TouchableOpacity style={[styles.secondaryButton, { borderColor: colors.border }]} onPress={() => navigation.goBack()}>
+          <Text style={[styles.secondaryButtonText, { color: colors.text }]}>Go Back</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.cardBackground }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+          <Ionicons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.headerTextContainer}>
-          <Text style={styles.headerTitle} numberOfLines={1}>{survey.title || moduleCode + ' Evaluation'}</Text>
-          <Text style={styles.headerSubtitle}>{moduleCode} - {survey.sections?.length || 0} Sections</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>{survey.title || moduleCode + ' Evaluation'}</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>{moduleCode} · {survey.sections?.length || 0} sections</Text>
         </View>
+        {totalQuestions > 0 && (
+          <Text style={[styles.headerCount, { color: colors.text }]}>{answeredCount} / {totalQuestions}</Text>
+        )}
       </View>
-      
+
+      {totalQuestions > 0 && (
+        <View style={[styles.progressDock, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border }]}>
+          <ProgressBar progress={totalQuestions ? answeredCount / totalQuestions : 0} />
+        </View>
+      )}
+
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {(!survey.sections || survey.sections.length === 0) ? (
           <View style={{ alignItems: 'center', marginTop: 50, paddingHorizontal: 20 }}>
-            <Ionicons name="document-text-outline" size={60} color="#444" />
-            <Text style={{ color: '#aaa', fontSize: 16, marginTop: 15, textAlign: 'center', lineHeight: 24 }}>
+            <Ionicons name="document-text-outline" size={54} color={colors.textSecondary} />
+            <Text style={{ color: colors.textSecondary, fontSize: 15, marginTop: 15, textAlign: 'center', lineHeight: 22, fontFamily: fonts.regular }}>
               This survey is currently empty or has not been fully configured yet. Please check back later!
             </Text>
           </View>
@@ -208,16 +244,16 @@ export default function SurveyScreen({ route, navigation }) {
           <>
             {survey.sections.map((section, idx) => (
               <View key={section.id || idx} style={styles.sectionContainer}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>{section.title}</Text>
+                <View style={[styles.sectionHeader, { backgroundColor: colors.primaryTint, borderLeftColor: colors.primary }]}>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>{section.title}</Text>
                   {section.instructions && (
-                    <Text style={styles.sectionInstructions}>{section.instructions}</Text>
+                    <Text style={[styles.sectionInstructions, { color: colors.textSecondary }]}>{section.instructions}</Text>
                   )}
                 </View>
 
                 {(section.questions || []).map((question, qIdx) => (
-                  <View key={question.id || qIdx} style={styles.questionContainer}>
-                    <Text style={styles.questionText}>
+                  <View key={question.id || qIdx} style={[styles.questionContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+                    <Text style={[styles.questionText, { color: colors.text }]}>
                       {qIdx + 1}. {question.text}
                     </Text>
                     {renderQuestionInput(question)}
@@ -227,28 +263,24 @@ export default function SurveyScreen({ route, navigation }) {
             ))}
 
             <View style={styles.footer}>
-              <TouchableOpacity
-                style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
-                disabled={submitting}
+              <Button
+                label={submitting ? 'Submitting...' : 'Submit Evaluation'}
+                icon={submitting ? undefined : 'paper-plane-outline'}
+                loading={submitting}
                 onPress={handleSubmit}
-              >
-                {submitting ? (
-                  <ActivityIndicator size="small" color="#fff" style={{marginRight: 8}}/>
-                ) : (
-                  <Ionicons name="paper-plane-outline" size={20} color="#fff" style={{marginRight: 8}} />
-                )}
-                <Text style={styles.submitButtonText}>{submitting ? 'Submitting...' : 'Submit Evaluation'}</Text>
-              </TouchableOpacity>
+                fullWidth
+                style={styles.submitButton}
+              />
             </View>
 
             <Modal visible={showSuccessModal} transparent animationType="none">
               <View style={styles.modalOverlay}>
-                <Animated.View style={[styles.successCard, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
-                  <View style={styles.checkmarkCircle}>
-                    <Ionicons name="checkmark-sharp" size={55} color="#fff" />
+                <Animated.View style={[styles.successCard, { backgroundColor: colors.cardBackground, opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
+                  <View style={[styles.checkmarkCircle, { backgroundColor: colors.success }]}>
+                    <Ionicons name="checkmark-sharp" size={50} color="#FFFFFF" />
                   </View>
-                  <Text style={styles.successTitle}>Thank You!</Text>
-                  <Text style={styles.successMessage}>Your response has been successfully recorded.</Text>
+                  <Text style={[styles.successTitle, { color: colors.text }]}>Thank You!</Text>
+                  <Text style={[styles.successMessage, { color: colors.textSecondary }]}>Your response has been successfully recorded.</Text>
                 </Animated.View>
               </View>
             </Modal>
@@ -260,110 +292,90 @@ export default function SurveyScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0A0A0A' },
+  container: { flex: 1 },
   centerContent: { justifyContent: 'center', alignItems: 'center', padding: 20 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 30,
-    paddingBottom: 20,
+    paddingHorizontal: spacing.xl,
+    paddingTop: 24,
+    paddingBottom: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: '#1E1E1E',
   },
-  backButton: { marginRight: 15 },
+  backButton: { marginRight: 14 },
   headerTextContainer: { flex: 1 },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
-  headerSubtitle: { fontSize: 12, color: '#f06292', marginTop: 2 },
-  scrollContent: { padding: 20, paddingBottom: 60 },
-  sectionContainer: { marginBottom: 30 },
+  headerTitle: { fontSize: 17, fontFamily: fonts.extraBold },
+  headerSubtitle: { fontSize: 11.5, fontFamily: fonts.semiBold, marginTop: 2 },
+  headerCount: { fontSize: 13, fontFamily: fonts.bold, fontVariant: ['tabular-nums'], marginLeft: spacing.sm },
+  progressDock: { paddingHorizontal: spacing.xl, paddingBottom: spacing.md, borderBottomWidth: 1 },
+  scrollContent: { padding: spacing.xl, paddingBottom: 60, maxWidth: 720, width: '100%', alignSelf: 'center' },
+  sectionContainer: { marginBottom: 28 },
   sectionHeader: {
-    backgroundColor: '#1E1E1E',
-    padding: 15,
-    borderRadius: 8,
+    padding: spacing.md,
+    borderRadius: radii.sm,
     borderLeftWidth: 4,
-    borderLeftColor: '#4A90E2',
-    marginBottom: 20,
+    marginBottom: spacing.lg,
   },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
-  sectionInstructions: { fontSize: 13, color: '#aaa', marginTop: 5, fontStyle: 'italic' },
+  sectionTitle: { fontSize: 16, fontFamily: fonts.extraBold },
+  sectionInstructions: { fontSize: 12.5, fontFamily: fonts.regular, marginTop: 4, fontStyle: 'italic' },
   questionContainer: {
-    backgroundColor: '#161616',
-    padding: 18,
-    borderRadius: 12,
-    marginBottom: 15,
+    padding: spacing.lg,
+    borderRadius: radii.lg,
+    marginBottom: spacing.md,
     borderWidth: 1,
-    borderColor: '#222',
   },
-  questionText: { fontSize: 15, color: '#fff', marginBottom: 15, lineHeight: 22, fontWeight: '600' },
-  
+  questionText: { fontSize: 14.5, marginBottom: spacing.md, lineHeight: 21, fontFamily: fonts.bold },
+
   // Free text
   textInput: {
-    backgroundColor: '#111',
-    borderWidth: 1,
-    borderColor: '#333',
-    borderRadius: 8,
-    color: '#ddd',
+    borderWidth: 1.5,
+    borderRadius: radii.sm,
     padding: 12,
     textAlignVertical: 'top',
     fontSize: 14,
+    fontFamily: fonts.regular,
   },
 
   // Likert
   likertContainer: { flexDirection: 'row', justifyContent: 'space-between' },
   likertOption: {
-    width: 45,
-    height: 45,
-    borderRadius: 22.5,
-    backgroundColor: '#1a1a1a',
-    borderWidth: 1,
-    borderColor: '#333',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1.5,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  likertOptionSelected: { backgroundColor: 'rgba(240, 98, 146, 0.2)', borderColor: '#f06292' },
-  likertText: { color: '#888', fontWeight: 'bold' },
-  likertTextSelected: { color: '#f06292' },
+  likertText: { fontFamily: fonts.bold, fontSize: 15 },
 
   // Multiple Choice
   choicesContainer: { gap: 10 },
   choiceButton: {
-    backgroundColor: '#1a1a1a',
-    borderWidth: 1,
-    borderColor: '#333',
-    padding: 14,
-    borderRadius: 8,
-  },
-  choiceButtonSelected: { backgroundColor: 'rgba(138, 43, 226, 0.15)', borderColor: '#4A90E2' },
-  choiceText: { color: '#bbb', fontSize: 14 },
-  choiceTextSelected: { color: '#fff', fontWeight: 'bold' },
-
-  footer: { marginTop: 20, alignItems: 'center' },
-  submitButton: {
     flexDirection: 'row',
-    backgroundColor: '#f06292',
-    paddingVertical: 14,
-    paddingHorizontal: 30,
-    borderRadius: 25,
     alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
+    gap: 12,
+    borderWidth: 1.5,
+    padding: 13,
+    borderRadius: radii.md,
   },
-  submitButtonDisabled: { opacity: 0.7 },
-  submitButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  
-  errorText: { color: '#ddd', fontSize: 16, textAlign: 'center', lineHeight: 24, marginBottom: 20 },
+  radioDot: { width: 18, height: 18, borderRadius: 9, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  radioDotFill: { width: 9, height: 9, borderRadius: 5 },
+  choiceText: { fontSize: 13.5, fontFamily: fonts.medium, flexShrink: 1 },
+
+  footer: { marginTop: 12, alignItems: 'center', maxWidth: 720, width: '100%', alignSelf: 'center' },
+  submitButton: { paddingVertical: 14, borderRadius: radii.pill },
+
+  errorText: { fontSize: 15, textAlign: 'center', lineHeight: 22, marginBottom: 20, fontFamily: fonts.regular },
   secondaryButton: {
     borderWidth: 1,
-    borderColor: '#333',
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: radii.sm,
   },
-  secondaryButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center' },
-  successCard: { backgroundColor: '#1E1E1E', borderRadius: 24, padding: 35, width: '85%', alignItems: 'center', shadowColor: '#f06292', shadowOffset: { width: 0, height: 15 }, shadowOpacity: 0.4, shadowRadius: 30, elevation: 15 },
-  checkmarkCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#f06292', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
-  successTitle: { color: '#fff', fontSize: 26, fontWeight: 'bold', marginBottom: 12 },
-  successMessage: { color: '#aaa', fontSize: 16, textAlign: 'center', lineHeight: 24 }
+  secondaryButtonText: { fontSize: 13.5, fontFamily: fonts.bold },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(14,0,78,0.6)', justifyContent: 'center', alignItems: 'center' },
+  successCard: { borderRadius: radii.xl, padding: 32, width: '85%', alignItems: 'center', shadowColor: '#0E004E', shadowOffset: { width: 0, height: 15 }, shadowOpacity: 0.3, shadowRadius: 30, elevation: 15 },
+  checkmarkCircle: { width: 76, height: 76, borderRadius: 38, justifyContent: 'center', alignItems: 'center', marginBottom: 18 },
+  successTitle: { fontSize: 22, fontFamily: fonts.extraBold, marginBottom: 10 },
+  successMessage: { fontSize: 14.5, textAlign: 'center', lineHeight: 21, fontFamily: fonts.regular }
 });
