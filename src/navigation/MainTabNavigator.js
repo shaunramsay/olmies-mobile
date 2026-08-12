@@ -39,7 +39,19 @@ export default function MainTabNavigator() {
         },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSecondary,
-        tabBarLabelStyle: { fontSize: 11, marginTop: 4, fontFamily: fonts.semiBold },
+        // "Help Desk" is the longest label in this five-tab bar (each tab gets ~1/5 of the screen
+        // width), so it is the first to distort. Two things were doing that:
+        //  - OS font scaling: at large accessibility font sizes the label outgrew its tab and was
+        //    clipped mid-word. Tab labels are a fixed-height chrome element, so they opt out of
+        //    scaling rather than overflow (the icon+label pair stays legible at every setting).
+        //  - Default horizontal item padding left too little room for a two-word label, pushing it
+        //    to wrap/ellipsize even at the default font size.
+        // The UTech-branding redesign's own values (theme colours, fontSize 11, marginTop 4 and the
+        // semiBold face) are preserved exactly as-is; only the two robustness options and
+        // textAlign are added on top.
+        tabBarAllowFontScaling: false,
+        tabBarItemStyle: { paddingHorizontal: 2 },
+        tabBarLabelStyle: { fontSize: 11, marginTop: 4, fontFamily: fonts.semiBold, textAlign: 'center' },
         tabBarIcon: ({ focused, color, size }) => {
           let iconName = '';
           if (route.name === 'Home') iconName = focused ? 'home' : 'home-outline';
