@@ -39,6 +39,11 @@ ALLOWED_REFERENCES = {
     # Firebase Android client configuration. The API key in it is a public client identifier by
     # Firebase design; it must be restricted to the app's package and SHA-1 in Google Cloud.
     "google-api-key": {"google-services.json"},
+    # The rule definitions themselves.
+    "former-hardcoded-jwt-key": {"scripts/security/scan-secrets.py"},
+    "former-default-admin-password": {"scripts/security/scan-secrets.py"},
+    "connection-string-password": {"scripts/security/scan-secrets.py"},
+    "postgres-url-password": {"scripts/security/scan-secrets.py"},
 }
 
 SKIP_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif", ".ico", ".pdf", ".woff", ".woff2", ".ttf", ".dll", ".pdb", ".exe", ".lock"}
