@@ -6,6 +6,7 @@ import API_BASE_URL, { buildApiUrl } from '../../config/api';
 import { useAppTheme } from '../../context/ThemeContext';
 import { Button, Card } from '../../components/ui';
 import { brand, fonts, radii, spacing } from '../../utils/theme';
+const { SIGN_IN_UNAVAILABLE_MESSAGE, isDemoAccount, isSignInUnavailable, loginEndpointFor, shouldShowDemoAccounts } = require('../../utils/loginPolicy');
 
 const UTECH_CREST = require('../../../assets/utech-crest.png');
 
@@ -29,10 +30,8 @@ export default function LoginScreen({ navigation }) {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const showDemoAccounts =
-    __DEV__ ||
-    process.env.EXPO_PUBLIC_ENABLE_DEMO_LOGIN === 'true' ||
-    API_BASE_URL.includes('olmies-ai-test');
+  // Development builds only (security finding SC-07).
+  const showDemoAccounts = shouldShowDemoAccounts(__DEV__);
 
   const handleLogin = async () => {
     const normalizedUsername = username.trim();
@@ -46,7 +45,7 @@ export default function LoginScreen({ navigation }) {
     setIsLoading(true);
 
     try {
-        const isTestAccount = normalizedUsername === 'test_student' || normalizedUsername === 'test_lecturer';
+        const isTestAccount = isDemoAccount(normalizedUsername, __DEV__);
         const requestBody = isTestAccount
             ? { username: normalizedUsername, password }
             : {
@@ -55,7 +54,7 @@ export default function LoginScreen({ navigation }) {
                 deviceId: await getDeviceId()
             };
 
-        const endpoint = isTestAccount ? '/api/v1/auth/testing/login' : '/api/v1/auth/login';
+        const endpoint = loginEndpointFor(normalizedUsername, __DEV__);
         const response = await fetch(buildApiUrl(endpoint), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -97,7 +96,11 @@ export default function LoginScreen({ navigation }) {
                 });
             }
 
-            setErrorMsg(isTestAccount && showDemoAccounts ? INVALID_DEMO_LOGIN_MESSAGE : INVALID_LOGIN_MESSAGE);
+            if (isSignInUnavailable(response.status, data)) {
+                setErrorMsg(SIGN_IN_UNAVAILABLE_MESSAGE);
+            } else {
+                setErrorMsg(isTestAccount && showDemoAccounts ? INVALID_DEMO_LOGIN_MESSAGE : INVALID_LOGIN_MESSAGE);
+            }
         }
     } catch (error) {
         setErrorMsg(NETWORK_ERROR_MESSAGE);

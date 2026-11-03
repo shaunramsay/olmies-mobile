@@ -45,3 +45,11 @@ ui-mockup-*.png
 # generated native folders
 /ios
 /android
+
+# Security remediation (SC-12/SC-30): database dumps, debug captures and archives never belong in git
+*.sql
+*.tar
+*.tar.gz
+debug_*.json
+*_out*.txt
+.env.backup

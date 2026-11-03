@@ -1,0 +1,32 @@
+name: Mobile Security CI
+
+# Unit tests and secret scan on every push and pull request. Does not build or publish an app.
+on:
+  push:
+    branches: [dev, test, main, production-2]
+  pull_request:
+    branches: [dev, test, main, production-2]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  security-gate:
+    name: security-gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Secret scan (tracked files)
+        run: python3 scripts/security/scan-secrets.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Unit and security tests
+        run: npm test
+      - name: Release config blocks the overlay permission
+        run: |
+          npx expo config --type public --json > /tmp/expo.json
+          python3 -c "import json;d=json.load(open('/tmp/expo.json'));assert 'android.permission.SYSTEM_ALERT_WINDOW' in d['android'].get('blockedPermissions',[]), 'SYSTEM_ALERT_WINDOW not blocked'"

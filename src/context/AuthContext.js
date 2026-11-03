@@ -218,15 +218,12 @@ export const AuthProvider = ({ children }) => {
             setUser(decoded);
             return decoded;
         } catch (e) {
-            console.warn("Invalid JWT format detected. Assuming Mock Backend Token...", jwt);
-            if (explicitUserData) {
-                setUser(explicitUserData);
-                return explicitUserData;
-            } else {
-                const fallback = { username: 'Test User', role: 'Student' };
-                setUser(fallback);
-                return fallback;
-            }
+            // An undecodable token is never treated as a signed-in user (security finding SC-29).
+            // The former fallback invented a "Test User" student; the server rejected every call,
+            // but the app looked signed in.
+            console.warn('Invalid access token received; signing out.');
+            setUser(null);
+            return null;
         }
     };
 

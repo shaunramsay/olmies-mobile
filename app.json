@@ -20,7 +20,10 @@
         "foregroundImage": "./assets/android-icon-foreground.png"
       },
       "googleServicesFile": "./google-services.json",
-      "package": "com.shaunramsay14.olmiesmobile"
+      "package": "com.shaunramsay14.olmiesmobile",
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
