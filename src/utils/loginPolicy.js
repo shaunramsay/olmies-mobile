@@ -1,10 +1,12 @@
-// Security finding SC-07: demo logins exist only in development builds.
+// Student and lecturer sign-in (security findings SC-03, SC-05, SC-07).
 //
-// Previously the demo buttons (and the synthetic /api/v1/auth/testing/login route) were enabled in
-// any build whose API URL contained "olmies-ai-test", or when EXPO_PUBLIC_ENABLE_DEMO_LOGIN was
-// set at build time, so distributed preview APKs advertised shared test credentials. Now only a
-// __DEV__ build (Metro / Expo Go on a developer machine) shows them, and the server only honours
-// them in its Development environment.
+// The server decides which sign-in this host offers (GET /api/v1/auth/methods):
+//   * entra      - "Sign in with UTech" (Microsoft Entra ID, authorization code + PKCE). The API
+//                  validates the ID token and takes the role from UTech's app-role assignment.
+//   * synthetic  - username/password for synthetic sim-/test_ accounts. The server offers this
+//                  only in Development and TEST; production builds never see a password form
+//                  unless the server says so, and a production server refuses it.
+// The app never sends a role, and no demo credentials are compiled into the app.
 
 const SIGN_IN_UNAVAILABLE_CODE = 'institutional_sign_in_unavailable';
 
@@ -12,22 +14,53 @@ const SIGN_IN_UNAVAILABLE_MESSAGE =
   'Student and lecturer sign-in is temporarily unavailable while UTech institutional sign-in is being set up. ' +
   'You can still use the campus map, deals, announcements and the public Help Desk.';
 
-const shouldShowDemoAccounts = (isDevBuild) => isDevBuild === true;
+const METHODS_ENDPOINT = '/api/v1/auth/methods';
+const PASSWORD_ENDPOINT = '/api/v1/auth/login';
+const ENTRA_ENDPOINT = '/api/v1/auth/entra';
 
-const isDemoAccount = (username, isDevBuild) =>
-  shouldShowDemoAccounts(isDevBuild) && (username === 'test_student' || username === 'test_lecturer');
+const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const loginEndpointFor = (username, isDevBuild) =>
-  isDemoAccount(username, isDevBuild) ? '/api/v1/auth/testing/login' : '/api/v1/auth/login';
+/** Normalises the server's /auth/methods answer; anything unexpected offers nothing. */
+const signInOptions = (methods) => {
+  const entra = methods && methods.entra && GUID.test(methods.entra.tenantId || '') && GUID.test(methods.entra.clientId || '')
+    ? { tenantId: methods.entra.tenantId, clientId: methods.entra.clientId }
+    : null;
+  return {
+    entra,
+    password: methods != null && methods.synthetic === true,
+  };
+};
+
+const entraIssuer = (tenantId) => `https://login.microsoftonline.com/${tenantId}/v2.0`;
+
+const passwordSignInBody = (username, password, deviceId) => ({
+  username: (username || '').trim(),
+  password,
+  deviceId,
+});
+
+const entraSignInBody = (idToken, deviceId) => ({ idToken, deviceId });
 
 const isSignInUnavailable = (status, body) =>
   status === 503 && body != null && body.error === SIGN_IN_UNAVAILABLE_CODE;
 
+const failureMessage = (status, body) => {
+  if (isSignInUnavailable(status, body)) return SIGN_IN_UNAVAILABLE_MESSAGE;
+  if (status === 403) return (body && body.error) || 'This account has no current OLMIES access.';
+  if (status === 429) return 'Too many failed attempts. Please wait 15 minutes and try again.';
+  return 'Sign-in failed. Please check your details and try again.';
+};
+
 module.exports = {
+  ENTRA_ENDPOINT,
+  METHODS_ENDPOINT,
+  PASSWORD_ENDPOINT,
   SIGN_IN_UNAVAILABLE_CODE,
   SIGN_IN_UNAVAILABLE_MESSAGE,
-  isDemoAccount,
+  entraIssuer,
+  entraSignInBody,
+  failureMessage,
   isSignInUnavailable,
-  loginEndpointFor,
-  shouldShowDemoAccounts,
+  passwordSignInBody,
+  signInOptions,
 };

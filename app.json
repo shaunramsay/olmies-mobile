@@ -55,6 +55,7 @@
           "speechRecognitionPermission": "Allow Campus Companion to use native Speech Recognition to instantly route your voice into text queries."
         }
       ]
-    ]
+    ],
+    "scheme": "olmies"
   }
 }
