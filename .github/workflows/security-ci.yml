@@ -30,3 +30,9 @@ jobs:
         run: |
           npx expo config --type public --json > /tmp/expo.json
           python3 -c "import json;d=json.load(open('/tmp/expo.json'));assert 'android.permission.SYSTEM_ALERT_WINDOW' in d['android'].get('blockedPermissions',[]), 'SYSTEM_ALERT_WINDOW not blocked'"
+      - name: Production config never accepts unsigned OTA updates
+        env:
+          EAS_BUILD_PROFILE: production
+        run: |
+          npx expo config --type public --json > /tmp/expo-prod.json
+          node -e "const u=require('/tmp/expo-prod.json').updates||{};const {isSafeUpdatesConfig}=require('./src/utils/updatePolicy');if(!isSafeUpdatesConfig(u)){console.error('Unsigned OTA updates enabled in production config');process.exit(1)}"

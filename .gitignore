@@ -53,3 +53,7 @@ ui-mockup-*.png
 debug_*.json
 *_out*.txt
 .env.backup
+
+# OTA update signing private key (SC-31) - held by the release approver, never committed
+keys/
+*.private.pem
