@@ -53,6 +53,22 @@ Never assume two services are isolated because their environment names differ. B
 deployment, migration, seeding or data change, check which database each affected host actually
 uses. Never put credentials or connection strings in this file.
 
+## Data classification (confirmed by the project owner, 2026-11-03)
+
+* All current OLMIES application data is synthetic: development, TEST, demonstration and
+  Azure Production data, including surveys, responses, student enrolments, lecturer
+  assignments and modules. Never describe these records as real institutional records.
+* Azure Production is currently a demonstration environment running on synthetic data,
+  despite its name. It keeps its "Production protection" rules, and its deliberate version
+  difference from TEST must be preserved.
+* Synthetic data does not relax anything else. Environments still need separate databases,
+  because shared migrations, schema changes and accidental writes break the other
+  environment. Authentication, authorization and credential protection stay fully in force.
+* Authentication tokens, passwords, API keys, connection strings and server logs are genuine
+  operational information, not synthetic data. Protect them accordingly.
+* Before any integration brings in real UTech student or staff data (for example live ISAS or
+  Entra ID sign-in for real users), reassess this classification and get the owner's approval.
+
 ## Security and functionality
 
 Security and working functionality are equally important. A security fix keeps the legitimate
