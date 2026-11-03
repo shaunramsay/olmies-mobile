@@ -20,7 +20,10 @@
         "foregroundImage": "./assets/android-icon-foreground.png"
       },
       "googleServicesFile": "./google-services.json",
-      "package": "com.shaunramsay14.olmiesmobile"
+      "package": "com.shaunramsay14.olmiesmobile",
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -52,6 +55,7 @@
           "speechRecognitionPermission": "Allow Campus Companion to use native Speech Recognition to instantly route your voice into text queries."
         }
       ]
-    ]
+    ],
+    "scheme": "olmies"
   }
 }

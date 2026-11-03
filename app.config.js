@@ -1,4 +1,5 @@
 const baseConfig = require('./app.json');
+const { resolveUpdates } = require('./src/utils/updatePolicy');
 
 const googleMapsApiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '';
 const apiBaseUrl = process.env.EXPO_PUBLIC_API_URL || '';
@@ -22,6 +23,8 @@ module.exports = {
       },
     },
   },
+  // SC-31: OTA updates only when code-signed; otherwise disabled.
+  updates: resolveUpdates(baseConfig.expo.updates),
   extra: {
     ...(baseConfig.expo.extra || {}),
     apiBaseUrl,

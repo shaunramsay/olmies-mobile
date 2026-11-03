@@ -1,22 +1,69 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, SafeAreaView, KeyboardAvoidingView, ScrollView, Platform, ActivityIndicator, Image, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as AuthSession from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '../../context/AuthContext';
 import API_BASE_URL, { buildApiUrl } from '../../config/api';
 import { useAppTheme } from '../../context/ThemeContext';
 import { Button, Card } from '../../components/ui';
 import { brand, fonts, radii, spacing } from '../../utils/theme';
+const {
+  ENTRA_ENDPOINT, METHODS_ENDPOINT, PASSWORD_ENDPOINT, SIGN_IN_UNAVAILABLE_MESSAGE,
+  entraIssuer, entraSignInBody, failureMessage, passwordSignInBody, signInOptions,
+} = require('../../utils/loginPolicy');
+
+WebBrowser.maybeCompleteAuthSession();
 
 const UTECH_CREST = require('../../../assets/utech-crest.png');
-
-const demoAccounts = [
-  { label: 'Student', icon: 'school-outline', username: 'test_student', password: 'student123' },
-  { label: 'Lecturer', icon: 'briefcase-outline', username: 'test_lecturer', password: 'lecturer123' }
-];
-
-const INVALID_LOGIN_MESSAGE = 'Invalid username or password. Please try again.';
-const INVALID_DEMO_LOGIN_MESSAGE = 'Invalid demo credentials. Please use the Student or Lecturer demo buttons.';
 const NETWORK_ERROR_MESSAGE = 'Unable to reach the login service. Please check your connection and try again.';
+
+async function postJson(path, body) {
+  const response = await fetch(buildApiUrl(path), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const rawText = await response.text();
+  let data = {};
+  try { data = rawText ? JSON.parse(rawText) : {}; } catch { data = {}; }
+  return { response, data };
+}
+
+// "Sign in with UTech": Microsoft Entra ID, authorization code + PKCE. Only the resulting ID
+// token is sent to the OLMIES API, which verifies it and decides the role (SC-03/SC-05).
+function EntraSignInButton({ entra, disabled, onIdToken, onError }) {
+  const discovery = AuthSession.useAutoDiscovery(entraIssuer(entra.tenantId));
+  const redirectUri = AuthSession.makeRedirectUri({ scheme: 'olmies', path: 'auth' });
+  const [request, result, promptAsync] = AuthSession.useAuthRequest(
+    { clientId: entra.clientId, redirectUri, scopes: ['openid', 'profile', 'email'], usePKCE: true },
+    discovery
+  );
+
+  useEffect(() => {
+    if (!result || !discovery) return;
+    if (result.type === 'success' && result.params.code) {
+      AuthSession.exchangeCodeAsync(
+        { clientId: entra.clientId, code: result.params.code, redirectUri, extraParams: { code_verifier: request.codeVerifier } },
+        discovery
+      )
+        .then((tokens) => (tokens.idToken ? onIdToken(tokens.idToken) : onError('UTech sign-in did not return an identity.')))
+        .catch(() => onError('UTech sign-in could not be completed.'));
+    } else if (result.type === 'error') {
+      onError('UTech sign-in could not be completed.');
+    }
+  }, [result]);
+
+  return (
+    <Button
+      label="Sign in with UTech account"
+      onPress={() => promptAsync()}
+      disabled={disabled || !request}
+      fullWidth
+      style={styles.submitButton}
+    />
+  );
+}
 
 export default function LoginScreen({ navigation }) {
   const { login, getDeviceId } = useAuth();
@@ -24,104 +71,62 @@ export default function LoginScreen({ navigation }) {
   const { width } = useWindowDimensions();
   const isWide = Platform.OS === 'web' && width >= 860;
 
+  const [options, setOptions] = useState(null);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const showDemoAccounts =
-    __DEV__ ||
-    process.env.EXPO_PUBLIC_ENABLE_DEMO_LOGIN === 'true' ||
-    API_BASE_URL.includes('olmies-ai-test');
 
-  const handleLogin = async () => {
-    const normalizedUsername = username.trim();
+  useEffect(() => {
+    let cancelled = false;
+    fetch(buildApiUrl(METHODS_ENDPOINT))
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null)
+      .then((methods) => { if (!cancelled) setOptions(signInOptions(methods)); });
+    return () => { cancelled = true; };
+  }, []);
 
-    if (!normalizedUsername) {
-        setErrorMsg('Please enter your Moodle username.');
-        return;
+  const finish = async ({ response, data }) => {
+    if (response.ok && data.token) {
+      await login(data.token, data.user, data.refreshToken);
+      if (navigation.canGoBack()) navigation.goBack();
+      else navigation.replace('Main');
+      return;
     }
-    setErrorMsg('');
+    setErrorMsg(failureMessage(response.status, data));
+  };
 
+  const run = async (work) => {
+    setErrorMsg('');
     setIsLoading(true);
-
     try {
-        const isTestAccount = normalizedUsername === 'test_student' || normalizedUsername === 'test_lecturer';
-        const requestBody = isTestAccount
-            ? { username: normalizedUsername, password }
-            : {
-                username: normalizedUsername,
-                password,
-                deviceId: await getDeviceId()
-            };
-
-        const endpoint = isTestAccount ? '/api/v1/auth/testing/login' : '/api/v1/auth/login';
-        const response = await fetch(buildApiUrl(endpoint), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody)
-        });
-
-        // Parse safely to prevent "Unexpected end of input" crashes on empty responses
-        const rawText = await response.text();
-        let data = {};
-        try {
-            data = rawText ? JSON.parse(rawText) : {};
-        } catch (parseError) {
-            if (__DEV__) {
-                console.warn('Login response was not valid JSON.', {
-                    status: response.status,
-                    endpoint,
-                    rawText,
-                    parseError
-                });
-            }
-        }
-
-        if (response.ok && data.token) {
-            // Successfully retrieved the JWT token, save it via Context
-            await login(data.token, data.user, data.refreshToken);
-
-            // Pop the Login modal to return to previous screen
-            if (navigation.canGoBack()) {
-                navigation.goBack();
-            } else {
-                navigation.replace('Main');
-            }
-        } else {
-            if (__DEV__) {
-                console.warn('Login failed.', {
-                    status: response.status,
-                    endpoint,
-                    response: data
-                });
-            }
-
-            setErrorMsg(isTestAccount && showDemoAccounts ? INVALID_DEMO_LOGIN_MESSAGE : INVALID_LOGIN_MESSAGE);
-        }
+      await work();
     } catch (error) {
-        setErrorMsg(NETWORK_ERROR_MESSAGE);
-        if (__DEV__) {
-            console.error("Login fetch error:", {
-                error,
-                apiBaseUrl: API_BASE_URL
-            });
-        }
+      setErrorMsg(NETWORK_ERROR_MESSAGE);
+      if (__DEV__) console.error('Login error:', { error, apiBaseUrl: API_BASE_URL });
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const fillDemoAccount = (account) => {
-    setUsername(account.username);
-    setPassword(account.password);
-    setErrorMsg('');
+  const handlePasswordLogin = () => {
+    if (!username.trim() || !password) {
+      setErrorMsg('Please enter your username and password.');
+      return;
+    }
+    run(async () => finish(await postJson(PASSWORD_ENDPOINT, passwordSignInBody(username, password, await getDeviceId()))));
   };
+
+  const handleEntraToken = (idToken) =>
+    run(async () => finish(await postJson(ENTRA_ENDPOINT, entraSignInBody(idToken, await getDeviceId()))));
+
+  const nothingOffered = options && !options.entra && !options.password;
 
   const formCard = (
     <Card style={styles.formCard} elevated>
       <Text style={[styles.title, { color: colors.text }]}>Welcome back</Text>
-      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Sign in with your University credentials to continue.</Text>
+      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Sign in with your University account to continue.</Text>
 
       {errorMsg ? (
         <View style={[styles.errorBanner, { backgroundColor: colors.dangerTint }]}>
@@ -129,73 +134,69 @@ export default function LoginScreen({ navigation }) {
         </View>
       ) : null}
 
-      {showDemoAccounts ? (
-        <View style={[styles.demoBanner, { backgroundColor: colors.accentTint, borderColor: colors.accent }]}>
-          <Text style={[styles.demoBannerText, { color: colors.accentInk }]}>
-            <Text style={{ fontFamily: fonts.bold }}>Demo accounts — </Text>
-            tap one below to autofill a student or lecturer login.
-          </Text>
-          <View style={styles.demoAccountGrid}>
-            {demoAccounts.map((account) => (
-              <TouchableOpacity
-                key={account.username}
-                style={[styles.demoAccountButton, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
-                onPress={() => fillDemoAccount(account)}
-                disabled={isLoading}
-              >
-                <Ionicons name={account.icon} size={16} color={colors.primary} />
-                <Text style={[styles.demoAccountText, { color: colors.text }]}>{account.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+      {!options ? <ActivityIndicator color={colors.primary} /> : null}
+
+      {nothingOffered ? (
+        <View style={[styles.errorBanner, { backgroundColor: colors.accentTint }]}>
+          <Text style={[styles.errorText, { color: colors.accentInk }]}>{SIGN_IN_UNAVAILABLE_MESSAGE}</Text>
         </View>
       ) : null}
 
-      <Text style={[styles.label, { color: colors.text }]}>Username</Text>
-      <View style={[styles.inputContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
-          <Ionicons name="person-outline" size={18} color={colors.textSecondary} style={styles.inputIcon} />
-          <TextInput
-              style={[styles.input, { color: colors.text }]}
-              placeholder="Enter ID number"
-              placeholderTextColor={colors.textSecondary}
-              value={username}
-              onChangeText={setUsername}
-              autoCapitalize="none"
-              autoCorrect={false}
-          />
-      </View>
+      {options?.entra ? (
+        <EntraSignInButton
+          entra={options.entra}
+          disabled={isLoading}
+          onIdToken={handleEntraToken}
+          onError={setErrorMsg}
+        />
+      ) : null}
 
-      <Text style={[styles.label, { color: colors.text }]}>Password</Text>
-      <View style={[styles.inputContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
-          <Ionicons name="lock-closed-outline" size={18} color={colors.textSecondary} style={styles.inputIcon} />
-          <TextInput
-              style={[styles.input, { color: colors.text }]}
-              placeholder="Enter password"
-              placeholderTextColor={colors.textSecondary}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-          />
-          <TouchableOpacity
-              onPress={() => setShowPassword(!showPassword)}
-              style={styles.eyeIconContainer}
-              accessibilityLabel={showPassword ? "Hide password" : "Show password"}
-          >
-              <Ionicons
-                  name={showPassword ? "eye-outline" : "eye-off-outline"}
-                  size={18}
-                  color={colors.textSecondary}
+      {options?.password ? (
+        <>
+          <View style={[styles.demoBanner, { backgroundColor: colors.accentTint, borderColor: colors.accent }]}>
+            <Text style={[styles.demoBannerText, { color: colors.accentInk }]}>
+              <Text style={{ fontFamily: fonts.bold }}>TEST environment — </Text>
+              synthetic accounts only. Real UTech accounts use "Sign in with UTech".
+            </Text>
+          </View>
+
+          <Text style={[styles.label, { color: colors.text }]}>Username</Text>
+          <View style={[styles.inputContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <Ionicons name="person-outline" size={18} color={colors.textSecondary} style={styles.inputIcon} />
+              <TextInput
+                  style={[styles.input, { color: colors.text }]}
+                  placeholder="sim-..."
+                  placeholderTextColor={colors.textSecondary}
+                  value={username}
+                  onChangeText={setUsername}
+                  autoCapitalize="none"
+                  autoCorrect={false}
               />
-          </TouchableOpacity>
-      </View>
+          </View>
 
-      <Button
-        label="Sign In"
-        onPress={handleLogin}
-        loading={isLoading}
-        fullWidth
-        style={styles.submitButton}
-      />
+          <Text style={[styles.label, { color: colors.text }]}>Password</Text>
+          <View style={[styles.inputContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <Ionicons name="lock-closed-outline" size={18} color={colors.textSecondary} style={styles.inputIcon} />
+              <TextInput
+                  style={[styles.input, { color: colors.text }]}
+                  placeholder="Enter password"
+                  placeholderTextColor={colors.textSecondary}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={styles.eyeIconContainer}
+                  accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+              >
+                  <Ionicons name={showPassword ? "eye-outline" : "eye-off-outline"} size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+          </View>
+
+          <Button label="Sign In" onPress={handlePasswordLogin} loading={isLoading} fullWidth style={styles.submitButton} />
+        </>
+      ) : null}
     </Card>
   );
 
