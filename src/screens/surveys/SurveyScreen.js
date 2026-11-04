@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../context/ThemeContext';
 import { Button, ProgressBar } from '../../components/ui';
 import { fonts, radii, spacing } from '../../utils/theme';
+const { isAnswered, unansweredQuestions, answeredCount: countAnswered, incompleteMessage, submissionFailureMessage } = require('../../utils/surveyCompletion');
 
 export default function SurveyScreen({ route, navigation }) {
   const { surveyId, moduleCode, moduleOfferingId, campaignId, surveyWindowId, assignmentId } = route.params;
@@ -18,6 +19,9 @@ export default function SurveyScreen({ route, navigation }) {
   const [answers, setAnswers] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [formError, setFormError] = useState(null);
+  const scrollRef = useRef(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.5)).current;
 
@@ -44,18 +48,25 @@ export default function SurveyScreen({ route, navigation }) {
 
   const handleAnswerChange = (questionId, value) => {
     setAnswers(prev => ({ ...prev, [questionId]: value }));
+    setFormError(null);
   };
 
   const totalQuestions = useMemo(
     () => (survey?.sections || []).reduce((sum, s) => sum + (s.questions?.length || 0), 0),
     [survey]
   );
-  const answeredCount = useMemo(
-    () => Object.values(answers).filter(v => v !== '' && v != null).length,
-    [answers]
-  );
+  const answeredCount = useMemo(() => countAnswered(survey, answers), [survey, answers]);
 
   const handleSubmit = async () => {
+    // OQA: every question must be answered before a survey can be submitted.
+    setSubmitAttempted(true);
+    const remaining = unansweredQuestions(survey, answers).length;
+    if (remaining > 0) {
+      setFormError(incompleteMessage(remaining));
+      scrollRef.current?.scrollTo?.({ y: 0, animated: true });
+      return;
+    }
+    setFormError(null);
     setSubmitting(true);
     try {
       const deviceId = await getDeviceId();
@@ -100,8 +111,9 @@ export default function SurveyScreen({ route, navigation }) {
           });
         }, 2200);
       } else {
-        const errData = await response.json();
-        alert(errData.error || 'Failed to submit the survey.');
+        let errData = null;
+        try { errData = await response.json(); } catch { errData = null; }
+        setFormError(submissionFailureMessage(errData));
       }
     } catch (err) {
       console.error('Error submitting survey:', err);
@@ -232,7 +244,12 @@ export default function SurveyScreen({ route, navigation }) {
         </View>
       )}
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.scrollContent}>
+        {formError ? (
+          <View accessibilityRole="alert" style={[styles.formErrorBanner, { borderColor: '#EF4444' }]}>
+            <Text style={[styles.formErrorText, { color: '#EF4444' }]}>{formError}</Text>
+          </View>
+        ) : null}
         {(!survey.sections || survey.sections.length === 0) ? (
           <View style={{ alignItems: 'center', marginTop: 50, paddingHorizontal: 20 }}>
             <Ionicons name="document-text-outline" size={54} color={colors.textSecondary} />
@@ -251,14 +268,21 @@ export default function SurveyScreen({ route, navigation }) {
                   )}
                 </View>
 
-                {(section.questions || []).map((question, qIdx) => (
-                  <View key={question.id || qIdx} style={[styles.questionContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-                    <Text style={[styles.questionText, { color: colors.text }]}>
-                      {qIdx + 1}. {question.text}
-                    </Text>
-                    {renderQuestionInput(question)}
-                  </View>
-                ))}
+                {(section.questions || []).map((question, qIdx) => {
+                  const missing = submitAttempted && !isAnswered(answers, question);
+                  return (
+                    <View key={question.id || qIdx} style={[styles.questionContainer, { backgroundColor: colors.cardBackground, borderColor: missing ? '#EF4444' : colors.border }]}>
+                      <Text style={[styles.questionText, { color: colors.text }]}>
+                        {qIdx + 1}. {question.text}
+                        <Text style={{ color: '#EF4444' }}> *</Text>
+                      </Text>
+                      {renderQuestionInput(question)}
+                      {missing ? (
+                        <Text style={[styles.missingText, { color: '#EF4444' }]}>Please answer this question.</Text>
+                      ) : null}
+                    </View>
+                  );
+                })}
               </View>
             ))}
 
@@ -325,6 +349,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   questionText: { fontSize: 14.5, marginBottom: spacing.md, lineHeight: 21, fontFamily: fonts.bold },
+  missingText: { fontSize: 12.5, marginTop: spacing.sm, fontFamily: fonts.bold },
+  formErrorBanner: { borderWidth: 1.5, borderRadius: radii.md, padding: spacing.md, marginBottom: spacing.md },
+  formErrorText: { fontSize: 13.5, lineHeight: 19, fontFamily: fonts.bold },
 
   // Free text
   textInput: {
