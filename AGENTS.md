@@ -206,21 +206,68 @@ Mark verified facts separately from assumptions and from stale information.
 
 ## Databases
 
-Never assume two services are isolated because their environment names differ. Before any
-deployment, migration, seeding or data change, check which database each affected host actually
-uses. Never put credentials or connection strings in this file.
+Never assume two services are isolated because their environment names differ. Running in
+Development does not establish database isolation. Before any deployment or administrative
+database mutation, verify the actual database target and all connected environments. Migrations,
+seeding, fixture provisioning, synthetic identity creation, schema resets and other administrative
+data changes require explicit project-owner authorization for their scope and cross-environment
+effects. Starting an application that may execute these paths requires the same review; shared
+database access or an environment label is not authorization. Never put credentials or connection
+strings in this file.
+
+Credential rotation or synchronization across environments requires an explicitly approved,
+coordinated process covering all affected consumers, change order and verification. A credential
+mismatch does not itself authorize changing a secret, connection string or hosting configuration.
+
+## Intentional Shared Supabase Database — Project Owner Decision (6 November 2026)
+
+This is the project owner's explicit architectural decision for the current synthetic-data
+arrangement. It governs the architecture where earlier wording conflicts with it; it does not
+waive existing approval requirements or production protections. Database and operational
+instructions below are reconciled with this decision; all other safeguards remain in force.
+
+1. The project owner deliberately configured OLMIES development and Railway TEST to use a
+   common Supabase data source. This provides one consistent source of truth for synthetic
+   application data across development, testing and demonstrations.
+2. The shared database is intentional. Do not classify database sharing itself as an accidental
+   misconfiguration or automatically recommend database separation as a required security
+   remediation.
+3. All application data in the current development and demonstration environments is
+   owner-declared synthetic. This does not eliminate the need to protect credentials, database
+   integrity, access controls or application security.
+4. The legacy Azure Production configuration may also reference the same Supabase project.
+   Azure Production remains stopped and must not be restarted, modified or deployed to without
+   explicit project-owner authorization.
+5. Do not create separate databases, change database connection strings, migrate data, reset
+   schemas, perform destructive operations or alter Railway/Azure configuration without explicit
+   project-owner approval.
+6. Shared database access does not imply that migrations, fixture provisioning, synthetic
+   identity creation or seeding may execute automatically. Such operations must be governed by
+   explicit safeguards and reviewed for their effect on all connected environments.
+7. The existing `Database__IsolatedFromProduction=true` setting must not be interpreted as proof
+   of physical database isolation. Its operational consequences require separate review. Do not
+   change it without examining dependencies and obtaining project-owner approval.
+8. Future institutional Production deployment involving real UTech data requires a separately
+   approved architecture, appropriate isolation, institutional security controls and EAS
+   authorization. The current shared synthetic-data arrangement does not authorize using the
+   same database for live institutional records.
+9. Security remediation must preserve the owner's single-source-of-truth design while
+   eliminating genuine vulnerabilities. If a proposed correction conflicts with this decision,
+   stop and present alternatives rather than silently redesigning the infrastructure.
 
 ## Data classification (confirmed by the project owner, 2026-11-03)
 
-* All current OLMIES application data is synthetic: development, TEST, demonstration and
+* All current OLMIES application data is owner-declared synthetic: development, TEST, demonstration and
   Azure Production data, including surveys, responses, student enrolments, lecturer
   assignments and modules. Never describe these records as real institutional records.
-* Azure Production is currently a demonstration environment running on synthetic data,
-  despite its name. It keeps its "Production protection" rules, and its deliberate version
+* Azure Production is a protected, stopped legacy synthetic demonstration environment,
+  despite its name. It must not be restarted, modified or deployed to without explicit
+  project-owner authorization. Its "Production protection" rules and deliberate version
   difference from TEST must be preserved.
-* Synthetic data does not relax anything else. Environments still need separate databases,
-  because shared migrations, schema changes and accidental writes break the other
-  environment. Authentication, authorization and credential protection stay fully in force.
+* Synthetic data does not relax anything else. Development and Railway TEST intentionally
+  share a common Supabase data source. Review migrations, schema changes and writes for their
+  effect on every connected environment; sharing alone does not require database separation.
+  Authentication, authorization, database integrity and credential protection stay fully in force.
 * Authentication tokens, passwords, API keys, connection strings and server logs are genuine
   operational information, not synthetic data. Protect them accordingly.
 * Before any integration brings in real UTech student or staff data (for example live ISAS or
@@ -367,7 +414,8 @@ If a merge conflict involves workflow files:
 # Environment Notes
 
 * Railway test is the active test environment.
-* Azure production is the real production environment.
+* Azure Production is a protected, stopped legacy synthetic demonstration environment;
+  restart, modification or deployment requires explicit project-owner authorization.
 * Railway production is legacy/stale and should not be used for normal deployment verification.
 
 # Purpose
@@ -376,5 +424,5 @@ This workflow exists to keep:
 
 * environments predictable
 * deployments controlled
-* testing isolated
+* testing controlled without assuming database isolation
 * production safe
