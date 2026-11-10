@@ -305,12 +305,6 @@ const styles = StyleSheet.create({
   errorText: { fontFamily: fonts.bold, fontSize: 12.5 },
   demoBanner: { borderWidth: 1, borderRadius: radii.md, padding: 12, marginBottom: 16 },
   demoBannerText: { fontFamily: fonts.regular, fontSize: 11.5, marginBottom: 10, lineHeight: 16 },
-  demoAccountGrid: { flexDirection: 'row', gap: 10 },
-  demoAccountButton: {
-    flex: 1, minHeight: 42, borderRadius: radii.sm, borderWidth: 1,
-    alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 7,
-  },
-  demoAccountText: { fontSize: 12.5, fontFamily: fonts.bold },
   label: { fontSize: 11.5, fontFamily: fonts.bold, marginBottom: 6, marginTop: 13 },
   inputContainer: {
     flexDirection: 'row', alignItems: 'center', borderRadius: radii.md,
