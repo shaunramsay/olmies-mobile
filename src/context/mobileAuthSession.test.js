@@ -209,3 +209,31 @@ test('fetchWithAuth refreshes after a valid-token 401 and retries once', async (
   assert.equal(calls[1].url, 'https://api.test/api/v1/auth/refresh');
   assert.equal(calls[2].headers.Authorization, `Bearer ${newToken}`);
 });
+
+test('an ISAS outage during refresh keeps the session (server answers 503 academic_record_unavailable)', async () => {
+  const harness = createSessionHarness(async () => createResponse(503, { error: 'academic_record_unavailable' }));
+
+  await harness.session.login(makeJwt(-1), { username: 'student-1', role: 'Student' }, 'refresh-1');
+  const refreshed = await harness.session.refreshAccessToken();
+
+  assert.equal(refreshed, null);
+  assert.equal(await harness.storage.getItemAsync('refresh'), 'refresh-1');
+  assert.notEqual(harness.user, null);
+});
+
+test('a network failure during refresh keeps the session', async () => {
+  const harness = createSessionHarness(async () => { throw new Error('offline'); });
+
+  await harness.session.login(makeJwt(-1), { username: 'student-1', role: 'Student' }, 'refresh-1');
+  assert.equal(await harness.session.refreshAccessToken(), null);
+  assert.equal(await harness.storage.getItemAsync('refresh'), 'refresh-1');
+});
+
+test('a refresh refused for the account itself (no longer eligible) clears the session', async () => {
+  for (const status of [400, 401, 403]) {
+    const harness = createSessionHarness(async () => createResponse(status, { error: 'not eligible' }));
+    await harness.session.login(makeJwt(-1), { username: 'student-1', role: 'Student' }, 'refresh-1');
+    await harness.session.refreshAccessToken();
+    assert.equal(await harness.storage.getItemAsync('refresh'), null, `status ${status}`);
+  }
+});

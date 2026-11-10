@@ -12,6 +12,7 @@ import WebNavigationShell from './WebNavigationShell';
 import AskUTechScreen from '../screens/helpdesk/AskUTechScreen';
 import SurveyScreen from '../screens/surveys/SurveyScreen';
 import SurveyResultsScreen from '../screens/surveys/SurveyResultsScreen';
+import OccurrenceEvaluationScreen from '../screens/surveys/OccurrenceEvaluationScreen';
 import HistoryScreen from '../screens/main/HistoryScreen';
 import InsightsScreen from '../screens/main/InsightsScreen';
 
@@ -44,6 +45,7 @@ export default function AppNavigator() {
       <Stack.Screen name="AskUTech" component={AskUTechScreen} />
       <Stack.Screen name="Survey" component={SurveyScreen} options={{ presentation: 'fullScreenModal' }} />
       <Stack.Screen name="SurveyResults" component={SurveyResultsScreen} options={{ presentation: 'fullScreenModal' }} />
+      <Stack.Screen name="OccurrenceEvaluation" component={OccurrenceEvaluationScreen} options={{ presentation: 'fullScreenModal' }} />
       <Stack.Screen name="DataProtection" component={DataProtectionScreen} options={{ presentation: 'fullScreenModal' }} />
       <Stack.Screen name="History" component={HistoryScreen} />
       <Stack.Screen name="Insights" component={InsightsScreen} />
