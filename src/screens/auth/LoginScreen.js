@@ -80,7 +80,10 @@ export default function LoginScreen({ navigation }) {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(buildApiUrl(METHODS_ENDPOINT))
+    // buildApiUrl throws when the API destination is not approved; treat that like an unreachable
+    // service instead of letting the error escape the effect.
+    Promise.resolve()
+      .then(() => fetch(buildApiUrl(METHODS_ENDPOINT)))
       .then((r) => (r.ok ? r.json() : null))
       .catch(() => null)
       .then((methods) => { if (!cancelled) setOptions(signInOptions(methods)); });

@@ -39,3 +39,16 @@ jobs:
         run: |
           npx expo config --type public --json > /tmp/expo-prod.json
           node -e "const u=require('/tmp/expo-prod.json').updates||{};const {isSafeUpdatesConfig}=require('./src/utils/updatePolicy');if(!isSafeUpdatesConfig(u)){console.error('Unsigned OTA updates enabled in production config');process.exit(1)}"
+      - name: Release config sends credentials only to an approved API destination
+        env:
+          EAS_BUILD: 'true'
+          EAS_BUILD_PROFILE: preview
+        run: |
+          EXPO_PUBLIC_API_URL=https://olmies-ai-test.up.railway.app npx expo config --type public --json > /tmp/expo-dest.json
+          node -e "const d=require('/tmp/expo-dest.json');if(d.extra.apiBaseUrl!=='https://olmies-ai-test.up.railway.app'){console.error('approved TEST API not preserved');process.exit(1)}"
+          for refused in https://olmies-ai-production.up.railway.app http://olmies-ai-test.up.railway.app https://unapproved.example ""; do
+            if EXPO_PUBLIC_API_URL="$refused" npx expo config --type public --json > /dev/null 2>&1; then
+              echo "Release config accepted an unapproved API destination: ${refused:-<unset>}" >&2
+              exit 1
+            fi
+          done
