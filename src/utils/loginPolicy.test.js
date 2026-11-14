@@ -39,3 +39,11 @@ test('failure messages', () => {
   assert.equal(policy.issuer, undefined);
   assert.equal(policy.entraIssuer(tenantId), `https://login.microsoftonline.com/${tenantId}/v2.0`);
 });
+
+test('an ISAS outage at sign-in explains that public services still work', () => {
+  const { failureMessage, ACADEMIC_RECORD_UNAVAILABLE_MESSAGE } = require('./loginPolicy');
+  assert.equal(failureMessage(503, { error: 'academic_record_unavailable' }), ACADEMIC_RECORD_UNAVAILABLE_MESSAGE);
+  assert.match(ACADEMIC_RECORD_UNAVAILABLE_MESSAGE, /campus map/);
+  assert.equal(failureMessage(403, { error: 'No current student enrolment was found for this account.' }),
+    'No current student enrolment was found for this account.');
+});
