@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - test
+  # Pre-merge: run the security gate on PRs into test. The APK job stays skipped (owner dispatch only).
+  pull_request:
+    branches:
+      - test
   workflow_dispatch:
     inputs:
       approved_sha:
