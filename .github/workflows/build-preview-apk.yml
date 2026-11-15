@@ -4,10 +4,26 @@ on:
   push:
     branches:
       - test
+  # Pre-merge: run the security gate on PRs into test. The APK job stays skipped (owner dispatch only).
+  pull_request:
+    branches:
+      - test
   workflow_dispatch:
+    inputs:
+      approved_sha:
+        description: 'Full reviewed TEST commit SHA; owner dispatch authorizes this exact deployment/build'
+        required: true
+        type: string
 
 jobs:
+  security_gate:
+    uses: ./.github/workflows/security-checks.yml
+    permissions:
+      contents: read
+
   build-android-preview-apk:
+    needs: security_gate
+    if: github.ref == 'refs/heads/test' && github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner && github.triggering_actor == github.repository_owner && inputs.approved_sha == github.sha && needs.security_gate.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -19,7 +35,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22.23.4'
           cache: npm
 
       - name: Install dependencies

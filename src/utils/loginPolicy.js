@@ -10,6 +10,14 @@
 
 const SIGN_IN_UNAVAILABLE_CODE = 'institutional_sign_in_unavailable';
 
+// Student sign-in needs a current enrolment confirmed by ISAS. When ISAS cannot be asked the server
+// answers 503 academic_record_unavailable; public services keep working without signing in.
+const ACADEMIC_RECORD_UNAVAILABLE_CODE = 'academic_record_unavailable';
+const ACADEMIC_RECORD_UNAVAILABLE_MESSAGE =
+  "Your student status could not be checked with the university's records right now, so student sign-in is unavailable. " +
+  'You can still use the campus map, announcements and the public Help Desk without signing in. Please try again later.';
+const REAUTHENTICATION_REQUIRED_CODE = 'institutional_reauthentication_required';
+
 const SIGN_IN_UNAVAILABLE_MESSAGE =
   'Student and lecturer sign-in is temporarily unavailable while UTech institutional sign-in is being set up. ' +
   'You can still use the campus map, deals, announcements and the public Help Desk.';
@@ -44,14 +52,22 @@ const entraSignInBody = (idToken, deviceId) => ({ idToken, deviceId });
 const isSignInUnavailable = (status, body) =>
   status === 503 && body != null && body.error === SIGN_IN_UNAVAILABLE_CODE;
 
+const isAcademicRecordUnavailable = (status, body) =>
+  status === 503 && body != null && body.error === ACADEMIC_RECORD_UNAVAILABLE_CODE;
+
 const failureMessage = (status, body) => {
   if (isSignInUnavailable(status, body)) return SIGN_IN_UNAVAILABLE_MESSAGE;
+  if (isAcademicRecordUnavailable(status, body)) return ACADEMIC_RECORD_UNAVAILABLE_MESSAGE;
   if (status === 403) return (body && body.error) || 'This account has no current OLMIES access.';
   if (status === 429) return 'Too many failed attempts. Please wait 15 minutes and try again.';
   return 'Sign-in failed. Please check your details and try again.';
 };
 
 module.exports = {
+  ACADEMIC_RECORD_UNAVAILABLE_CODE,
+  ACADEMIC_RECORD_UNAVAILABLE_MESSAGE,
+  REAUTHENTICATION_REQUIRED_CODE,
+  isAcademicRecordUnavailable,
   ENTRA_ENDPOINT,
   METHODS_ENDPOINT,
   PASSWORD_ENDPOINT,
