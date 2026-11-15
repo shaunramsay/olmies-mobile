@@ -21,18 +21,57 @@ wording appears in `olmies-ai`, `olmies-mobile` and `ISAS.IntegrationAPI`; only 
 
 ## Production protection
 
-No AI coding agent is authorized to:
+Production protection is mandatory. It covers every Production resource, whether or not it is
+listed: the resources designated Production in "Resource inventory", any newly discovered resource
+that serves a live Production environment, and any database or store that contains real
+institutional data. No AI coding agent may, without the owner's explicit authorization for that
+specific action:
 
-* push to or merge into the production branch;
-* deploy application changes to Azure Production;
-* modify production databases;
+* push to or merge into a production branch, or run or change a production deployment pipeline;
+* deploy to, start, restart, stop, modify, reconfigure or delete a Production resource or service
+  (including every Azure Production resource);
+* modify a Production database or a database containing real institutional data;
 * change production environment variables or secrets;
-* run production migrations or data resets;
-* stop or restart production services.
+* run production migrations or data resets.
 
-Any production action needs the repository owner's explicit authorization for that specific
-action. A security vulnerability found in Production is reported to the owner immediately, with
+Production status is decided by the owner's designation and by what a resource actually does or
+holds, not inferred from a historical or stale configuration that references it. If a resource's
+identity or classification is genuinely uncertain, treat it as Production, stop and ask the owner.
+A security vulnerability found in Production is reported to the owner immediately, with
 recommended containment, and does not by itself authorize any production change.
+
+## Resource inventory (owner-approved 12 November 2026; not exhaustive)
+
+The inventory records known resources. It never narrows "Production protection": a Production
+resource that is missing from this list is still protected, and the list is updated when one is found.
+
+Production (protected):
+* Azure Web App `olmies-api-8294` (stopped), its app settings and its deployment credentials.
+* Azure PostgreSQL `olmies-prod-pg-8294`.
+* The production branches (`production-2` in olmies-ai and olmies-mobile, `production` in
+  ISAS.IntegrationAPI) and their deployment workflows (for example `deploy-azure-production.yml`).
+
+Development/TEST:
+* Supabase project `rdlp…ckoy` ("Olmies Db"), the shared Development and Railway TEST database.
+  Classified Development/TEST by the owner on 12 November 2026: the read-only verification found only
+  synthetic data, and the owner confirmed that it holds no real student data (all student records,
+  including username `2111685`, are test records). Writes still follow the shared-database rules.
+* Railway project `ISAS.IntegrationAPI`, environment `test` (services `olmies-ai`,
+  `thriving-dedication`, `talented-flexibility`, `genuine-enjoyment`).
+* Local development checkouts and their configuration.
+
+Legacy (do not start, deploy or use for verification; any change or deletion needs owner approval):
+* Azure Web App `olmies-ai-helpdesk` (stopped 12 November 2026). Former TEST deployment target until
+  2 May 2026; its workflow `test_olmies-ai-helpdesk.yml` has been removed from every branch.
+* Railway environment `production` in the same Railway project.
+* Branch `master`.
+
+Legacy access to `rdlp…ckoy` was removed on 12 November 2026 (owner-approved): the Supabase connection
+and Supabase key/URL settings were removed from `olmies-api-8294`, `olmies-ai-helpdesk` and the Railway
+legacy `production` service, and the `Deploy Azure Production` workflow is disabled. Credentials were
+not rotated (owner decision). `olmies-ai-helpdesk` still has a `HelpDeskConnection` setting whose target
+was not confirmed. Never start either Azure app, re-enable that workflow or redeploy the legacy Railway
+service without the owner's approval.
 
 ## Development and TEST workflow
 
@@ -42,6 +81,27 @@ recommended containment, and does not by itself authorize any production change.
 4. Promote approved changes from `dev` to `test`.
 5. Let the existing TEST workflow run.
 6. Verify the deployed TEST host with the security and functional smoke tests.
+
+Approved Development/TEST work on Development/TEST resources does not need Production
+authorization merely because a stopped Production configuration references the same resource.
+This includes running tests, maintaining synthetic fixtures, updating synthetic survey and
+campaign records, deploying approved code to Railway TEST, executing approved guarded TEST
+reconciliation scripts, native mobile verification, and changing Development/TEST configuration
+within the approved scope. "Approved" still means the owner approved the change or its scope;
+promotion to `test`, migrations and administrative data changes keep their approval rules.
+
+### Local development checkout
+
+* Normal development starts from the verified local `dev` branch of the primary checkout.
+* Before editing a repository, verify `git remote -v`, the branch, `git status`, and that `dev` is
+  synchronized with a fresh `origin/dev` (or can fast-forward to it).
+* Keep the primary `dev` checkout clean and synchronized (fast-forward only).
+* Use a feature branch or separate worktree only when necessary (for example when the primary
+  checkout holds other work); merge completed work back into `dev` through a reviewed pull request.
+* Never develop directly on `test` or a production branch, and never promote to `test` without the
+  required verification.
+* If a checkout is not on `dev` or has uncommitted work, inspect and preserve it before switching.
+  Preserve existing worktrees. Never force-push, `reset --hard`, rebase shared branches or discard work.
 
 Before promoting to `test`, confirm the exact deployment trigger AND the database the TEST host
 uses (see "Databases"). Do not rewrite Git history, squash unrelated commits or overwrite
@@ -235,12 +295,15 @@ instructions below are reconciled with this decision; all other safeguards remai
 3. All application data in the current development and demonstration environments is
    owner-declared synthetic. This does not eliminate the need to protect credentials, database
    integrity, access controls or application security.
-4. The legacy Azure Production configuration may also reference the same Supabase project.
-   Azure Production remains stopped and must not be restarted, modified or deployed to without
-   explicit project-owner authorization.
+4. The shared Supabase project is classified Development/TEST (owner-confirmed 12 November 2026;
+   see "Resource inventory"). The stopped legacy Azure applications referenced it until 12 November
+   2026; that historical reference does not make it Production. Azure Production remains stopped and must not be
+   started, modified or deployed to without explicit project-owner authorization, and must never
+   be started while it references this database (its code applies migrations on start).
 5. Do not create separate databases, change database connection strings, migrate data, reset
    schemas, perform destructive operations or alter Railway/Azure configuration without explicit
-   project-owner approval.
+   project-owner approval. Approved Development/TEST data work follows "Development and TEST
+   workflow".
 6. Shared database access does not imply that migrations, fixture provisioning, synthetic
    identity creation or seeding may execute automatically. Such operations must be governed by
    explicit safeguards and reviewed for their effect on all connected environments.
