@@ -2,6 +2,7 @@
 """Regression checks for the TEST deployment trust boundary; never runs a deployment."""
 from pathlib import Path
 import json
+import re
 import unittest
 import yaml
 
@@ -19,6 +20,23 @@ STANDALONE_CI = ('security-ci.yml', 'ci.yml')
 def runs_on_test_push(workflow):
     return 'test' in workflow.get('on', {}).get('push', {}).get('branches', [])
 
+CREDENTIAL_EXPR = re.compile(r'\$\{\{[^}]*\bsecrets\b')
+
+def strings(node):
+    if isinstance(node, dict): return [s for k, v in node.items() for s in [k] + strings(v)]
+    if isinstance(node, list): return [s for v in node for s in strings(v)]
+    return [node] if isinstance(node, str) else []
+
+def guard_allows(context):
+    """Evaluate GUARD (a conjunction of equalities) against a GitHub Actions context."""
+    def value(token):
+        return token[1:-1] if token.startswith("'") else context.get(token)
+    return all(value(a) == value(b) for a, b in (clause.split(' == ') for clause in GUARD.split(' && ')))
+
+OWNER_DISPATCH = {'github.ref': 'refs/heads/test', 'github.event_name': 'workflow_dispatch', 'github.actor': 'owner',
+                  'github.triggering_actor': 'owner', 'github.repository_owner': 'owner', 'inputs.approved_sha': 'abc123',
+                  'github.sha': 'abc123', 'needs.security_gate.result': 'success'}
+
 def validate(workflow, reusable):
     jobs = workflow.get('jobs', {})
     gate = jobs.get('security_gate', {})
@@ -26,6 +44,11 @@ def validate(workflow, reusable):
     assert not gate.get('if'), 'required gate must not be conditional'
     assert gate.get('continue-on-error', 'false') == 'false', 'gate must fail closed'
     assert workflow.get('on', {}).get('push', {}).get('branches') == ['test'], 'TEST push only'
+    triggers = workflow.get('on', {})
+    assert 'pull_request_target' not in triggers, 'pull_request_target runs with base-branch credentials'
+    pre_merge = triggers.get('pull_request') or {}
+    assert isinstance(pre_merge, dict) and pre_merge.get('branches') == ['test'], 'security gate must run on pull requests to test'
+    assert 'secrets' not in gate, 'security gate must not receive build credentials'
     approval = workflow.get('on', {}).get('workflow_dispatch', {}).get('inputs', {}).get('approved_sha', {})
     assert approval.get('required') == 'true' and approval.get('type') == 'string', 'reviewed SHA must be explicit'
     deploys = [job for key, job in jobs.items() if key != 'security_gate']
@@ -36,6 +59,7 @@ def validate(workflow, reusable):
         assert 'security_gate' in needs, 'deployment must depend on security_gate'
         assert job.get('if') == GUARD, 'deployment must require TEST ref and successful gate'
     assert 'workflow_call' in reusable.get('on', {}), 'gate must be reusable'
+    assert not any(CREDENTIAL_EXPR.search(text) for text in strings(reusable)), 'security checks must not use credentials'
     test_commands = []
     for job in reusable.get('jobs', {}).values():
         assert not job.get('if'), 'security checks must run unconditionally'
@@ -43,6 +67,7 @@ def validate(workflow, reusable):
         for step in job.get('steps', []):
             if step.get('uses', '').startswith('actions/checkout@'):
                 assert step.get('with', {}).get('ref') in [None, '${{ github.sha }}'], 'checks must use the running commit'
+                assert step.get('with', {}).get('repository') in [None, '${{ github.repository }}'], 'checks must use this repository'
             assert step.get('continue-on-error', 'false') == 'false', 'failed security steps cannot pass'
             command = step.get('run', '')
             if '--list-tests' not in command and any(token in command for token in ['dotnet test ', 'npm test', 'npx vitest run']):
@@ -111,6 +136,38 @@ class DeploymentGateTests(unittest.TestCase):
             path = ROOT / '.github/workflows' / name
             if path.exists():
                 self.assertFalse(runs_on_test_push(read(path)), f'{name} must not also run on pushes to test')
+    def test_pre_merge_security_trigger_cannot_be_removed(self):
+        self.workflow['on'].pop('pull_request')
+        with self.assertRaises(AssertionError): validate(self.workflow, self.reusable)
+    def test_pre_merge_security_trigger_must_target_test_only(self):
+        for branches in (['dev'], ['test', 'dev'], []):
+            self.workflow['on']['pull_request'] = {'branches': branches}
+            with self.assertRaises(AssertionError): validate(self.workflow, self.reusable)
+    def test_pull_request_target_trigger_is_refused(self):
+        self.workflow['on']['pull_request_target'] = {'branches': ['test']}
+        with self.assertRaises(AssertionError): validate(self.workflow, self.reusable)
+    def test_owner_dispatch_of_the_reviewed_sha_is_the_build_path(self):
+        self.assertEqual(self.job['if'], GUARD)
+        self.assertTrue(guard_allows(OWNER_DISPATCH))
+    def test_pull_request_events_cannot_build_apk(self):
+        self.assertEqual(self.job['if'], GUARD)
+        for event in ('pull_request', 'pull_request_target'):
+            realistic = dict(OWNER_DISPATCH, **{'github.event_name': event, 'github.ref': 'refs/pull/11/merge', 'inputs.approved_sha': None})
+            spoofed = dict(OWNER_DISPATCH, **{'github.event_name': event})
+            self.assertFalse(guard_allows(realistic), event)
+            self.assertFalse(guard_allows(spoofed), event)
+    def test_build_credentials_cannot_reach_the_gate(self):
+        self.workflow['jobs']['security_gate']['secrets'] = 'inherit'
+        with self.assertRaises(AssertionError): validate(self.workflow, self.reusable)
+    def test_security_checks_cannot_use_credentials(self):
+        job = next(iter(self.reusable['jobs'].values()))
+        job['steps'].append({'run': 'true', 'env': {'EXPO_TOKEN': '${{ secrets.EXPO_TOKEN }}'}})
+        with self.assertRaises(AssertionError): validate(self.workflow, self.reusable)
+    def test_checkout_cannot_switch_to_another_repository(self):
+        job = next(iter(self.reusable['jobs'].values()))
+        checkout = next(step for step in job['steps'] if step.get('uses', '').startswith('actions/checkout@'))
+        checkout['with'] = {'repository': 'someone-else/olmies-mobile'}
+        with self.assertRaises(AssertionError): validate(self.workflow, self.reusable)
     def test_standalone_ci_on_test_push_is_detected(self):
         self.assertTrue(runs_on_test_push({'on': {'push': {'branches': ['dev', 'test']}}}))
         self.assertFalse(runs_on_test_push({'on': {'push': {'branches': ['dev', 'main']}}}))
