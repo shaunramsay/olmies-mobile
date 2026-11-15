@@ -8,6 +8,7 @@ import { fetchUTechSemester, getUTechSemester } from '../../utils/dateUtils';
 import { useAppTheme } from '../../context/ThemeContext';
 import { Badge, ProgressBar } from '../../components/ui';
 import { fonts, radii, shadow, spacing } from '../../utils/theme';
+const { evaluationList } = require('../../utils/occurrenceEvaluation');
 
 export default function SurveysScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -19,6 +20,10 @@ export default function SurveysScreen({ navigation }) {
   const [openSurveys, setOpenSurveys] = useState([]);
   const [engagementItems, setEngagementItems] = useState([]);
   const [engagementGroups, setEngagementGroups] = useState([]);
+  // Occurrence-aware module evaluations (GET /api/v1/student/evaluations); notices name campaigns
+  // whose academic record could not be read from ISAS right now.
+  const [evaluations, setEvaluations] = useState({ evaluations: [], unavailable: [] });
+  const [modulesNotice, setModulesNotice] = useState(null);
   const [currentPeriodDisplay, setCurrentPeriodDisplay] = useState(() => getUTechSemester().fullDisplay);
   const [loading, setLoading] = useState(true);
 
@@ -37,13 +42,29 @@ export default function SurveysScreen({ navigation }) {
           setCurrentPeriodDisplay(period.fullDisplay);
 
           if (user) {
-            const [modulesRes, engagementsRes, surveysRes] = await Promise.all([
+            const [modulesRes, engagementsRes, surveysRes, evaluationsRes] = await Promise.all([
               fetchWithAuth('/api/v1/mobile/modules'),
               fetchWithAuth('/api/v1/student/engagements'),
-              fetchWithAuth('/api/v1/mobile/open-surveys')
+              fetchWithAuth('/api/v1/mobile/open-surveys'),
+              isLecturer ? Promise.resolve(null) : fetchWithAuth('/api/v1/student/evaluations')
             ]);
 
-            if (modulesRes.ok) setModules(await modulesRes.json());
+            if (modulesRes.ok) {
+              setModules(await modulesRes.json());
+              setModulesNotice(null);
+            } else {
+              setModules([]);
+              // 503: ISAS could not be asked; 403: no current enrolment. Shown, never guessed.
+              const body = await modulesRes.json().catch(() => ({}));
+              setModulesNotice(modulesRes.status === 503 || modulesRes.status === 403 ? (body.message || null) : null);
+            }
+            if (evaluationsRes && evaluationsRes.ok) {
+              setEvaluations(evaluationList(await evaluationsRes.json()));
+            } else if (evaluationsRes && evaluationsRes.status === 503) {
+              setEvaluations({ evaluations: [], unavailable: [{ campaignId: 'all', message: "Your academic record could not be checked with the university's records right now. Please try again later." }] });
+            } else {
+              setEvaluations({ evaluations: [], unavailable: [] });
+            }
             if (engagementsRes.ok) {
               const engagementFeed = await engagementsRes.json();
               setEngagementItems(Array.isArray(engagementFeed?.items) ? engagementFeed.items : []);
@@ -59,6 +80,8 @@ export default function SurveysScreen({ navigation }) {
             setModules([]);
             setEngagementItems([]);
             setEngagementGroups([]);
+            setEvaluations({ evaluations: [], unavailable: [] });
+            setModulesNotice(null);
           }
         } catch (err) {
           console.error('Error fetching dashboard data:', err);
@@ -184,6 +207,47 @@ export default function SurveysScreen({ navigation }) {
                 </View>
               </View>
             )}
+          </View>
+        )}
+
+        {user && !isLecturer && (evaluations.evaluations.length > 0 || evaluations.unavailable.length > 0) && (
+          <View style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }, !isDarkTheme && shadow.card]}>
+            <View style={styles.cardTitleContainer}>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>Module Evaluations</Text>
+            </View>
+            <Text style={[styles.cardDescription, { color: colors.textSecondary, marginTop: 6 }]}>
+              Evaluate each module and the teaching sessions you attended.
+            </Text>
+            {evaluations.unavailable.map((notice) => (
+              <View key={notice.campaignId} style={[styles.assignmentGroup, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                <Text style={[styles.cardDescription, { color: colors.textSecondary, marginBottom: 0 }]}>
+                  {notice.campaignName ? `${notice.campaignName}: ` : ''}{notice.message}
+                </Text>
+              </View>
+            ))}
+            {evaluations.evaluations.map((evaluation) => (
+              <View key={evaluation.assignmentId} style={[styles.assignmentGroup, { borderColor: evaluation.canStart ? colors.accent : colors.border, backgroundColor: evaluation.canStart ? colors.accentTint : colors.background }]}>
+                <View style={styles.assignmentHeaderRow}>
+                  <View style={{ flex: 1, paddingRight: 10 }}>
+                    <Text style={[styles.moduleLabel, { color: colors.secondary }]}>{evaluation.moduleCode}</Text>
+                    <Text style={[styles.assignmentTitle, { color: colors.text }]}>{evaluation.moduleName || evaluation.moduleCode}</Text>
+                    <Text style={[styles.cardDescription, { color: colors.textSecondary, marginBottom: 0 }]}>{evaluation.campaignName}</Text>
+                  </View>
+                  {evaluation.canStart ? (
+                    <TouchableOpacity
+                      style={[styles.primaryButton, { backgroundColor: colors.accent }]}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Start the evaluation for ${evaluation.moduleCode}`}
+                      onPress={() => navigation.navigate('OccurrenceEvaluation', { assignmentId: evaluation.assignmentId, moduleCode: evaluation.moduleCode })}
+                    >
+                      <Text style={[styles.primaryButtonText, { color: onPrimaryText }]}>Start</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <Badge label={evaluation.statusLabel} tone={evaluation.statusTone} />
+                  )}
+                </View>
+              </View>
+            ))}
           </View>
         )}
 
@@ -324,11 +388,13 @@ export default function SurveysScreen({ navigation }) {
             </TouchableOpacity>
           ) : loading ? (
              <ActivityIndicator size="large" color={colors.primary} style={{ marginVertical: 20 }} />
+          ) : modulesNotice ? (
+             <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>{modulesNotice}</Text>
           ) : modules.length === 0 ? (
              <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>You are not currently {isLecturer ? 'assigned to' : 'enrolled in'} any active modules.</Text>
           ) : (
             modules.map((mod, index) => (
-              <View key={mod.moduleOfferingId}>
+              <View key={mod.moduleOfferingId || mod.moduleCode}>
                 <View style={styles.moduleRow}>
                   <View style={{flex: 1, paddingRight: 10}}>
                     <Text style={[styles.moduleLabel, { color: colors.secondary }]}>{mod.moduleCode}</Text>

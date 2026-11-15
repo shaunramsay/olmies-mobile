@@ -26,6 +26,12 @@ const buildAuthenticatedHeaders = (headers, token, body) => {
   return nextHeaders;
 };
 
+// A refresh the server could not complete for reasons that say nothing about the account (an ISAS
+// outage answers 503 academic_record_unavailable; any 5xx; no network) must not sign the user out:
+// the server deliberately keeps the session. Only an answer about the session itself (400/401/403,
+// or a malformed success) ends it locally.
+const keepsSessionAfterFailedRefresh = (status) => typeof status !== 'number' || status >= 500;
+
 const createMobileAuthSession = ({
   tokenStorage,
   tokenKey,
@@ -115,6 +121,10 @@ const createMobileAuthSession = ({
         });
 
         if (!response.ok) {
+          if (keepsSessionAfterFailedRefresh(response.status)) {
+            logger.warn('Mobile token refresh is temporarily unavailable; keeping the session.', { status: response.status });
+            return null;
+          }
           await clearLocalAuth();
           return null;
         }
@@ -132,8 +142,8 @@ const createMobileAuthSession = ({
           user,
         };
       } catch (error) {
-        logger.warn('Mobile token refresh failed:', error);
-        await clearLocalAuth();
+        // Network failure: nothing is known about the session, so keep it.
+        logger.warn('Mobile token refresh failed; keeping the session:', error);
         return null;
       } finally {
         refreshPromise = null;
@@ -186,6 +196,7 @@ const createMobileAuthSession = ({
 };
 
 module.exports = {
+  keepsSessionAfterFailedRefresh,
   buildAuthenticatedHeaders,
   createMobileAuthSession,
   readJsonSafe,
