@@ -12,6 +12,13 @@ GUARD = "github.ref == 'refs/heads/test' && github.event_name == 'workflow_dispa
 def read(path):
     return yaml.load(Path(path).read_text(), Loader=yaml.BaseLoader)
 
+# Standalone CI workflows that may exist on a branch. TEST keeps only build-preview-apk.yml and
+# security-checks.yml, so a branch can have none of them; then there is nothing to duplicate.
+STANDALONE_CI = ('security-ci.yml', 'ci.yml')
+
+def runs_on_test_push(workflow):
+    return 'test' in workflow.get('on', {}).get('push', {}).get('branches', [])
+
 def validate(workflow, reusable):
     jobs = workflow.get('jobs', {})
     gate = jobs.get('security_gate', {})
@@ -100,8 +107,12 @@ class DeploymentGateTests(unittest.TestCase):
         job['steps'].append({'run': 'npm test', 'continue-on-error': 'true'})
         with self.assertRaises(AssertionError): validate(self.workflow, self.reusable)
     def test_test_push_does_not_duplicate_standalone_ci(self):
-        ci = next((ROOT / '.github/workflows').glob('security-ci.yml'), ROOT / '.github/workflows/ci.yml')
-        workflow = read(ci)
-        self.assertNotIn('test', workflow.get('on', {}).get('push', {}).get('branches', []))
+        for name in STANDALONE_CI:
+            path = ROOT / '.github/workflows' / name
+            if path.exists():
+                self.assertFalse(runs_on_test_push(read(path)), f'{name} must not also run on pushes to test')
+    def test_standalone_ci_on_test_push_is_detected(self):
+        self.assertTrue(runs_on_test_push({'on': {'push': {'branches': ['dev', 'test']}}}))
+        self.assertFalse(runs_on_test_push({'on': {'push': {'branches': ['dev', 'main']}}}))
 
 if __name__ == '__main__': unittest.main()
